@@ -10,25 +10,25 @@ interface ButtonProps extends PressableProps {
 }
 
 const VARIANTS = {
-  primary: 'bg-primary-500 active:bg-primary-600',
+  primary:   'bg-primary-500 active:bg-primary-600',
   secondary: 'bg-slate-100 active:bg-slate-200',
-  outline: 'border border-primary-500 bg-transparent active:bg-primary-50',
-  ghost: 'bg-transparent active:bg-slate-100',
-  danger: 'bg-danger-500 active:bg-danger-600',
+  outline:   'border border-primary-500 bg-transparent active:bg-primary-50',
+  ghost:     'bg-transparent active:bg-primary-50',
+  danger:    'bg-danger-500 active:bg-danger-600',
 } as const;
 
 const TEXT_VARIANTS = {
-  primary: 'text-white',
+  primary:   'text-white',
   secondary: 'text-slate-700',
-  outline: 'text-primary-500',
-  ghost: 'text-primary-500',
-  danger: 'text-white',
+  outline:   'text-primary-500',
+  ghost:     'text-primary-600',
+  danger:    'text-white',
 } as const;
 
 const SIZES = {
   sm: 'px-3 py-2 rounded-lg',
-  md: 'px-5 py-3 rounded-xl',
-  lg: 'px-6 py-4 rounded-xl',
+  md: 'px-5 py-3.5 rounded-2xl',
+  lg: 'px-6 py-4 rounded-2xl',
 } as const;
 
 const TEXT_SIZES = {
@@ -57,7 +57,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'danger' ? '#fff' : '#6366f1'}
+          color={variant === 'primary' || variant === 'danger' ? '#fff' : '#CE21FB'}
           className="mr-2"
         />
       ) : icon ? (

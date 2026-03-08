@@ -3,20 +3,26 @@ import { View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function Index() {
-  const session = useAuthStore((s) => s.session);
+  const session    = useAuthStore((s) => s.session);
   const isHydrated = useAuthStore((s) => s.isHydrated);
 
   if (!isHydrated) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#CE21FB" />
       </View>
     );
   }
 
-  if (session) {
-    return <Redirect href="/(tabs)" />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
-  return <Redirect href="/(auth)/login" />;
+  const isLinked = !!session.user?.app_metadata?.company_id;
+
+  if (!isLinked) {
+    return <Redirect href="/(onboarding)/employee-code" />;
+  }
+
+  return <Redirect href="/(tabs)" />;
 }

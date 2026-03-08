@@ -98,7 +98,7 @@ export default function WalletScreen() {
         )
       }
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#6366f1" />
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#CE21FB" />
       }
     />
   );

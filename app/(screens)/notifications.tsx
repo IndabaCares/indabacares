@@ -60,7 +60,7 @@ export default function NotificationsScreen() {
         }
         ItemSeparatorComponent={() => <View className="h-px bg-slate-50" />}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#6366f1" />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#CE21FB" />
         }
       />
     </View>

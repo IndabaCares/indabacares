@@ -11,8 +11,10 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ user, company }: ProfileHeaderProps) {
   return (
-    <View className="items-center bg-white px-6 pb-6 pt-4">
-      <Avatar uri={user.avatarUrl} name={user.fullName} size="xl" />
+    <View className="items-center bg-primary-50 px-6 pb-8 pt-6">
+      <View className="rounded-full border-4 border-white shadow-sm">
+        <Avatar uri={user.avatarUrl} name={user.fullName} size="xl" />
+      </View>
       <Text className="mt-3 text-xl font-bold text-slate-900">
         {user.displayName || user.fullName}
       </Text>

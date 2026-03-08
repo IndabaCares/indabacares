@@ -17,7 +17,7 @@ interface NotificationItemProps {
 }
 
 const TYPE_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string }> = {
-  recognition_received: { name: 'thumbs-up', color: '#6366f1' },
+  recognition_received: { name: 'thumbs-up', color: '#CE21FB' },
   recognition_boosted: { name: 'rocket', color: '#f59e0b' },
   reaction: { name: 'heart', color: '#ef4444' },
   comment: { name: 'chatbubble', color: '#3b82f6' },
@@ -25,7 +25,7 @@ const TYPE_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: 
   reward_approved: { name: 'checkmark-circle', color: '#22c55e' },
   reward_fulfilled: { name: 'gift', color: '#22c55e' },
   reward_rejected: { name: 'close-circle', color: '#ef4444' },
-  budget_reset: { name: 'refresh', color: '#6366f1' },
+  budget_reset: { name: 'refresh', color: '#CE21FB' },
   system: { name: 'information-circle', color: '#64748b' },
 };
 

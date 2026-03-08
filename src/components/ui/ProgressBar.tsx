@@ -7,7 +7,7 @@ interface ProgressBarProps {
   height?: number;
 }
 
-export function ProgressBar({ progress, color = '#6366f1', height = 6 }: ProgressBarProps) {
+export function ProgressBar({ progress, color = '#CE21FB', height = 6 }: ProgressBarProps) {
   const clampedProgress = Math.min(Math.max(progress, 0), 1);
 
   return (

@@ -71,7 +71,7 @@ export default function GiveScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      className="flex-1 bg-slate-50"
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
@@ -79,7 +79,7 @@ export default function GiveScreen() {
         className="px-4 pt-4"
       >
         {/* Step 1: Recipients */}
-        <Text className="mb-2 text-sm font-semibold text-slate-700">Who are you recognizing?</Text>
+        <Text className="mb-2 text-sm font-semibold text-primary-700">Who are you recognizing?</Text>
         <RecipientPicker
           selected={recipients}
           onSelect={(p) => setRecipients([...recipients, p])}
@@ -90,7 +90,7 @@ export default function GiveScreen() {
         )}
 
         {/* Step 2: Thumbs Up Type */}
-        <Text className="mb-2 mt-4 text-sm font-semibold text-slate-700">
+        <Text className="mb-2 mt-4 text-sm font-semibold text-primary-700">
           What kind of recognition?
         </Text>
         <ThumbsUpTypeSelector
@@ -124,11 +124,11 @@ export default function GiveScreen() {
         <ImageAttachment imageUrl={imageUrl} onImageChange={setImageUrl} />
 
         {/* Step 5: Visibility */}
-        <Text className="mb-2 text-sm font-semibold text-slate-700">Who can see this?</Text>
+        <Text className="mb-2 text-sm font-semibold text-primary-700">Who can see this?</Text>
         <VisibilityPicker value={visibility} onChange={setVisibility} />
 
         {/* Step 6: Hashtags */}
-        <Text className="mb-2 text-sm font-semibold text-slate-700">Hashtags (optional)</Text>
+        <Text className="mb-2 text-sm font-semibold text-primary-700">Hashtags (optional)</Text>
         <HashtagInput hashtags={hashtags} onChange={setHashtags} />
 
         {/* Submit */}

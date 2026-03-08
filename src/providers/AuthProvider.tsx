@@ -50,17 +50,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isError, error]);
 
-  // Route guard
+  // Route guard — three exclusive states:
+  //
+  //   1. No session
+  //      → (auth) group: login, signup, forgot-password
+  //
+  //   2. Session exists but company_id absent from JWT
+  //      → (onboarding) group: employee-code → confirm-hotel
+  //        The user stays here until useConfirmHotel refreshes the session.
+  //
+  //   3. Session exists and company_id present in JWT
+  //      → (tabs) group: main application
+  //
   useEffect(() => {
     if (!isHydrated) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup       = segments[0] === '(auth)';
+    const inOnboardingGroup = segments[0] === '(onboarding)';
+    const isLinked          = !!session?.user?.app_metadata?.company_id;
 
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
+    if (!session) {
+      if (!inAuthGroup) router.replace('/(auth)/login');
+      return;
     }
+
+    if (!isLinked) {
+      if (!inOnboardingGroup) router.replace('/(onboarding)/employee-code');
+      return;
+    }
+
+    // Linked — push into main app
+    if (inAuthGroup || inOnboardingGroup) router.replace('/(tabs)');
   }, [session, isHydrated, segments]);
 
   return <>{children}</>;

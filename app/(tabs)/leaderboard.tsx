@@ -51,7 +51,7 @@ export default function LeaderboardScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor="#6366f1"
+            tintColor="#CE21FB"
           />
         }
       />

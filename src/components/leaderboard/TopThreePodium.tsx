@@ -19,7 +19,7 @@ interface TopThreePodiumProps {
 }
 
 const PODIUM_HEIGHTS = [100, 130, 80]; // 2nd, 1st, 3rd
-const PODIUM_COLORS = ['bg-slate-300', 'bg-warning-500', 'bg-amber-700'];
+const PODIUM_COLORS = ['bg-slate-300', 'bg-gold-500', 'bg-amber-700'];
 const MEDALS = ['🥈', '🥇', '🥉'];
 const ORDER = [1, 0, 2]; // Display order: 2nd, 1st, 3rd
 
@@ -47,7 +47,7 @@ export function TopThreePodium({ entries }: TopThreePodiumProps) {
             <Text className="mt-1.5 text-center text-xs font-bold text-slate-800" numberOfLines={1}>
               {name.split(' ')[0]}
             </Text>
-            <Text className="text-xs font-medium text-primary-600">
+            <Text className="text-xs font-semibold text-primary-600">
               {entry.total_points} pts
             </Text>
             {change !== 0 && (

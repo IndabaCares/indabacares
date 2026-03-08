@@ -86,11 +86,11 @@ export const RecognitionCard = memo(function RecognitionCard({ recognition }: Re
 
       {/* Hashtags */}
       {recognition.hashtags.length > 0 && (
-        <View className="mb-3 flex-row flex-wrap">
+        <View className="mb-3 flex-row flex-wrap gap-1">
           {recognition.hashtags.map((tag) => (
-            <Text key={tag} className="mr-2 text-sm font-medium text-primary-500">
-              #{tag}
-            </Text>
+            <View key={tag} className="rounded-full bg-primary-50 px-2.5 py-1">
+              <Text className="text-xs font-semibold text-primary-600">#{tag}</Text>
+            </View>
           ))}
         </View>
       )}

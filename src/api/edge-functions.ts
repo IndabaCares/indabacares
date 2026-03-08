@@ -6,6 +6,8 @@
 import { supabase } from '@/lib/supabase';
 import type {
   AuthMeResponse,
+  ClaimEmployeeCodeRequest,
+  ClaimEmployeeCodeResponse,
   SendRecognitionRequest,
   SendRecognitionResponse,
   SubmitMoodRequest,
@@ -94,6 +96,14 @@ export async function authSignUp(body: SignUpRequest): Promise<{ message: string
   }
 
   return data;
+}
+
+// ─── Onboarding ──────────────────────────────────────────────────────────────
+
+export async function claimEmployeeCode(
+  body: ClaimEmployeeCodeRequest
+): Promise<ClaimEmployeeCodeResponse> {
+  return invoke<ClaimEmployeeCodeResponse>('claim-employee-code', body);
 }
 
 // ─── Recognition ────────────────────────────────────────────────────────────

@@ -26,8 +26,8 @@ export function LeaderboardRow({ entry }: LeaderboardRowProps) {
   return (
     <Pressable
       onPress={() => router.push(`/(screens)/user/${entry.user.id}`)}
-      className={`mx-4 mb-2 flex-row items-center rounded-xl px-4 py-3 ${
-        isMe ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-slate-50'
+      className={`mx-4 mb-2 flex-row items-center rounded-2xl px-4 py-3 ${
+        isMe ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-slate-100'
       }`}
     >
       {/* Rank */}

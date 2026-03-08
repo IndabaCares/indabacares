@@ -146,6 +146,25 @@ export interface SignUpRequest {
   inviteToken?: string;
 }
 
+// ─── claim-employee-code ────────────────────────────────────────────────────
+
+export interface ClaimEmployeeCodeRequest {
+  employee_code: string;
+}
+
+export interface ClaimEmployeeCodeResponse {
+  success: boolean;
+  message: string;
+  requiresRefresh: boolean;
+  company: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+    primaryColor: string;
+  } | null;
+}
+
 // ─── Generic Edge Function error ────────────────────────────────────────────
 
 export interface EdgeFunctionError {

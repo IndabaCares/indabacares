@@ -35,7 +35,7 @@ export function ThumbsUpTypeSelector({ selectedId, onSelect }: ThumbsUpTypeSelec
   });
 
   if (isLoading) {
-    return <ActivityIndicator className="py-4" color="#6366f1" />;
+    return <ActivityIndicator className="py-4" color="#CE21FB" />;
   }
 
   return (

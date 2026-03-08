@@ -33,7 +33,7 @@ export default function RewardsScreen() {
         ListHeaderComponent={
           <View className="px-4 pt-4">
             {/* Balance */}
-            <Card className="mb-4 flex-row items-center">
+            <Card className="mb-4 flex-row items-center bg-primary-50 border-primary-100">
               <Ionicons name="star" size={28} color="#f59e0b" />
               <V className="ml-3">
                 <Text className="text-xs text-slate-500">Your Stars</Text>
@@ -68,7 +68,7 @@ export default function RewardsScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor="#6366f1"
+            tintColor="#CE21FB"
           />
         }
       />

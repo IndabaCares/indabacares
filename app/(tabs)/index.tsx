@@ -66,7 +66,7 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={isRefetching && !isFetchingNextPage}
             onRefresh={handleRefresh}
-            tintColor="#6366f1"
+            tintColor="#CE21FB"
           />
         }
         onEndReached={handleEndReached}

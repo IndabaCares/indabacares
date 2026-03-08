@@ -13,7 +13,7 @@ export function BalanceCards({ user }: BalanceCardsProps) {
       label: 'Points',
       value: user.pointsBalance,
       icon: 'trophy' as const,
-      color: '#6366f1',
+      color: '#CE21FB',
       bg: 'bg-primary-50',
     },
     {

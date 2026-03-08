@@ -42,8 +42,8 @@ export default function ProfileScreen() {
           <Pressable
             key={item.label}
             onPress={() => router.push(item.route as any)}
-            className={`flex-row items-center px-4 py-4 active:bg-slate-50 ${
-              index < menuItems.length - 1 ? 'border-b border-slate-50' : ''
+            className={`flex-row items-center px-4 py-4 active:bg-primary-50 ${
+              index < menuItems.length - 1 ? 'border-b border-slate-100' : ''
             }`}
           >
             <Ionicons name={item.icon} size={20} color="#64748b" />
@@ -56,9 +56,9 @@ export default function ProfileScreen() {
       {/* Edit Profile */}
       <Pressable
         onPress={() => router.push('/(screens)/edit-profile')}
-        className="mx-4 mt-4 flex-row items-center justify-center rounded-xl border border-primary-200 bg-primary-50 py-3"
+        className="mx-4 mt-4 flex-row items-center justify-center rounded-2xl border border-primary-200 bg-primary-50 py-3.5"
       >
-        <Ionicons name="create-outline" size={18} color="#6366f1" />
+        <Ionicons name="create-outline" size={18} color="#CE21FB" />
         <Text className="ml-2 text-sm font-semibold text-primary-600">Edit Profile</Text>
       </Pressable>
 

@@ -1,12 +1,13 @@
 // ─── Colors ─────────────────────────────────────────────────────────────────
 export const COLORS = {
-  primary: '#6366f1',
-  primaryLight: '#818cf8',
-  primaryDark: '#4f46e5',
+  primary: '#CE21FB',
+  primaryLight: '#db58fb',
+  primaryDark: '#a518cb',
   success: '#22c55e',
   warning: '#f59e0b',
   danger: '#ef4444',
-  background: '#f8fafc',
+  gold: '#f59e0b',
+  background: '#fdf4ff',
   surface: '#ffffff',
   textPrimary: '#0f172a',
   textSecondary: '#64748b',
@@ -20,7 +21,7 @@ export const MOOD_MAP = {
   bad: { emoji: '😕', label: 'Bad', color: '#f97316' },
   okay: { emoji: '😐', label: 'Okay', color: '#eab308' },
   good: { emoji: '😊', label: 'Good', color: '#22c55e' },
-  amazing: { emoji: '🤩', label: 'Amazing', color: '#6366f1' },
+  amazing: { emoji: '🤩', label: 'Amazing', color: '#CE21FB' },
 } as const;
 
 export type MoodValue = keyof typeof MOOD_MAP;
@@ -51,7 +52,7 @@ export const REDEMPTION_STATUS = {
   pending: { label: 'Pending', color: '#f59e0b' },
   approved: { label: 'Approved', color: '#3b82f6' },
   preparing: { label: 'Preparing', color: '#8b5cf6' },
-  shipped: { label: 'Shipped', color: '#6366f1' },
+  shipped: { label: 'Shipped', color: '#CE21FB' },
   fulfilled: { label: 'Fulfilled', color: '#22c55e' },
   rejected: { label: 'Rejected', color: '#ef4444' },
   cancelled: { label: 'Cancelled', color: '#94a3b8' },

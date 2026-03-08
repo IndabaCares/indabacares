@@ -35,7 +35,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <View className="flex-1 items-center justify-center bg-white">
-      <ActivityIndicator size="large" color="#6366f1" />
+      <ActivityIndicator size="large" color="#CE21FB" />
       <Text className="mt-4 text-base text-slate-500">Signing you in...</Text>
     </View>
   );

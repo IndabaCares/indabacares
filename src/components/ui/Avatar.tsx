@@ -41,7 +41,7 @@ export function Avatar({ uri, name, size = 'md', showOnline }: AvatarProps) {
     />
   ) : (
     <View className={`${s.container} items-center justify-center rounded-full bg-primary-100`}>
-      <Text className={`${s.text} font-bold text-primary-600`}>
+      <Text className={`${s.text} font-bold text-primary-700`}>
         {getInitials(name)}
       </Text>
     </View>

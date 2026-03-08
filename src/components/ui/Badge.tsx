@@ -7,7 +7,7 @@ interface BadgeProps {
   size?: 'sm' | 'md';
 }
 
-export function Badge({ label, color = '#6366f1', size = 'sm' }: BadgeProps) {
+export function Badge({ label, color = '#CE21FB', size = 'sm' }: BadgeProps) {
   return (
     <View
       className={`items-center justify-center rounded-full ${size === 'sm' ? 'px-2 py-0.5' : 'px-3 py-1'}`}

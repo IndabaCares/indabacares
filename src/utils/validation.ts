@@ -42,6 +42,17 @@ export const submitMoodSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+export const employeeCodeSchema = z.object({
+  code: z
+    .string()
+    .min(4, 'Code must be at least 4 characters')
+    .max(16, 'Code must be 16 characters or fewer')
+    .regex(/^[A-Z0-9]+$/, 'Code must be uppercase letters and numbers only')
+    .transform((v) => v.trim().toUpperCase()),
+});
+
+export type EmployeeCodeInput = z.infer<typeof employeeCodeSchema>;
+
 export const editProfileSchema = z.object({
   displayName: z.string().min(2).max(50).optional(),
   jobTitle: z.string().max(100).optional(),
