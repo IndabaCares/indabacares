@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useConfirmHotel, useLogout } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/Button';
 
@@ -55,9 +56,17 @@ export default function ConfirmHotelScreen() {
     <View className="flex-1 bg-white">
       {/* Brand strip — uses the hotel's primary colour */}
       <View
-        className="items-center px-6 pb-12"
-        style={{ paddingTop: insets.top + 40, backgroundColor: brandColor }}
+        className="pb-12"
+        style={{ paddingTop: insets.top, backgroundColor: brandColor }}
       >
+        <Pressable
+          onPress={handleBack}
+          hitSlop={12}
+          className="ml-4 mt-3 h-9 w-9 items-center justify-center rounded-full bg-white/20 active:bg-white/30"
+        >
+          <Ionicons name="chevron-back" size={24} color="#ffffff" />
+        </Pressable>
+        <View className="mt-2 items-center px-6">
         <View
           className="mb-4 h-24 w-24 items-center justify-center rounded-3xl bg-white/20"
         >
@@ -68,7 +77,8 @@ export default function ConfirmHotelScreen() {
         <Text className="text-2xl font-bold text-white">
           {companyName ?? 'Your Hotel'}
         </Text>
-        <Text className="mt-1 text-sm text-white/70">Indaba Group of Hotels</Text>
+          <Text className="mt-1 text-sm text-white/70">Indaba Group of Hotels</Text>
+        </View>
       </View>
 
       {/* Confirmation card */}
@@ -105,10 +115,6 @@ export default function ConfirmHotelScreen() {
                 onPress={handleConfirm}
                 size="lg"
               />
-
-              <Pressable onPress={handleBack} className="mt-4 items-center py-2">
-                <Text className="text-sm text-slate-400">Not your hotel? Go back</Text>
-              </Pressable>
             </>
           )}
         </View>

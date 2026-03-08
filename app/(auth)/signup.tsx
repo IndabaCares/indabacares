@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useSignUp } from '@/hooks/use-auth';
 import { signUpSchema, type SignUpInput } from '@/utils/validation';
 import { Button } from '@/components/ui/Button';
@@ -149,16 +150,25 @@ export default function SignUpScreen() {
       >
         {/* Brand header */}
         <View
-          className="items-center px-6 pb-10"
-          style={{ paddingTop: insets.top + 40, backgroundColor: '#CE21FB' }}
+          className="pb-10"
+          style={{ paddingTop: insets.top, backgroundColor: '#CE21FB' }}
         >
-          <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-white/20">
-            <Text className="text-4xl font-bold text-white">IC</Text>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            className="ml-4 mt-3 h-9 w-9 items-center justify-center rounded-full bg-white/20 active:bg-white/30"
+          >
+            <Ionicons name="chevron-back" size={24} color="#ffffff" />
+          </Pressable>
+          <View className="mt-2 items-center px-6">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-white/20">
+              <Text className="text-4xl font-bold text-white">IC</Text>
+            </View>
+            <Text className="text-3xl font-bold text-white">Create Account</Text>
+            <Text className="mt-1 text-base text-white/70">
+              {token ? 'Complete your invitation' : 'Join IndabaCares'}
+            </Text>
           </View>
-          <Text className="text-3xl font-bold text-white">Create Account</Text>
-          <Text className="mt-1 text-base text-white/70">
-            {token ? 'Complete your invitation' : 'Join IndabaCares'}
-          </Text>
         </View>
 
         {/* Form card */}
