@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/auth-store';
-import { useLogout } from '@/hooks/use-auth';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { BadgeShowcase } from '@/components/profile/BadgeShowcase';
 import { BalanceCards } from '@/components/profile/BalanceCards';
@@ -13,9 +13,9 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const company = useAuthStore((s) => s.company);
-  const logout = useLogout();
+  const { employee, clearEmployee } = useEmployee();
 
-  if (!user || !company) return null;
+  if (!employee) return null;
 
   const menuItems = [
     { label: 'My Orders', icon: 'receipt-outline' as const, route: '/(screens)/orders' },
@@ -64,8 +64,7 @@ export default function ProfileScreen() {
 
       {/* Logout */}
       <Pressable
-        onPress={() => logout.mutate()}
-        disabled={logout.isPending}
+        onPress={() => clearEmployee()}
         className="mx-4 mt-4 flex-row items-center rounded-2xl bg-danger-50 px-4 py-4 active:bg-danger-100"
       >
         <Ionicons name="log-out-outline" size={22} color="#ef4444" />

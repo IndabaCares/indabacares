@@ -5,14 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCompanyTheme } from '@/hooks/use-company-theme';
 import { useFeatureFlags } from '@/hooks/use-feature-flags';
-import { useLogout } from '@/hooks/use-auth';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 function LogoutIcon() {
-  const logout = useLogout();
+  const { clearEmployee } = useEmployee();
   return (
     <Pressable
-      onPress={() => logout.mutate()}
-      disabled={logout.isPending}
+      onPress={() => clearEmployee()}
       className="ml-4 h-10 w-10 items-center justify-center"
       hitSlop={8}
     >
