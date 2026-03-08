@@ -8,61 +8,94 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEmployee } from '@/providers/EmployeeContext';
-import {
-  ALLOWED_HOTELS,
-  verifyEmployeeIdentity,
-  setEmployeePassword,
-  loginEmployee,
-} from '@/api/employee-auth';
+import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers';
 
-// ─── Inline hotel dropdown ────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-function HotelPicker({
+const PRIMARY = '#CE21FB';
+
+const HOTELS = [
+  'Indaba Hotel',
+  'Indaba Lodge Richards Bay',
+  'Indaba Lodge Gaborone',
+  'Chobe Safari Lodge',
+  'Chobe Bush Lodge',
+  'Nata Lodge',
+  'African Procurement Agencies',
+] as const;
+
+// ─── Hotel Dropdown ───────────────────────────────────────────────────────────
+
+function HotelDropdown({
   value,
   onChange,
-  error,
+  hasError,
 }: {
   value: string;
   onChange: (h: string) => void;
-  error?: string;
+  hasError: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <View className="mb-4">
-      <Text className="mb-1.5 text-sm font-medium text-slate-700">Hotel</Text>
+    <View className="mb-5">
+      <Text className="mb-2 text-sm font-semibold text-slate-600">Hotel</Text>
 
       <Pressable
         onPress={() => setOpen((o) => !o)}
-        className={`flex-row items-center rounded-2xl border bg-white px-4 py-3.5 ${
-          error ? 'border-danger-500' : open ? 'border-primary-400' : 'border-slate-200'
-        }`}
+        style={[
+          styles.inputShadow,
+          hasError && { borderColor: '#ef4444', borderWidth: 1.5 },
+          open && { borderColor: PRIMARY, borderWidth: 1.5 },
+        ]}
+        className="flex-row items-center rounded-2xl border border-slate-200 bg-white px-4 py-4"
       >
-        <Text className={`flex-1 text-base ${value ? 'text-slate-900' : 'text-slate-400'}`}>
+        <Text
+          className={`flex-1 text-base ${value ? 'text-slate-900' : 'text-slate-400'}`}
+        >
           {value || 'Select your hotel'}
         </Text>
-        <Text className="text-slate-400">{open ? '▲' : '▼'}</Text>
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color="#94a3b8"
+        />
       </Pressable>
 
-      {error && <Text className="mt-1 text-xs text-danger-500">{error}</Text>}
+      {hasError && (
+        <Text className="mt-1.5 text-xs font-medium text-red-500">
+          Please select your hotel.
+        </Text>
+      )}
 
       {open && (
-        <View className="mt-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          {ALLOWED_HOTELS.map((hotel, index) => (
+        <View
+          style={styles.dropdownShadow}
+          className="mt-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white"
+        >
+          {HOTELS.map((hotel, index) => (
             <Pressable
               key={hotel}
-              onPress={() => { onChange(hotel); setOpen(false); }}
-              className={`px-4 py-3.5 active:bg-primary-50 ${
-                hotel === value ? 'bg-primary-50' : 'bg-white'
-              } ${index < ALLOWED_HOTELS.length - 1 ? 'border-b border-slate-100' : ''}`}
+              onPress={() => {
+                onChange(hotel);
+                setOpen(false);
+              }}
+              className={`px-4 py-3.5 active:bg-purple-50 ${
+                hotel === value ? 'bg-purple-50' : ''
+              } ${index < HOTELS.length - 1 ? 'border-b border-slate-100' : ''}`}
             >
-              <Text className={`text-base ${
-                hotel === value ? 'font-semibold text-primary-600' : 'text-slate-800'
-              }`}>
+              <Text
+                className={`text-base ${
+                  hotel === value
+                    ? 'font-semibold text-purple-600'
+                    : 'text-slate-800'
+                }`}
+              >
                 {hotel}
               </Text>
             </Pressable>
@@ -73,188 +106,232 @@ function HotelPicker({
   );
 }
 
-// ─── Password input with eye toggle ──────────────────────────────────────────
+// ─── Labelled Text Input ──────────────────────────────────────────────────────
 
-function PasswordInput({
+function Field({
   label,
   value,
   onChangeText,
   placeholder,
+  autoCapitalize = 'none',
+  autoCorrect = false,
+  secure = false,
+  hasError = false,
+  hint,
 }: {
   label: string;
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
+  autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
+  autoCorrect?: boolean;
+  secure?: boolean;
+  hasError?: boolean;
+  hint?: string;
 }) {
   const [hidden, setHidden] = useState(true);
 
   return (
-    <View className="mb-4">
-      <Text className="mb-1.5 text-sm font-medium text-slate-700">{label}</Text>
-      <View className="relative">
+    <View className="mb-5">
+      <Text className="mb-2 text-sm font-semibold text-slate-600">{label}</Text>
+      <View
+        style={[
+          styles.inputShadow,
+          hasError && { borderColor: '#ef4444', borderWidth: 1.5 },
+        ]}
+        className="flex-row items-center rounded-2xl border border-slate-200 bg-white px-4"
+      >
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          placeholder={placeholder ?? '••••••••'}
+          placeholder={placeholder}
           placeholderTextColor="#94a3b8"
-          secureTextEntry={hidden}
-          autoCapitalize="none"
-          autoCorrect={false}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 pr-12 text-base text-slate-900"
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          secureTextEntry={secure ? hidden : false}
+          className="flex-1 py-4 text-base text-slate-900"
+          style={{ paddingRight: secure ? 40 : 0 }}
         />
-        <Pressable
-          onPress={() => setHidden((h) => !h)}
-          className="absolute bottom-0 right-0 top-0 w-12 items-center justify-center"
-          hitSlop={4}
-        >
-          <Ionicons
-            name={hidden ? 'eye-outline' : 'eye-off-outline'}
-            size={20}
-            color="#94a3b8"
-          />
-        </Pressable>
+        {secure && (
+          <Pressable
+            onPress={() => setHidden((h) => !h)}
+            hitSlop={8}
+            className="absolute right-4 top-0 bottom-0 justify-center"
+          >
+            <Ionicons
+              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color="#94a3b8"
+            />
+          </Pressable>
+        )}
       </View>
+      {hint && !hasError && (
+        <Text className="mt-1.5 text-xs text-slate-400">{hint}</Text>
+      )}
+      {hasError && (
+        <Text className="mt-1.5 text-xs font-medium text-red-500">{hint}</Text>
+      )}
+    </View>
+  );
+}
+
+// ─── Mode Toggle ──────────────────────────────────────────────────────────────
+
+type Mode = 'first' | 'returning';
+
+function ModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: Mode;
+  onChange: (m: Mode) => void;
+}) {
+  return (
+    <View className="mb-8 flex-row rounded-2xl bg-slate-100 p-1">
+      {(['returning', 'first'] as const).map((m) => {
+        const active = mode === m;
+        return (
+          <Pressable
+            key={m}
+            onPress={() => onChange(m)}
+            style={active ? { backgroundColor: PRIMARY } : undefined}
+            className={`flex-1 items-center rounded-xl py-2.5 ${
+              active ? '' : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-sm font-semibold ${
+                active ? 'text-white' : 'text-slate-500'
+              }`}
+            >
+              {m === 'returning' ? 'Login' : 'First Time'}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-type Phase =
-  | 'identity'       // Step 1: full_name + code + hotel
-  | 'set_password'   // First login: create a password
-  | 'login';         // Returning: enter existing password
-
 export default function EmployeeAuthScreen() {
-  const insets          = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const { setEmployee } = useEmployee();
 
-  // ── Phase 1 fields ───────────────────────────────────────────────────────
-  const [fullName,     setFullName]     = useState('');
-  const [employeeCode, setEmployeeCode] = useState('');
-  const [hotel,        setHotel]        = useState('');
-  const [hotelError,   setHotelError]   = useState<string | undefined>();
+  const [mode, setMode] = useState<Mode>('returning');
 
-  // ── Password fields ──────────────────────────────────────────────────────
-  const [password,    setPassword]    = useState('');
-  const [confirmPw,   setConfirmPw]   = useState('');
+  // ── Shared fields ────────────────────────────────────────────────────────
+  const [employeeCode, setEmployeeCode] = useState('');
+  const [password, setPassword] = useState('');
+
+  // ── First-auth-only fields ────────────────────────────────────────────────
+  const [fullName, setFullName] = useState('');
+  const [hotel, setHotel] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+
+  // ── Validation error flags ────────────────────────────────────────────────
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ── UI state ─────────────────────────────────────────────────────────────
-  const [phase,   setPhase]   = useState<Phase>('identity');
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
-  // Stored after a successful identity check
-  const [verifiedId,        setVerifiedId]        = useState('');
-  const [verifiedFullName,  setVerifiedFullName]  = useState('');
-  const [verifiedHotel,     setVerifiedHotel]     = useState('');
-
-  // ── Phase 1: verify identity ─────────────────────────────────────────────
-  const handleVerifyIdentity = async () => {
-    setError(null);
-    setHotelError(undefined);
-
-    if (!fullName.trim() || !employeeCode.trim()) {
-      setError('Please fill in all fields.');
-      return;
-    }
-    if (!hotel) {
-      setHotelError('Please select your hotel.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await verifyEmployeeIdentity(fullName, employeeCode, hotel);
-
-      if (!result.found) {
-        setError(result.error ?? 'Employee not recognised. Check your name, code, and hotel.');
-        return;
-      }
-
-      setVerifiedId(result.id);
-      setVerifiedFullName(result.full_name);
-      setVerifiedHotel(result.hotel);
-      setPhase(result.needs_password ? 'set_password' : 'login');
-    } catch (e: any) {
-      setError(e?.message ?? 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  // ── Reset state when switching mode ──────────────────────────────────────
+  const handleModeChange = (m: Mode) => {
+    setMode(m);
+    setErrors({});
+    setGlobalError(null);
+    setPassword('');
+    setConfirmPw('');
   };
 
-  // ── Phase 2a: set password (first login) ─────────────────────────────────
-  const handleSetPassword = async () => {
-    setError(null);
+  // ── Validation ────────────────────────────────────────────────────────────
+  const validate = (): boolean => {
+    const next: Record<string, string> = {};
 
-    if (!password) {
-      setError('Please choose a password.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    if (password !== confirmPw) {
-      setError('Passwords do not match.');
-      return;
+    if (mode === 'first') {
+      if (!fullName.trim())
+        next.fullName = 'Full name is required.';
+      if (!employeeCode.trim())
+        next.employeeCode = 'Employee code is required.';
+      if (!hotel)
+        next.hotel = 'Please select your hotel.';
+      if (!password)
+        next.password = 'Password is required.';
+      if (password && password.length < 6)
+        next.password = 'Password must be at least 6 characters.';
+      if (!confirmPw)
+        next.confirmPw = 'Please confirm your password.';
+      if (password && confirmPw && password !== confirmPw)
+        next.confirmPw = 'Passwords do not match.';
+    } else {
+      if (!employeeCode.trim())
+        next.employeeCode = 'Employee code is required.';
+      if (!password)
+        next.password = 'Password is required.';
     }
 
-    setLoading(true);
-    try {
-      const result = await setEmployeePassword(verifiedId, password);
-
-      if (!result.success) {
-        setError(result.error ?? 'Could not set password. Please try again.');
-        return;
-      }
-
-      // Password saved — log the employee in
-      await setEmployee({
-        employee_id:   verifiedId,
-        full_name:     verifiedFullName,
-        employee_code: employeeCode.trim().toUpperCase(),
-        hotel:         verifiedHotel,
-      });
-    } catch (e: any) {
-      setError(e?.message ?? 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
-  // ── Phase 2b: returning login ─────────────────────────────────────────────
-  const handleLogin = async () => {
-    setError(null);
-
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
-
+  // ── Submit: First Authentication ──────────────────────────────────────────
+  const handleFirstAuth = async () => {
+    if (!validate()) return;
+    setGlobalError(null);
     setLoading(true);
-    try {
-      const result = await loginEmployee(employeeCode, verifiedHotel, password);
 
-      if (!result.found) {
-        setError(result.error ?? 'Invalid employee code or password.');
+    try {
+      const result = await firstAuthentication(fullName, employeeCode, hotel, password);
+
+      if (!result.ok) {
+        setGlobalError(result.error);
         return;
       }
 
       await setEmployee({
-        employee_id:   result.id,
+        employee_id:   result.employee_id,
         full_name:     result.full_name,
-        employee_code: employeeCode.trim().toUpperCase(),
+        employee_code: result.employee_code,
         hotel:         result.hotel,
       });
-    } catch (e: any) {
-      setError(e?.message ?? 'Something went wrong. Please try again.');
+    } catch {
+      setGlobalError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Submit: Returning Login ───────────────────────────────────────────────
+  const handleLogin = async () => {
+    if (!validate()) return;
+    setGlobalError(null);
+    setLoading(true);
+
+    try {
+      const result = await returningLogin(employeeCode, hotel, password);
+
+      if (!result.ok) {
+        setGlobalError(result.error);
+        return;
+      }
+
+      await setEmployee({
+        employee_id:   result.employee_id,
+        full_name:     result.full_name,
+        employee_code: result.employee_code,
+        hotel:         result.hotel,
+      });
+    } catch {
+      setGlobalError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <KeyboardAvoidingView
@@ -264,142 +341,215 @@ export default function EmployeeAuthScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom + 24,
+          paddingTop: insets.top + 32,
+          paddingBottom: insets.bottom + 32,
+          paddingHorizontal: 28,
         }}
         keyboardShouldPersistTaps="handled"
-        className="px-8"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="mb-8 mt-16 items-center">
+        {/* ── Header ── */}
+        <View className="mb-8 items-center">
+          <View
+            style={{ backgroundColor: PRIMARY }}
+            className="mb-4 h-14 w-14 items-center justify-center rounded-2xl"
+          >
+            <Ionicons name="shield-checkmark-outline" size={28} color="#fff" />
+          </View>
           <Text className="text-2xl font-bold text-slate-900">
-            {phase === 'identity'
-              ? 'Employee Authentication'
-              : phase === 'set_password'
-              ? 'Create Your Password'
-              : 'Welcome Back'}
+            {mode === 'first' ? 'Create Your Account' : 'Welcome Back'}
           </Text>
-          <Text className="mt-3 text-center text-base text-slate-500">
-            {phase === 'identity'
-              ? 'Enter your details to access IndabaCares.'
-              : phase === 'set_password'
-              ? `Hi ${verifiedFullName}! Set a password for your account.`
-              : `Hi ${verifiedFullName}! Enter your password to continue.`}
+          <Text className="mt-2 text-center text-sm text-slate-500">
+            {mode === 'first'
+              ? 'Verify your identity and set a password.'
+              : 'Sign in with your employee code and password.'}
           </Text>
         </View>
 
-        {/* ── Phase 1: Identity ── */}
-        {phase === 'identity' && (
+        {/* ── Mode toggle ── */}
+        <ModeToggle mode={mode} onChange={handleModeChange} />
+
+        {/* ── First Auth form ── */}
+        {mode === 'first' && (
           <>
-            <View className="mb-4">
-              <Text className="mb-1.5 text-sm font-medium text-slate-700">Full Name</Text>
-              <TextInput
-                value={fullName}
-                onChangeText={(v) => { setFullName(v); setError(null); }}
-                placeholder="As registered by your manager"
-                placeholderTextColor="#94a3b8"
-                autoCapitalize="words"
-                autoCorrect={false}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900"
-              />
-            </View>
+            <Field
+              label="Full Name"
+              value={fullName}
+              onChangeText={(v) => {
+                setFullName(v);
+                setErrors((e) => ({ ...e, fullName: '' }));
+                setGlobalError(null);
+              }}
+              placeholder="As registered by your manager"
+              autoCapitalize="words"
+              autoCorrect={false}
+              hasError={!!errors.fullName}
+              hint={errors.fullName}
+            />
 
-            <View className="mb-4">
-              <Text className="mb-1.5 text-sm font-medium text-slate-700">Employee Code</Text>
-              <TextInput
-                value={employeeCode}
-                onChangeText={(v) => { setEmployeeCode(v.toUpperCase()); setError(null); }}
-                placeholder="e.g. INDABA01"
-                placeholderTextColor="#94a3b8"
-                autoCapitalize="characters"
-                autoCorrect={false}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900"
-              />
-            </View>
+            <Field
+              label="Employee Code"
+              value={employeeCode}
+              onChangeText={(v) => {
+                setEmployeeCode(v.toUpperCase());
+                setErrors((e) => ({ ...e, employeeCode: '' }));
+                setGlobalError(null);
+              }}
+              placeholder="e.g. IH0042"
+              autoCapitalize="characters"
+              hasError={!!errors.employeeCode}
+              hint={errors.employeeCode}
+            />
 
-            <HotelPicker
+            <HotelDropdown
               value={hotel}
-              onChange={(h) => { setHotel(h); setHotelError(undefined); setError(null); }}
-              error={hotelError}
+              onChange={(h) => {
+                setHotel(h);
+                setErrors((e) => ({ ...e, hotel: '' }));
+                setGlobalError(null);
+              }}
+              hasError={!!errors.hotel}
             />
-          </>
-        )}
 
-        {/* ── Phase 2a: Set password (first login) ── */}
-        {phase === 'set_password' && (
-          <>
-            <PasswordInput
-              label="New Password"
+            <Field
+              label="Password"
               value={password}
-              onChangeText={(v) => { setPassword(v); setError(null); }}
+              onChangeText={(v) => {
+                setPassword(v);
+                setErrors((e) => ({ ...e, password: '' }));
+                setGlobalError(null);
+              }}
               placeholder="At least 6 characters"
+              secure
+              hasError={!!errors.password}
+              hint={errors.password}
             />
-            <PasswordInput
+
+            <Field
               label="Confirm Password"
               value={confirmPw}
-              onChangeText={(v) => { setConfirmPw(v); setError(null); }}
+              onChangeText={(v) => {
+                setConfirmPw(v);
+                setErrors((e) => ({ ...e, confirmPw: '' }));
+                setGlobalError(null);
+              }}
+              placeholder="Re-enter your password"
+              secure
+              hasError={!!errors.confirmPw}
+              hint={errors.confirmPw}
             />
           </>
         )}
 
-        {/* ── Phase 2b: Returning login ── */}
-        {phase === 'login' && (
-          <PasswordInput
-            label="Password"
-            value={password}
-            onChangeText={(v) => { setPassword(v); setError(null); }}
-          />
+        {/* ── Returning Login form ── */}
+        {mode === 'returning' && (
+          <>
+            <Field
+              label="Employee Code"
+              value={employeeCode}
+              onChangeText={(v) => {
+                setEmployeeCode(v.toUpperCase());
+                setErrors((e) => ({ ...e, employeeCode: '' }));
+                setGlobalError(null);
+              }}
+              placeholder="e.g. IH0042"
+              autoCapitalize="characters"
+              hasError={!!errors.employeeCode}
+              hint={errors.employeeCode}
+            />
+
+            <HotelDropdown
+              value={hotel}
+              onChange={(h) => {
+                setHotel(h);
+                setErrors((e) => ({ ...e, hotel: '' }));
+                setGlobalError(null);
+              }}
+              hasError={!!errors.hotel}
+            />
+
+            <Field
+              label="Password"
+              value={password}
+              onChangeText={(v) => {
+                setPassword(v);
+                setErrors((e) => ({ ...e, password: '' }));
+                setGlobalError(null);
+              }}
+              placeholder="Your password"
+              secure
+              hasError={!!errors.password}
+              hint={errors.password}
+            />
+          </>
         )}
 
-        {/* Error */}
-        {error && (
-          <Text className="mb-4 text-center text-sm font-medium text-danger-500">
-            {error}
-          </Text>
+        {/* ── Global error ── */}
+        {globalError && (
+          <View className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <Text className="text-center text-sm font-medium text-red-600">
+              {globalError}
+            </Text>
+          </View>
         )}
 
-        {/* Primary action button */}
+        {/* ── Primary button ── */}
         <Pressable
-          onPress={
-            phase === 'identity'
-              ? handleVerifyIdentity
-              : phase === 'set_password'
-              ? handleSetPassword
-              : handleLogin
-          }
+          onPress={mode === 'first' ? handleFirstAuth : handleLogin}
           disabled={loading}
-          className={`items-center justify-center rounded-2xl bg-primary-500 py-4 active:bg-primary-600 ${
-            loading ? 'opacity-50' : ''
-          }`}
+          style={[styles.buttonShadow, { backgroundColor: PRIMARY, opacity: loading ? 0.7 : 1 }]}
+          className="mt-2 items-center justify-center rounded-2xl py-4"
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color="#ffffff" size="small" />
           ) : (
-            <Text className="text-base font-semibold text-white">
-              {phase === 'identity'
-                ? 'Continue'
-                : phase === 'set_password'
-                ? 'Set Password & Sign In'
-                : 'Sign In'}
+            <Text className="text-base font-bold tracking-wide text-white">
+              {mode === 'first' ? 'Authenticate & Create Password' : 'Login'}
             </Text>
           )}
         </Pressable>
 
-        {/* Back link for password phases */}
-        {phase !== 'identity' && (
-          <Pressable
-            onPress={() => {
-              setPhase('identity');
-              setPassword('');
-              setConfirmPw('');
-              setError(null);
-            }}
-            className="mt-4 items-center py-2"
-          >
-            <Text className="text-sm text-slate-400">Use different details</Text>
-          </Pressable>
-        )}
+        {/* ── Mode hint ── */}
+        <Pressable
+          onPress={() => handleModeChange(mode === 'first' ? 'returning' : 'first')}
+          className="mt-5 items-center py-1"
+        >
+          <Text className="text-sm text-slate-400">
+            {mode === 'first'
+              ? 'Already have a password? '
+              : 'First time signing in? '}
+            <Text style={{ color: PRIMARY }} className="font-semibold">
+              {mode === 'first' ? 'Login' : 'Create account'}
+            </Text>
+          </Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  inputShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dropdownShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  buttonShadow: {
+    shadowColor: '#CE21FB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+});
