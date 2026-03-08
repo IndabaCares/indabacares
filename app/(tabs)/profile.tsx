@@ -65,10 +65,12 @@ export default function ProfileScreen() {
       {/* Logout */}
       <Pressable
         onPress={() => logout.mutate()}
-        className="mx-4 mt-4 flex-row items-center justify-center rounded-xl py-3"
+        disabled={logout.isPending}
+        className="mx-4 mt-4 flex-row items-center rounded-2xl bg-danger-50 px-4 py-4 active:bg-danger-100"
       >
-        <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-        <Text className="ml-2 text-sm font-medium text-danger-500">Sign Out</Text>
+        <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+        <Text className="ml-3 flex-1 text-base font-semibold text-danger-500">Sign Out</Text>
+        <Ionicons name="chevron-forward" size={18} color="#fca5a5" />
       </Pressable>
     </ScrollView>
   );
