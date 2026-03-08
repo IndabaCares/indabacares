@@ -6,12 +6,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Modal,
-  FlatList,
 } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useSignUp } from '@/hooks/use-auth';
 import { signUpSchema, type SignUpInput } from '@/utils/validation';
 import { Button } from '@/components/ui/Button';
@@ -19,14 +16,14 @@ import { TextInput } from '@/components/ui/TextInput';
 
 // ─── Hotel list ──────────────────────────────────────────────────────────────
 const HOTELS = [
-  { name: 'Indaba Hotel',               emoji: '🏨' },
-  { name: 'IndabaLodge Richards Bay',   emoji: '🌊' },
-  { name: 'IndabaLodge Gaborone',       emoji: '🌍' },
-  { name: 'Chobe Fish Eagle',           emoji: '🦅' },
-  { name: 'Nata Lodge',                 emoji: '🌿' },
+  'Indaba Hotel',
+  'IndabaLodge Richards Bay',
+  'IndabaLodge Gaborone',
+  'Chobe Fish Eagle',
+  'Nata Lodge',
 ] as const;
 
-// ─── Hotel picker component ───────────────────────────────────────────────────
+// ─── Hotel picker — inline expanding dropdown ─────────────────────────────────
 function HotelPicker({
   value,
   onChange,
@@ -37,87 +34,51 @@ function HotelPicker({
   error?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  const selected = HOTELS.find((h) => h.name === value);
 
   return (
     <View className="mb-4">
       <Text className="mb-1.5 text-sm font-medium text-slate-700">Your Hotel</Text>
 
+      {/* Trigger */}
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => setOpen((o) => !o)}
         className={`flex-row items-center rounded-2xl border bg-white px-4 py-3.5 ${
-          error ? 'border-danger-500' : 'border-slate-200'
+          error ? 'border-danger-500' : open ? 'border-primary-400' : 'border-slate-200'
         }`}
       >
-        {selected ? (
-          <>
-            <Text className="mr-2 text-lg">{selected.emoji}</Text>
-            <Text className="flex-1 text-base text-slate-900">{selected.name}</Text>
-          </>
-        ) : (
-          <Text className="flex-1 text-base text-slate-400">Select your hotel...</Text>
-        )}
-        <Ionicons name="chevron-down" size={18} color="#94a3b8" />
+        <Text className={`flex-1 text-base ${value ? 'text-slate-900' : 'text-slate-400'}`}>
+          {value || 'Select your hotel'}
+        </Text>
+        <Text className="text-slate-400">{open ? '▲' : '▼'}</Text>
       </Pressable>
 
       {error && <Text className="mt-1 text-xs text-danger-500">{error}</Text>}
 
-      {/* Picker modal */}
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable
-          className="flex-1 bg-black/40"
-          onPress={() => setOpen(false)}
-        />
-        <View
-          className="rounded-t-3xl bg-white"
-          style={{ paddingBottom: insets.bottom + 16 }}
-        >
-          {/* Handle */}
-          <View className="items-center py-3">
-            <View className="h-1 w-10 rounded-full bg-slate-200" />
-          </View>
-
-          <Text className="mb-2 px-6 text-lg font-bold text-slate-900">
-            Select your hotel
-          </Text>
-
-          <FlatList
-            data={HOTELS}
-            keyExtractor={(item) => item.name}
-            renderItem={({ item }) => {
-              const isSelected = item.name === value;
-              return (
-                <Pressable
-                  onPress={() => {
-                    onChange(item.name);
-                    setOpen(false);
-                  }}
-                  className={`flex-row items-center px-6 py-4 active:bg-primary-50 ${
-                    isSelected ? 'bg-primary-50' : ''
-                  }`}
-                >
-                  <Text className="mr-3 text-2xl">{item.emoji}</Text>
-                  <Text
-                    className={`flex-1 text-base ${
-                      isSelected
-                        ? 'font-bold text-primary-600'
-                        : 'font-medium text-slate-800'
-                    }`}
-                  >
-                    {item.name}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={20} color="#CE21FB" />
-                  )}
-                </Pressable>
-              );
-            }}
-            ItemSeparatorComponent={() => <View className="mx-6 h-px bg-slate-100" />}
-          />
+      {/* Dropdown list */}
+      {open && (
+        <View className="mt-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          {HOTELS.map((hotel, index) => (
+            <Pressable
+              key={hotel}
+              onPress={() => {
+                onChange(hotel);
+                setOpen(false);
+              }}
+              className={`px-4 py-3.5 active:bg-primary-50 ${
+                hotel === value ? 'bg-primary-50' : 'bg-white'
+              } ${index < HOTELS.length - 1 ? 'border-b border-slate-100' : ''}`}
+            >
+              <Text
+                className={`text-base ${
+                  hotel === value ? 'font-semibold text-primary-600' : 'text-slate-800'
+                }`}
+              >
+                {hotel}
+              </Text>
+            </Pressable>
+          ))}
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -152,7 +113,6 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = () => {
-    // Validate hotel selection when no invite token
     if (!token && !selectedHotel) {
       setHotelError('Please select your hotel');
       return;
@@ -170,7 +130,6 @@ export default function SignUpScreen() {
 
     signUp.mutate(result.data, {
       onSuccess: () => {
-        // Route to the employee code screen with the selected hotel as context
         router.replace({
           pathname: '/(onboarding)/employee-code',
           params: { hotelName: selectedHotel },
