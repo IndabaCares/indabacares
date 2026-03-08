@@ -105,24 +105,23 @@ export async function firstAuthentication(
 // ─── returningLogin ───────────────────────────────────────────────────────────
 //
 // Called for employees who have already set a password.
+// Only requires employee_code + password — hotel is NOT asked again.
 //
 // Steps:
-//   1. Query employee by employee_code (+ hotel for composite-unique safety)
+//   1. Query employee by employee_code only (hotel stored in session)
 //   2. Confirm a password hash exists
 //   3. Compare the supplied password against the stored bcrypt hash
 //   4. Return session data on match
 
 export async function returningLogin(
   employeeCode: string,
-  hotel:        string,
   password:     string,
 ): Promise<AuthResult> {
-  // ── Step 1: fetch employee row ────────────────────────────────────────────
+  // ── Step 1: fetch employee row by code only ───────────────────────────────
   const { data, error } = await supabase
     .from('employees')
     .select('*')
     .eq('employee_code', employeeCode.trim().toUpperCase())
-    .eq('hotel',         hotel)
     .eq('status',        'active')
     .single<EmployeeRow>();
 

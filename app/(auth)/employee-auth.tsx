@@ -267,6 +267,7 @@ export default function EmployeeAuthScreen() {
       if (password && confirmPw && password !== confirmPw)
         next.confirmPw = 'Passwords do not match.';
     } else {
+      // Returning login — hotel NOT required (stored in session from first auth)
       if (!employeeCode.trim())
         next.employeeCode = 'Employee code is required.';
       if (!password)
@@ -311,7 +312,7 @@ export default function EmployeeAuthScreen() {
     setLoading(true);
 
     try {
-      const result = await returningLogin(employeeCode, hotel, password);
+      const result = await returningLogin(employeeCode, password);
 
       if (!result.ok) {
         setGlobalError(result.error);
@@ -441,7 +442,7 @@ export default function EmployeeAuthScreen() {
           </>
         )}
 
-        {/* ── Returning Login form ── */}
+        {/* ── Returning Login form — employee code + password only ── */}
         {mode === 'returning' && (
           <>
             <Field
@@ -456,16 +457,6 @@ export default function EmployeeAuthScreen() {
               autoCapitalize="characters"
               hasError={!!errors.employeeCode}
               hint={errors.employeeCode}
-            />
-
-            <HotelDropdown
-              value={hotel}
-              onChange={(h) => {
-                setHotel(h);
-                setErrors((e) => ({ ...e, hotel: '' }));
-                setGlobalError(null);
-              }}
-              hasError={!!errors.hotel}
             />
 
             <Field
