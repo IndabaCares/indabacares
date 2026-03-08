@@ -5,6 +5,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCompanyTheme } from '@/hooks/use-company-theme';
 import { useFeatureFlags } from '@/hooks/use-feature-flags';
+import { useLogout } from '@/hooks/use-auth';
+
+function LogoutIcon() {
+  const logout = useLogout();
+  return (
+    <Pressable
+      onPress={() => logout.mutate()}
+      disabled={logout.isPending}
+      className="ml-4 h-10 w-10 items-center justify-center"
+      hitSlop={8}
+    >
+      <Ionicons name="log-out-outline" size={24} color="#ef4444" />
+    </Pressable>
+  );
+}
 
 function NotificationBell() {
   const unread = useAuthStore((s) => s.unreadNotifications);
@@ -105,6 +120,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
+          headerLeft: () => <LogoutIcon />,
         }}
       />
     </Tabs>
