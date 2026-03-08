@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLogin, useMagicLink } from '@/hooks/use-auth';
@@ -56,17 +56,17 @@ export default function LoginScreen() {
       >
         {/* Brand header */}
         <View
-          className="items-center px-6 pb-10 pt-16"
-          style={{
-            paddingTop: insets.top + 48,
-            backgroundColor: '#CE21FB',
-          }}
+          className="items-center px-6 pb-10"
+          style={{ paddingTop: insets.top + 32, backgroundColor: '#CE21FB' }}
         >
-          <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-white/20">
-            <Text className="text-4xl font-bold text-white">IC</Text>
+          <View className="mb-5 w-72 overflow-hidden rounded-2xl bg-white px-6 py-4">
+            <Image
+              source={require('../../assets/IndabaCaresLogo.png')}
+              style={{ width: '100%', height: 80 }}
+              resizeMode="contain"
+            />
           </View>
-          <Text className="text-3xl font-bold text-white">IndabaCares</Text>
-          <Text className="mt-1 text-base text-white/70">
+          <Text className="text-base text-white/80">
             Recognise. Reward. Celebrate.
           </Text>
         </View>
