@@ -1,27 +1,5 @@
 import { z } from 'zod';
 
-export const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
-
-export const signUpSchema = z
-  .object({
-    fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-    email: z.string().email('Please enter a valid email'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-      .regex(/[0-9]/, 'Password must contain at least one digit'),
-    companyName: z.string().min(2, 'Company name must be at least 2 characters').max(200).optional(),
-    inviteToken: z.string().uuid().optional(),
-  })
-  .refine((data) => data.inviteToken || data.companyName, {
-    message: 'Company name is required when signing up without an invite',
-    path: ['companyName'],
-  });
-
 export const sendRecognitionSchema = z.object({
   recipientIds: z
     .array(z.string().uuid())
@@ -58,8 +36,6 @@ export const editProfileSchema = z.object({
   jobTitle: z.string().max(100).optional(),
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
-export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SendRecognitionInput = z.infer<typeof sendRecognitionSchema>;
 export type SubmitMoodInput = z.infer<typeof submitMoodSchema>;
 export type EditProfileInput = z.infer<typeof editProfileSchema>;

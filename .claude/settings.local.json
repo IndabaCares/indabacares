@@ -18,7 +18,8 @@
       "Bash(cmd /c \"rmdir /s /q C:\\\\Users\\\\Personel\\\\Desktop\\\\Other\\\\MobileApps\\\\temp_supabase\")",
       "Bash(wc:*)",
       "Bash(npx create-expo-app@latest:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(rm:*)"
     ]
   }
 }

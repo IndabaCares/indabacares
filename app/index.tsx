@@ -15,7 +15,7 @@ export default function Index() {
   }
 
   if (!session) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/employee-auth" />;
   }
 
   const isLinked = !!session.user?.app_metadata?.company_id;

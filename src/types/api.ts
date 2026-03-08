@@ -134,18 +134,6 @@ export interface BoostRecognitionResponse {
   message: string;
 }
 
-// ─── auth-signup ────────────────────────────────────────────────────────────
-
-export interface SignUpRequest {
-  method: 'email_password' | 'magic_link';
-  email: string;
-  password: string;
-  fullName: string;
-  companyName?: string;
-  companySlug?: string;
-  inviteToken?: string;
-}
-
 // ─── claim-employee-code ────────────────────────────────────────────────────
 
 export interface ClaimEmployeeCodeRequest {

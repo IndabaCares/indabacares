@@ -18,7 +18,6 @@ import type {
   CancelRedemptionResponse,
   BoostRecognitionRequest,
   BoostRecognitionResponse,
-  SignUpRequest,
   EdgeFunctionError,
 } from '@/types/api';
 
@@ -70,32 +69,6 @@ async function invoke<T>(
 
 export async function authMe(): Promise<AuthMeResponse> {
   return invoke<AuthMeResponse>('auth-me', undefined, 'GET');
-}
-
-export async function authSignUp(body: SignUpRequest): Promise<{ message: string }> {
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const res = await fetch(`${supabaseUrl}/functions/v1/auth-signup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new EdgeFunctionCallError(
-      data?.error || `Signup failed (${res.status})`,
-      res.status
-    );
-  }
-
-  return data;
 }
 
 // ─── Onboarding ──────────────────────────────────────────────────────────────

@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isLinked          = !!session?.user?.app_metadata?.company_id;
 
     if (!session) {
-      if (!inAuthGroup) router.replace('/(auth)/login');
+      if (!inAuthGroup) router.replace('/(auth)/employee-auth');
       return;
     }
 
