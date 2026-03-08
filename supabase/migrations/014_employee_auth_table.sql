@@ -109,11 +109,10 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $func$
 DECLARE
   v_row public.employees%ROWTYPE;
 BEGIN
-  -- Normalise inputs: trim whitespace, case-insensitive name match
   SELECT *
   INTO v_row
   FROM public.employees
@@ -131,15 +130,15 @@ BEGIN
   END IF;
 
   RETURN jsonb_build_object(
-    'found',       true,
-    'id',          v_row.id,
-    'full_name',   v_row.full_name,
-    'hotel',       v_row.hotel,
-    'department',  v_row.department,
-    'position',    v_row.position
+    'found',      true,
+    'id',         v_row.id,
+    'full_name',  v_row.full_name,
+    'hotel',      v_row.hotel,
+    'department', v_row.department,
+    'position',   v_row.position
   );
 END;
-$$;
+$func$;
 
 -- Allow unauthenticated (anon) clients to call this function
 GRANT EXECUTE ON FUNCTION public.authenticate_employee(text, text, text) TO anon;
