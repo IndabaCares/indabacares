@@ -2,37 +2,38 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rewardsQuery, rewardCategoriesQuery, rewardDetailQuery } from '@/api/queries';
 import { redeemReward } from '@/api/edge-functions';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useUIStore } from '@/stores/ui-store';
+import { useAuthStore } from '@/stores/auth-store';
 
 export function useRewardCategories() {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: ['reward-categories'],
+    queryKey: ['reward-categories', employee?.hotel],
     queryFn: async () => {
-      if (!company) return [];
-      const { data, error } = await rewardCategoriesQuery(company.id);
+      if (!employee) return [];
+      const { data, error } = await rewardCategoriesQuery(employee.hotel);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company,
+    enabled: !!employee,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useRewards(categoryId?: string) {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.rewards(categoryId),
+    queryKey: [...QUERY_KEYS.rewards(categoryId), employee?.hotel],
     queryFn: async () => {
-      if (!company) return [];
-      const { data, error } = await rewardsQuery(company.id, categoryId);
+      if (!employee) return [];
+      const { data, error } = await rewardsQuery(employee.hotel, categoryId);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company,
+    enabled: !!employee,
     staleTime: 5 * 60 * 1000,
   });
 }

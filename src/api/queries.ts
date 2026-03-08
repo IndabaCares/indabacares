@@ -1,16 +1,19 @@
 /**
- * Typed PostgREST query builders.
- * All reads go direct to Supabase (benefiting from RLS) rather than Edge Functions.
+ * Typed PostgREST query builders — hotel-scoped.
  *
- * Note: Some insert/update calls use `as any` due to supabase-js v2.95 strict
- * generics not fully resolving manually-written Database types. In production,
- * generate types with `supabase gen types` for full type safety.
+ * All queries that return multi-tenant data now accept a `hotel` string
+ * (from EmployeeContext) and filter rows with .eq('hotel', hotel).
+ *
+ * Queries scoped to a single employee (mood, redemptions, etc.) accept
+ * `employeeId` (employee.employee_id from EmployeeContext).
+ *
+ * The admin dashboard has its own queries.ts and is unaffected.
  */
 
 import { supabase } from '@/lib/supabase';
 import { PAGE_SIZE } from '@/lib/constants';
 
-// ─── Feed ────────────────────────────────────────────────────────────────────
+// ─── Feed ─────────────────────────────────────────────────────────────────────
 
 export const RECOGNITION_SELECT = `
   id, message, visibility, stars_per_recipient, image_url,
@@ -42,10 +45,12 @@ export interface RecognitionFeedItem {
   comments_count: Array<{ count: number }>;
 }
 
-export function feedQuery(cursor?: string) {
+/** Feed scoped to the employee's hotel. */
+export function feedQuery(hotel: string, cursor?: string) {
   let query = supabase
     .from('recognitions')
     .select(RECOGNITION_SELECT)
+    .eq('hotel', hotel)
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
@@ -65,7 +70,7 @@ export function recognitionDetailQuery(id: string) {
     .single() as any;
 }
 
-// ─── Reactions ──────────────────────────────────────────────────────────────
+// ─── Reactions ────────────────────────────────────────────────────────────────
 
 export function reactionsQuery(recognitionId: string) {
   return supabase
@@ -75,10 +80,11 @@ export function reactionsQuery(recognitionId: string) {
     .order('created_at', { ascending: true }) as any;
 }
 
-export function addReaction(recognitionId: string, companyId: string, emoji: string) {
+/** hotel replaces the old company_id on the insert row. */
+export function addReaction(recognitionId: string, hotel: string, emoji: string) {
   return (supabase.from('reactions') as any).insert({
     recognition_id: recognitionId,
-    company_id: companyId,
+    hotel,
     emoji,
   });
 }
@@ -87,7 +93,7 @@ export function removeReaction(reactionId: string) {
   return supabase.from('reactions').delete().eq('id', reactionId);
 }
 
-// ─── Comments ───────────────────────────────────────────────────────────────
+// ─── Comments ─────────────────────────────────────────────────────────────────
 
 export function commentsQuery(recognitionId: string) {
   return supabase
@@ -97,10 +103,11 @@ export function commentsQuery(recognitionId: string) {
     .order('created_at', { ascending: true }) as any;
 }
 
-export function addComment(recognitionId: string, companyId: string, body: string) {
+/** hotel replaces the old company_id on the insert row. */
+export function addComment(recognitionId: string, hotel: string, body: string) {
   return (supabase.from('comments') as any).insert({
     recognition_id: recognitionId,
-    company_id: companyId,
+    hotel,
     body,
   });
 }
@@ -109,12 +116,14 @@ export function deleteComment(commentId: string) {
   return supabase.from('comments').delete().eq('id', commentId);
 }
 
-// ─── Notifications ──────────────────────────────────────────────────────────
+// ─── Notifications ────────────────────────────────────────────────────────────
 
-export function notificationsQuery(limit = 50) {
+/** Notifications scoped to the logged-in employee. */
+export function notificationsQuery(employeeId: string, limit = 50) {
   return supabase
     .from('notifications')
     .select('*')
+    .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(limit) as any;
 }
@@ -125,46 +134,49 @@ export function markNotificationRead(id: string) {
     .eq('id', id);
 }
 
-export function markAllNotificationsRead(userId: string) {
+export function markAllNotificationsRead(employeeId: string) {
   return (supabase.from('notifications') as any)
     .update({ is_read: true })
-    .eq('user_id', userId)
+    .eq('employee_id', employeeId)
     .eq('is_read', false);
 }
 
-// ─── Leaderboard ────────────────────────────────────────────────────────────
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
 
+/** Leaderboard filtered to the employee's hotel. */
 export function leaderboardQuery(
-  companyId: string,
+  hotel: string,
   periodType: string,
   periodKey: string,
-  limit = 50
+  limit = 50,
 ) {
   return supabase
     .from('leaderboard_cache')
     .select('*, user:profiles!user_id ( id, full_name, display_name, avatar_url, department_id )')
-    .eq('company_id', companyId)
+    .eq('hotel', hotel)
     .eq('period_type', periodType)
     .eq('period_key', periodKey)
     .order('rank', { ascending: true })
     .limit(limit) as any;
 }
 
-// ─── Rewards ────────────────────────────────────────────────────────────────
+// ─── Rewards ──────────────────────────────────────────────────────────────────
 
-export function rewardCategoriesQuery(companyId: string) {
+/** Reward categories scoped to the employee's hotel. */
+export function rewardCategoriesQuery(hotel: string) {
   return supabase
     .from('reward_categories')
     .select('*')
-    .eq('company_id', companyId)
+    .eq('hotel', hotel)
     .order('sort_order', { ascending: true }) as any;
 }
 
-export function rewardsQuery(companyId: string, categoryId?: string) {
+/** Rewards scoped to the employee's hotel, optionally filtered by category. */
+export function rewardsQuery(hotel: string, categoryId?: string) {
   let query = supabase
     .from('rewards')
     .select('*, category:reward_categories ( id, name )')
-    .eq('company_id', companyId)
+    .eq('hotel', hotel)
     .eq('is_active', true)
     .order('sort_order', { ascending: true }) as any;
 
@@ -183,66 +195,72 @@ export function rewardDetailQuery(id: string) {
     .single() as any;
 }
 
-// ─── Redemptions ────────────────────────────────────────────────────────────
+// ─── Redemptions ──────────────────────────────────────────────────────────────
 
-export function redemptionsQuery(userId: string) {
+/** Redemptions for the authenticated employee. */
+export function redemptionsQuery(employeeId: string) {
   return supabase
     .from('redemptions')
     .select('*, reward:rewards ( id, name, image_url, star_cost, reward_type )')
-    .eq('user_id', userId)
+    .eq('employee_id', employeeId)
     .order('created_at', { ascending: false }) as any;
 }
 
-// ─── Star Transactions ─────────────────────────────────────────────────────
+// ─── Star Transactions ────────────────────────────────────────────────────────
 
-export function starTransactionsQuery(userId: string, limit = 50) {
+/** Star transaction history for the authenticated employee. */
+export function starTransactionsQuery(employeeId: string, limit = 50) {
   return supabase
     .from('star_transactions')
     .select('id, type, amount, balance_after, description, reference_type, reference_id, created_at')
-    .eq('user_id', userId)
+    .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(limit) as any;
 }
 
-// ─── Mood ────────────────────────────────────────────────────────────────────
+// ─── Mood ─────────────────────────────────────────────────────────────────────
 
-export function moodHistoryQuery(userId: string, days = 30) {
+/** Mood history for the authenticated employee. */
+export function moodHistoryQuery(employeeId: string, days = 30) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
   return supabase
     .from('mood_entries')
     .select('id, mood, entry_date, created_at')
-    .eq('user_id', userId)
+    .eq('employee_id', employeeId)
     .gte('entry_date', since.toISOString().split('T')[0])
     .order('entry_date', { ascending: true }) as any;
 }
 
-// ─── Skills ─────────────────────────────────────────────────────────────────
+// ─── Skills ───────────────────────────────────────────────────────────────────
 
-export function skillCategoriesQuery(companyId: string) {
+/** Skill categories and indicators scoped to the employee's hotel. */
+export function skillCategoriesQuery(hotel: string) {
   return supabase
     .from('skill_categories')
     .select('*, indicators:skill_indicators ( id, name, description, sort_order )')
-    .eq('company_id', companyId)
+    .eq('hotel', hotel)
     .order('sort_order', { ascending: true }) as any;
 }
 
-export function mySkillScoresQuery(userId: string) {
+/** Skill scores received by the authenticated employee. */
+export function mySkillScoresQuery(employeeId: string) {
   return supabase
     .from('skill_ratings')
     .select('indicator_id, score, indicator:skill_indicators ( id, name, category:skill_categories ( id, name ) )')
-    .eq('recipient_id', userId) as any;
+    .eq('recipient_id', employeeId) as any;
 }
 
+/** Submit skill ratings. hotel replaces the old company_id. */
 export function submitSkillRating(
-  companyId: string,
+  hotel: string,
   recipientId: string,
-  ratings: Array<{ indicatorId: string; score: number }>
+  ratings: Array<{ indicatorId: string; score: number }>,
 ) {
   return (supabase.from('skill_ratings') as any).insert(
     ratings.map((r) => ({
-      company_id: companyId,
+      hotel,
       recipient_id: recipientId,
       indicator_id: r.indicatorId,
       score: r.score,
@@ -250,54 +268,65 @@ export function submitSkillRating(
   );
 }
 
-// ─── Badges ─────────────────────────────────────────────────────────────────
+// ─── Badges ───────────────────────────────────────────────────────────────────
 
-export function badgesQuery(companyId: string) {
+/** Badges scoped to the employee's hotel (plus global badges with null hotel). */
+export function badgesQuery(hotel: string) {
   return supabase
     .from('badges')
     .select('*')
-    .or(`company_id.eq.${companyId},company_id.is.null`) as any;
+    .or(`hotel.eq.${hotel},hotel.is.null`) as any;
 }
 
-export function userBadgesQuery(userId: string) {
+/** Badges earned by a specific employee. */
+export function userBadgesQuery(employeeId: string) {
   return supabase
     .from('user_badges')
     .select('*, badge:badges ( id, slug, name, description, icon )')
-    .eq('user_id', userId)
+    .eq('employee_id', employeeId)
     .order('earned_at', { ascending: false }) as any;
 }
 
-// ─── Profiles ───────────────────────────────────────────────────────────────
+// ─── Employees (search / profile) ────────────────────────────────────────────
 
-export function searchProfilesQuery(companyId: string, search: string) {
+/**
+ * Search employees within the same hotel.
+ * Replaces the old searchProfilesQuery which queried the `profiles` table
+ * and scoped by company_id.
+ */
+export function searchEmployeesQuery(hotel: string, search: string) {
   return supabase
-    .from('profiles')
-    .select('id, full_name, display_name, avatar_url, job_title, department_id, role')
-    .eq('company_id', companyId)
-    .eq('is_active', true)
+    .from('employees')
+    .select('id, full_name, employee_code, hotel, position, department')
+    .eq('hotel', hotel)
+    .eq('status', 'active')
     .ilike('full_name', `%${search}%`)
     .limit(20) as any;
 }
 
-export function profileDetailQuery(id: string) {
+export function employeeDetailQuery(id: string) {
   return supabase
-    .from('profiles')
-    .select('id, full_name, display_name, avatar_url, job_title, role, department_id, points_balance, created_at, departments ( id, name )')
+    .from('employees')
+    .select('id, full_name, employee_code, hotel, position, department, status')
     .eq('id', id)
     .single() as any;
 }
 
-export function updateProfile(id: string, data: { display_name?: string; job_title?: string; avatar_url?: string }) {
-  return (supabase.from('profiles') as any).update(data).eq('id', id);
+export function updateEmployeeProfile(
+  id: string,
+  data: { display_name?: string; position?: string; avatar_url?: string },
+) {
+  return (supabase.from('employees') as any).update(data).eq('id', id);
 }
 
-// ─── Thumbs Up Types ────────────────────────────────────────────────────────
+// ─── Thumbs Up Types ──────────────────────────────────────────────────────────
 
-export function thumbsUpTypesQuery(companyId: string) {
+/** Recognition types scoped to the employee's hotel. */
+export function thumbsUpTypesQuery(hotel: string) {
   return supabase
     .from('thumbs_up_types')
     .select('*')
-    .eq('company_id', companyId)
+    .eq('hotel', hotel)
     .eq('is_active', true)
     .order('sort_order', { ascending: true }) as any;
 }

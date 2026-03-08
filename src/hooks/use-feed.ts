@@ -1,15 +1,16 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { feedQuery } from '@/api/queries';
 import { QUERY_KEYS, PAGE_SIZE } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 export function useFeed() {
-  const session = useAuthStore((s) => s.session);
+  const { employee } = useEmployee();
 
   return useInfiniteQuery({
-    queryKey: QUERY_KEYS.feed,
+    queryKey: [...QUERY_KEYS.feed, employee?.hotel],
     queryFn: async ({ pageParam }) => {
-      const { data, error } = await feedQuery(pageParam);
+      if (!employee) return [];
+      const { data, error } = await feedQuery(employee.hotel, pageParam);
       if (error) throw error;
       return data ?? [];
     },
@@ -18,7 +19,7 @@ export function useFeed() {
       if (lastPage.length < PAGE_SIZE) return undefined;
       return lastPage[lastPage.length - 1]?.created_at;
     },
-    enabled: !!session,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!employee,
+    staleTime: 2 * 60 * 1000,
   });
 }

@@ -1,21 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { searchProfilesQuery, profileDetailQuery, updateProfile } from '@/api/queries';
+import { searchEmployeesQuery, employeeDetailQuery, updateEmployeeProfile } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useUIStore } from '@/stores/ui-store';
 
+/** Search employees within the same hotel. */
 export function useSearchProfiles(search: string) {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useQuery({
     queryKey: QUERY_KEYS.profiles(search),
     queryFn: async () => {
-      if (!company || !search) return [];
-      const { data, error } = await searchProfilesQuery(company.id, search);
+      if (!employee || !search) return [];
+      const { data, error } = await searchEmployeesQuery(employee.hotel, search);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company && search.length >= 2,
+    enabled: !!employee && search.length >= 2,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -24,7 +25,7 @@ export function useProfileDetail(id: string) {
   return useQuery({
     queryKey: QUERY_KEYS.profile(id),
     queryFn: async () => {
-      const { data, error } = await profileDetailQuery(id);
+      const { data, error } = await employeeDetailQuery(id);
       if (error) throw error;
       return data;
     },
@@ -34,13 +35,13 @@ export function useProfileDetail(id: string) {
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
   const showToast = useUIStore((s) => s.showToast);
 
   return useMutation({
-    mutationFn: async (data: { display_name?: string; job_title?: string; avatar_url?: string }) => {
-      if (!user) throw new Error('Not authenticated');
-      const { error } = await updateProfile(user.id, data);
+    mutationFn: async (data: { display_name?: string; position?: string; avatar_url?: string }) => {
+      if (!employee) throw new Error('Not authenticated');
+      const { error } = await updateEmployeeProfile(employee.employee_id, data);
       if (error) throw error;
     },
     onSuccess: () => {

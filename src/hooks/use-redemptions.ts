@@ -2,22 +2,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { redemptionsQuery } from '@/api/queries';
 import { cancelRedemption } from '@/api/edge-functions';
 import { QUERY_KEYS } from '@/lib/constants';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUIStore } from '@/stores/ui-store';
 
 export function useRedemptions() {
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.redemptions,
+    queryKey: [...QUERY_KEYS.redemptions, employee?.employee_id],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await redemptionsQuery(user.id);
+      if (!employee) return [];
+      const { data, error } = await redemptionsQuery(employee.employee_id);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!employee,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

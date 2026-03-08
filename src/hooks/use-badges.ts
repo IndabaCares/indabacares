@@ -1,29 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { badgesQuery, userBadgesQuery } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
+/** All badges available to this hotel (plus global badges). */
 export function useAllBadges() {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.badges,
+    queryKey: [...QUERY_KEYS.badges, employee?.hotel],
     queryFn: async () => {
-      if (!company) return [];
-      const { data, error } = await badgesQuery(company.id);
+      if (!employee) return [];
+      const { data, error } = await badgesQuery(employee.hotel);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company,
+    enabled: !!employee,
     staleTime: Infinity,
   });
 }
 
-export function useUserBadges(userId: string) {
+/** Badges earned by a specific employee. */
+export function useUserBadges(employeeId: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.userBadges(userId),
+    queryKey: QUERY_KEYS.userBadges(employeeId),
     queryFn: async () => {
-      const { data, error } = await userBadgesQuery(userId);
+      const { data, error } = await userBadgesQuery(employeeId);
       if (error) throw error;
       return data ?? [];
     },

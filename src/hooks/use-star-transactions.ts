@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { starTransactionsQuery } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 export interface StarTransaction {
   id: string;
@@ -15,17 +15,17 @@ export interface StarTransaction {
 }
 
 export function useStarTransactions() {
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.starTransactions,
+    queryKey: [...QUERY_KEYS.starTransactions, employee?.employee_id],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await starTransactionsQuery(user.id);
+      if (!employee) return [];
+      const { data, error } = await starTransactionsQuery(employee.employee_id);
       if (error) throw error;
       return (data ?? []) as StarTransaction[];
     },
-    enabled: !!user,
+    enabled: !!employee,
     staleTime: 2 * 60 * 1000,
   });
 }

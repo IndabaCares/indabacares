@@ -1,25 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsQuery, markNotificationRead, markAllNotificationsRead } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function useNotifications() {
-  const session = useAuthStore((s) => s.session);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.notifications,
+    queryKey: [...QUERY_KEYS.notifications, employee?.employee_id],
     queryFn: async () => {
-      const { data, error } = await notificationsQuery();
+      if (!employee) return [];
+      const { data, error } = await notificationsQuery(employee.employee_id);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!session,
-    staleTime: 60 * 1000, // 1 minute
+    enabled: !!employee,
+    staleTime: 60 * 1000,
   });
 }
 
 export function useMarkRead() {
   const queryClient = useQueryClient();
+  const { employee } = useEmployee();
   const setUnreadCount = useAuthStore((s) => s.setUnreadCount);
 
   return useMutation({
@@ -29,7 +32,6 @@ export function useMarkRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
-      // Recalculate unread count from cache
       const cached = queryClient.getQueryData<any[]>(QUERY_KEYS.notifications);
       if (cached) {
         setUnreadCount(cached.filter((n: any) => !n.is_read).length);
@@ -40,13 +42,13 @@ export function useMarkRead() {
 
 export function useMarkAllRead() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
   const setUnreadCount = useAuthStore((s) => s.setUnreadCount);
 
   return useMutation({
     mutationFn: async () => {
-      if (!user) return;
-      const { error } = await markAllNotificationsRead(user.id);
+      if (!employee) return;
+      const { error } = await markAllNotificationsRead(employee.employee_id);
       if (error) throw error;
     },
     onSuccess: () => {

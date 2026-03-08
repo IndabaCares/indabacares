@@ -1,43 +1,43 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { skillCategoriesQuery, mySkillScoresQuery, submitSkillRating } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useUIStore } from '@/stores/ui-store';
 
 export function useSkillCategories() {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: QUERY_KEYS.skillCategories,
+    queryKey: [...QUERY_KEYS.skillCategories, employee?.hotel],
     queryFn: async () => {
-      if (!company) return [];
-      const { data, error } = await skillCategoriesQuery(company.id);
+      if (!employee) return [];
+      const { data, error } = await skillCategoriesQuery(employee.hotel);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company,
+    enabled: !!employee,
     staleTime: Infinity,
   });
 }
 
 export function useMySkillScores() {
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: ['my-skill-scores'],
+    queryKey: ['my-skill-scores', employee?.employee_id],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await mySkillScoresQuery(user.id);
+      if (!employee) return [];
+      const { data, error } = await mySkillScoresQuery(employee.employee_id);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!employee,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useSubmitSkillRating() {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
   const showToast = useUIStore((s) => s.showToast);
 
   return useMutation({
@@ -48,8 +48,8 @@ export function useSubmitSkillRating() {
       recipientId: string;
       ratings: Array<{ indicatorId: string; score: number }>;
     }) => {
-      if (!company) throw new Error('No company context');
-      const { error } = await submitSkillRating(company.id, recipientId, ratings);
+      if (!employee) throw new Error('Not authenticated');
+      const { error } = await submitSkillRating(employee.hotel, recipientId, ratings);
       if (error) throw error;
     },
     onSuccess: () => {

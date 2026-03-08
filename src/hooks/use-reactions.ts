@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reactionsQuery, addReaction, removeReaction } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 export function useReactions(recognitionId: string) {
   return useQuery({
@@ -11,37 +11,32 @@ export function useReactions(recognitionId: string) {
       if (error) throw error;
       return data ?? [];
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   });
 }
 
 export function useAddReaction(recognitionId: string) {
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   return useMutation({
     mutationFn: async (emoji: string) => {
-      if (!company) throw new Error('No company context');
-      const { error } = await addReaction(recognitionId, company.id, emoji);
+      if (!employee) throw new Error('Not authenticated');
+      const { error } = await addReaction(recognitionId, employee.hotel, emoji);
       if (error) throw error;
     },
     onMutate: async (emoji) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: QUERY_KEYS.reactions(recognitionId) });
-
-      // Snapshot
       const previous = queryClient.getQueryData(QUERY_KEYS.reactions(recognitionId));
 
-      // Optimistic update
       queryClient.setQueryData(QUERY_KEYS.reactions(recognitionId), (old: any[]) => [
         ...(old || []),
         {
           id: `temp-${Date.now()}`,
           emoji,
-          user_id: user?.id,
+          user_id: employee?.employee_id,
           created_at: new Date().toISOString(),
-          user: { id: user?.id, full_name: user?.fullName, avatar_url: user?.avatarUrl },
+          user: { id: employee?.employee_id, full_name: employee?.full_name, avatar_url: null },
         },
       ]);
 
