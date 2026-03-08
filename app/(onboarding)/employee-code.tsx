@@ -7,7 +7,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useClaimEmployeeCode, useLogout } from '@/hooks/use-auth';
 import { employeeCodeSchema } from '@/utils/validation';
@@ -17,6 +17,7 @@ import { TextInput } from '@/components/ui/TextInput';
 export default function EmployeeCodeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { hotelName } = useLocalSearchParams<{ hotelName?: string }>();
   const [code, setCode]           = useState('');
   const [codeError, setCodeError] = useState<string | undefined>();
 
@@ -73,7 +74,9 @@ export default function EmployeeCodeScreen() {
           <View className="mb-3 h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
             <Text className="text-3xl font-bold text-white">IC</Text>
           </View>
-          <Text className="text-2xl font-bold text-white">Join your team</Text>
+          <Text className="text-2xl font-bold text-white">
+            {hotelName ?? 'Join your team'}
+          </Text>
           <Text className="mt-1 text-sm text-white/70">Enter the code from your manager</Text>
         </View>
 
@@ -81,7 +84,9 @@ export default function EmployeeCodeScreen() {
         <View className="flex-1 rounded-t-3xl bg-white px-6" style={{ marginTop: -16, paddingTop: 32 }}>
           <Text className="mb-1 text-xl font-bold text-slate-900">Employee Code</Text>
           <Text className="mb-6 text-sm text-slate-500">
-            Your administrator assigned you a unique code to link your account to your hotel.
+            {hotelName
+              ? `Enter the unique code your ${hotelName} manager gave you.`
+              : 'Your administrator assigned you a unique code to link your account to your hotel.'}
           </Text>
 
           <TextInput
