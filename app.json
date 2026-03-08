@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "indabacares",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
