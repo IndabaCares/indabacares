@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "IndabaCares",
+    "slug": "indabacares",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "indabacares",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6366f1"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.indabacares.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6366f1"
+      },
+      "package": "com.indabacares.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#6366f1"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow IndabaCares to access your photos to upload avatars and recognition images."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2769acb0-54c1-4935-9da1-864c41506d37"
+      }
+    }
+  }
+}

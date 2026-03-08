@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:upreciate.io)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(\"C:\\\\Users\\\\Personel\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m pip install PyPDF2 --quiet)",
+      "Bash(\"C:\\\\Users\\\\Personel\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -c \"\nimport PyPDF2\nreader = PyPDF2.PdfReader\\(r''C:\\\\Users\\\\Personel\\\\Desktop\\\\Upreciate - Presentation-EN.pdf''\\)\nprint\\(f''Total pages: {len\\(reader.pages\\)}''\\)\nfor i, page in enumerate\\(reader.pages\\):\n    text = page.extract_text\\(\\)\n    if text:\n        print\\(f''\\\\n=== PAGE {i+1} ===''\\)\n        print\\(text\\)\n\")",
+      "Bash(\"C:\\\\Program Files\\\\Python312\\\\python.exe\" -m pip install PyPDF2 --quiet)",
+      "Bash(\"C:\\\\Program Files\\\\Python312\\\\python.exe\" -c \"\nimport PyPDF2\nreader = PyPDF2.PdfReader\\(r''C:\\\\Users\\\\Personel\\\\Desktop\\\\Upreciate - Presentation-EN.pdf''\\)\nprint\\(f''Total pages: {len\\(reader.pages\\)}''\\)\nfor i, page in enumerate\\(reader.pages\\):\n    text = page.extract_text\\(\\)\n    if text:\n        print\\(f''\\\\n=== PAGE {i+1} ===''\\)\n        print\\(text\\)\n\")",
+      "Bash(\"C:\\\\Program Files\\\\Python312\\\\python.exe\" -c \"\nimport PyPDF2\nreader = PyPDF2.PdfReader\\(r''C:\\\\Users\\\\Personel\\\\Desktop\\\\Other\\\\MobileApps\\\\IndabaCares\\\\Upreciate.pdf''\\)\nprint\\(f''Total pages: {len\\(reader.pages\\)}''\\)\nfor i, page in enumerate\\(reader.pages\\):\n    text = page.extract_text\\(\\)\n    if text:\n        print\\(f''\\\\n=== PAGE {i+1} ===''\\)\n        print\\(text\\)\n\")",
+      "Bash(\"C:\\\\Program Files\\\\Python312\\\\python.exe\" -c:*)",
+      "Bash(where:*)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase --version)",
+      "Bash(npx supabase:*)",
+      "Bash(cmd /c \"rmdir /s /q C:\\\\Users\\\\Personel\\\\Desktop\\\\Other\\\\MobileApps\\\\temp_supabase\")",
+      "Bash(wc:*)",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(npm view:*)"
+    ]
+  }
+}
