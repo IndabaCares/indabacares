@@ -1,16 +1,17 @@
 /**
  * EmployeeContext
  *
- * Provides the authenticated employee record to the entire tree.
+ * Provides the authenticated employee record to the entire React tree.
  *
- * Boot sequence (on mount):
- *   1. Read AsyncStorage via EmployeeSessionManager  → fast (~5 ms)
- *   2. Set employee state + mark isLoaded = true     → routing unblocks
- *   3. If session existed, validate against Supabase in the background
- *   4. If employee is now inactive → clear session → AuthProvider redirects
+ * Session token lifecycle:
+ *   Login  → createSession() creates a Supabase session row + persists token
+ *   Boot   → loadSession() restores token from AsyncStorage + reactivates header
+ *   Verify → validateSessionWithDB() confirms employee is still active
+ *   Logout → clearSession() revokes server-side row + clears header
  *
- * This keeps cold-start feel instant and still enforces server-side
- * status changes every time the app is opened.
+ * The x-session-token header is injected into every Supabase request by the
+ * custom fetch adapter in src/lib/supabase.ts.  PostgreSQL RLS policies read
+ * it via current_employee_hotel() to enforce hotel-level tenant isolation.
  */
 
 import React, {
@@ -22,7 +23,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import {
-  saveSession,
+  createSession,
   loadSession,
   clearSession,
   validateSessionWithDB,
@@ -41,12 +42,16 @@ interface EmployeeContextValue {
    * AuthProvider waits for this before routing.
    */
   isLoaded: boolean;
-  /** Persist and activate a new employee session. */
-  setEmployee: (employee: AuthenticatedEmployee) => Promise<void>;
   /**
-   * Clear session and log the employee out.
-   * AuthProvider's useEffect will redirect to /(auth)/employee-auth
-   * which opens in Returning Login mode by default.
+   * Login: creates a server-side session, persists it, and activates the
+   * x-session-token header on the Supabase client.
+   */
+  setEmployee: (
+    identity: Omit<AuthenticatedEmployee, 'session_token'>
+  ) => Promise<void>;
+  /**
+   * Logout: revokes the server-side session, clears AsyncStorage, and
+   * removes the header.  AuthProvider redirects to /(auth)/employee-auth.
    */
   clearEmployee: () => Promise<void>;
 }
@@ -71,7 +76,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function boot() {
-      // Step 1 — fast local read
+      // Step 1 — fast local read (~5 ms); also reactivates x-session-token header
       const session = await loadSession();
 
       if (cancelled) return;
@@ -81,48 +86,55 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
         setEmployeeState(session);
       }
 
-      // Step 3 — unblock routing immediately (session or not)
+      // Step 3 — unblock routing immediately
       setIsLoaded(true);
 
       if (!session) return;
 
-      // Step 4 — background DB validation (does not block the UI)
+      // Step 4 — background DB validation
       const valid = await validateSessionWithDB(session);
 
       if (cancelled) return;
 
       if (!valid) {
-        // Employee is inactive — evict session silently
+        // Employee inactive or token expired — evict session
         setEmployeeState(null);
-        await clearSession();
+        await clearSession(session.session_token);
       }
     }
 
     boot().catch(() => {
-      // Any unexpected error → treat as no session
       if (!cancelled) setIsLoaded(true);
     });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // ── setEmployee ───────────────────────────────────────────────────────────
+  // ── setEmployee — called after successful authentication ──────────────────
 
-  const setEmployee = useCallback(async (emp: AuthenticatedEmployee) => {
-    setEmployeeState(emp);
-    await saveSession(emp);
-  }, []);
+  const setEmployee = useCallback(
+    async (identity: Omit<AuthenticatedEmployee, 'session_token'>) => {
+      // createSession: makes server-side row, persists to AsyncStorage,
+      // and activates the token in the Supabase fetch adapter
+      const session = await createSession(
+        identity.employee_id,
+        identity.full_name,
+        identity.employee_code,
+        identity.hotel,
+      );
+      setEmployeeState(session);
+    },
+    [],
+  );
 
-  // ── clearEmployee (logout) ────────────────────────────────────────────────
+  // ── clearEmployee — logout ────────────────────────────────────────────────
 
   const clearEmployee = useCallback(async () => {
+    const token = employee?.session_token;
     setEmployeeState(null);
-    await clearSession();
-    // AuthProvider detects employee === null and redirects to
-    // /(auth)/employee-auth, which defaults to 'returning' mode.
-  }, []);
+    // clearSession: revokes server-side row, removes AsyncStorage, clears header
+    await clearSession(token);
+  }, [employee]);
 
   return (
     <EmployeeContext.Provider value={{ employee, isLoaded, setEmployee, clearEmployee }}>
