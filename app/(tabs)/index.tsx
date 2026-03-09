@@ -7,8 +7,10 @@ import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useUIStore } from '@/stores/ui-store';
+import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
 
 export default function FeedScreen() {
+  useReactionRealtime();
   const {
     data,
     isLoading,
@@ -66,7 +68,7 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={isRefetching && !isFetchingNextPage}
             onRefresh={handleRefresh}
-            tintColor="#CE21FB"
+            tintColor="#ED6813"
           />
         }
         onEndReached={handleEndReached}

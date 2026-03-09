@@ -16,42 +16,31 @@ import { PAGE_SIZE } from '@/lib/constants';
 // ─── Feed ─────────────────────────────────────────────────────────────────────
 
 export const RECOGNITION_SELECT = `
-  id, message, visibility, stars_per_recipient, image_url,
-  hashtags, is_boosted, boosted_by, boosted_at, created_at,
-  sender:profiles!sender_id ( id, full_name, display_name, avatar_url ),
-  thumbs_up_type:thumbs_up_types ( id, name, icon, color, stars_awarded ),
-  recipients:recognition_recipients (
-    recipient:profiles!recipient_id ( id, full_name, display_name, avatar_url )
-  ),
-  reactions_count:reactions ( count ),
-  comments_count:comments ( count )
+  id, message, badge, hotel, created_at,
+  sender:employees!sender_id   ( id, full_name, employee_code, position ),
+  receiver:employees!receiver_id ( id, full_name, employee_code, position ),
+  likes_count:recognition_likes ( count ),
+  comments_count:recognition_comments ( count )
 ` as const;
 
 export interface RecognitionFeedItem {
   id: string;
   message: string;
-  visibility: string;
-  stars_per_recipient: number;
-  image_url: string | null;
-  hashtags: string[];
-  is_boosted: boolean;
-  boosted_by: string | null;
-  boosted_at: string | null;
+  badge: string;
+  hotel: string;
   created_at: string;
-  sender: { id: string; full_name: string; display_name: string | null; avatar_url: string | null };
-  thumbs_up_type: { id: string; name: string; icon: string; color: string; stars_awarded: number };
-  recipients: Array<{ recipient: { id: string; full_name: string; display_name: string | null; avatar_url: string | null } }>;
-  reactions_count: Array<{ count: number }>;
+  sender:   { id: string; full_name: string; employee_code: string; position: string | null };
+  receiver: { id: string; full_name: string; employee_code: string; position: string | null };
+  likes_count:    Array<{ count: number }>;
   comments_count: Array<{ count: number }>;
 }
 
-/** Feed scoped to the employee's hotel. */
+/** Paginated feed scoped to the employee's hotel, newest first. */
 export function feedQuery(hotel: string, cursor?: string) {
   let query = supabase
     .from('recognitions')
     .select(RECOGNITION_SELECT)
     .eq('hotel', hotel)
-    .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
 
@@ -70,51 +59,84 @@ export function recognitionDetailQuery(id: string) {
     .single() as any;
 }
 
-// ─── Reactions ────────────────────────────────────────────────────────────────
-
-export function reactionsQuery(recognitionId: string) {
-  return supabase
-    .from('reactions')
-    .select('id, emoji, user_id, created_at, user:profiles!user_id ( id, full_name, avatar_url )')
-    .eq('recognition_id', recognitionId)
-    .order('created_at', { ascending: true }) as any;
+/** Post a new recognition. Returns the inserted row. */
+export function postRecognition(
+  senderId: string,
+  receiverId: string,
+  message: string,
+  badge: string,
+  hotel: string,
+) {
+  return (supabase.from('recognitions') as any)
+    .insert({ sender_id: senderId, receiver_id: receiverId, message, badge, hotel })
+    .select(RECOGNITION_SELECT)
+    .single();
 }
 
-/** hotel replaces the old company_id on the insert row. */
-export function addReaction(recognitionId: string, hotel: string, emoji: string) {
-  return (supabase.from('reactions') as any).insert({
+// ─── Likes ────────────────────────────────────────────────────────────────────
+
+export function likesQuery(recognitionId: string) {
+  return supabase
+    .from('recognition_likes')
+    .select('id, employee_id, created_at')
+    .eq('recognition_id', recognitionId) as any;
+}
+
+export function addLike(recognitionId: string, employeeId: string, hotel: string) {
+  return (supabase.from('recognition_likes') as any).insert({
     recognition_id: recognitionId,
+    employee_id: employeeId,
     hotel,
-    emoji,
   });
 }
 
-export function removeReaction(reactionId: string) {
-  return supabase.from('reactions').delete().eq('id', reactionId);
+export function removeLike(likeId: string) {
+  return supabase.from('recognition_likes').delete().eq('id', likeId);
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
 
-export function commentsQuery(recognitionId: string) {
+export function recognitionCommentsQuery(recognitionId: string) {
   return supabase
-    .from('comments')
-    .select('id, body, created_at, updated_at, user:profiles!user_id ( id, full_name, display_name, avatar_url )')
+    .from('recognition_comments')
+    .select('id, body, created_at, employee:employees!employee_id ( id, full_name, position )')
     .eq('recognition_id', recognitionId)
     .order('created_at', { ascending: true }) as any;
 }
 
-/** hotel replaces the old company_id on the insert row. */
-export function addComment(recognitionId: string, hotel: string, body: string) {
-  return (supabase.from('comments') as any).insert({
+export function addRecognitionComment(
+  recognitionId: string,
+  employeeId: string,
+  hotel: string,
+  body: string,
+) {
+  return (supabase.from('recognition_comments') as any).insert({
     recognition_id: recognitionId,
+    employee_id: employeeId,
     hotel,
     body,
   });
 }
 
-export function deleteComment(commentId: string) {
-  return supabase.from('comments').delete().eq('id', commentId);
+export function deleteRecognitionComment(commentId: string) {
+  return supabase.from('recognition_comments').delete().eq('id', commentId);
 }
+
+// ─── Legacy stubs (kept so old imports don't break during migration) ──────────
+/** @deprecated Use likesQuery instead */
+export const reactionsQuery = likesQuery;
+/** @deprecated Use addLike instead */
+export const addReaction = (recognitionId: string, hotel: string, _emoji: string) =>
+  addLike(recognitionId, '', hotel);
+/** @deprecated Use removeLike instead */
+export const removeReaction = removeLike;
+/** @deprecated Use recognitionCommentsQuery instead */
+export const commentsQuery = recognitionCommentsQuery;
+/** @deprecated Use addRecognitionComment instead */
+export const addComment = (recognitionId: string, hotel: string, body: string) =>
+  addRecognitionComment(recognitionId, '', hotel, body);
+/** @deprecated Use deleteRecognitionComment instead */
+export const deleteComment = deleteRecognitionComment;
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 
@@ -122,75 +144,40 @@ export function deleteComment(commentId: string) {
 export function notificationsQuery(employeeId: string, limit = 50) {
   return supabase
     .from('notifications')
-    .select('*')
+    .select('id, employee_id, title, message, type, read, hotel, created_at')
     .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(limit) as any;
 }
 
 export function markNotificationRead(id: string) {
-  return (supabase.from('notifications') as any)
-    .update({ is_read: true })
-    .eq('id', id);
+  return supabase.rpc('mark_notification_read', { p_id: id }) as any;
 }
 
 export function markAllNotificationsRead(employeeId: string) {
-  return (supabase.from('notifications') as any)
-    .update({ is_read: true })
-    .eq('employee_id', employeeId)
-    .eq('is_read', false);
+  return supabase.rpc('mark_all_notifications_read', {
+    p_employee_id: employeeId,
+  }) as any;
 }
 
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
-
-/** Leaderboard filtered to the employee's hotel. */
-export function leaderboardQuery(
-  hotel: string,
-  periodType: string,
-  periodKey: string,
-  limit = 50,
-) {
-  return supabase
-    .from('leaderboard_cache')
-    .select('*, user:profiles!user_id ( id, full_name, display_name, avatar_url, department_id )')
-    .eq('hotel', hotel)
-    .eq('period_type', periodType)
-    .eq('period_key', periodKey)
-    .order('rank', { ascending: true })
-    .limit(limit) as any;
-}
+// leaderboardQuery removed — leaderboard_cache was dropped in migration 030.
+// Use the get_leaderboard() RPC via leaderboard-service.ts instead.
 
 // ─── Rewards ──────────────────────────────────────────────────────────────────
 
-/** Reward categories scoped to the employee's hotel. */
-export function rewardCategoriesQuery(hotel: string) {
+/** Rewards scoped to the employee's hotel, newest first. */
+export function rewardsQuery(hotel: string) {
   return supabase
-    .from('reward_categories')
-    .select('*')
-    .eq('hotel', hotel)
-    .order('sort_order', { ascending: true }) as any;
-}
-
-/** Rewards scoped to the employee's hotel, optionally filtered by category. */
-export function rewardsQuery(hotel: string, categoryId?: string) {
-  let query = supabase
     .from('rewards')
-    .select('*, category:reward_categories ( id, name )')
+    .select('id, title, description, points_required, image_url, hotel, stock, created_at')
     .eq('hotel', hotel)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true }) as any;
-
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-  }
-
-  return query;
+    .order('created_at', { ascending: false }) as any;
 }
 
 export function rewardDetailQuery(id: string) {
   return supabase
     .from('rewards')
-    .select('*, category:reward_categories ( id, name )')
+    .select('id, title, description, points_required, image_url, hotel, stock, created_at')
     .eq('id', id)
     .single() as any;
 }
@@ -201,18 +188,34 @@ export function rewardDetailQuery(id: string) {
 export function redemptionsQuery(employeeId: string) {
   return supabase
     .from('redemptions')
-    .select('*, reward:rewards ( id, name, image_url, star_cost, reward_type )')
+    .select(
+      `id, points_used, status, hotel, created_at,
+       approved_at, rejected_at, fulfilled_at, rejection_reason,
+       reward:rewards ( id, title, image_url, points_required )`,
+    )
     .eq('employee_id', employeeId)
     .order('created_at', { ascending: false }) as any;
 }
 
-// ─── Star Transactions ────────────────────────────────────────────────────────
-
-/** Star transaction history for the authenticated employee. */
-export function starTransactionsQuery(employeeId: string, limit = 50) {
+/** Employee's current points balance. */
+export function employeePointsQuery(employeeId: string) {
   return supabase
-    .from('star_transactions')
-    .select('id, type, amount, balance_after, description, reference_type, reference_id, created_at')
+    .from('employees')
+    .select('points_balance')
+    .eq('id', employeeId)
+    .single() as any;
+}
+
+// ─── Points Ledger ────────────────────────────────────────────────────────────
+
+/**
+ * Points ledger history for the authenticated employee.
+ * Replaces star_transactions (System 1, dropped in migration 030).
+ */
+export function pointsLedgerQuery(employeeId: string, limit = 50) {
+  return supabase
+    .from('points_ledger')
+    .select('id, points, source, hotel, created_at')
     .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(limit) as any;
@@ -307,16 +310,32 @@ export function searchEmployeesQuery(hotel: string, search: string) {
 export function employeeDetailQuery(id: string) {
   return supabase
     .from('employees')
-    .select('id, full_name, employee_code, hotel, position, department, status')
+    .select('id, full_name, employee_code, hotel, status')
     .eq('id', id)
-    .single() as any;
+    .single();
 }
 
 export function updateEmployeeProfile(
   id: string,
-  data: { display_name?: string; position?: string; avatar_url?: string },
+  data: { full_name?: string; hotel?: string },
 ) {
-  return (supabase.from('employees') as any).update(data).eq('id', id);
+  return supabase.from('employees').update(data).eq('id', id);
+}
+
+// ─── Recognition Reactions ────────────────────────────────────────────────────
+
+export function recognitionReactionsQuery(recognitionId: string) {
+  return supabase
+    .from('recognition_reactions')
+    .select('id, employee_id, reaction_type, created_at')
+    .eq('recognition_id', recognitionId) as any;
+}
+
+export function deleteReaction(reactionId: string) {
+  return supabase
+    .from('recognition_reactions')
+    .delete()
+    .eq('id', reactionId);
 }
 
 // ─── Thumbs Up Types ──────────────────────────────────────────────────────────

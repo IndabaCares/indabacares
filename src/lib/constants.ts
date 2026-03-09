@@ -1,13 +1,13 @@
 // ─── Colors ─────────────────────────────────────────────────────────────────
 export const COLORS = {
-  primary: '#CE21FB',
-  primaryLight: '#db58fb',
-  primaryDark: '#a518cb',
+  primary: '#ED6813',
+  primaryLight: '#f28a45',
+  primaryDark: '#c45310',
   success: '#22c55e',
   warning: '#f59e0b',
   danger: '#ef4444',
   gold: '#f59e0b',
-  background: '#fdf4ff',
+  background: '#fff8f3',
   surface: '#ffffff',
   textPrimary: '#0f172a',
   textSecondary: '#64748b',
@@ -21,7 +21,7 @@ export const MOOD_MAP = {
   bad: { emoji: '😕', label: 'Bad', color: '#f97316' },
   okay: { emoji: '😐', label: 'Okay', color: '#eab308' },
   good: { emoji: '😊', label: 'Good', color: '#22c55e' },
-  amazing: { emoji: '🤩', label: 'Amazing', color: '#CE21FB' },
+  amazing: { emoji: '🤩', label: 'Amazing', color: '#ED6813' },
 } as const;
 
 export type MoodValue = keyof typeof MOOD_MAP;
@@ -49,13 +49,10 @@ export const MAX_MESSAGE_LENGTH = 2000;
 
 // ─── Redemption Status Labels ───────────────────────────────────────────────
 export const REDEMPTION_STATUS = {
-  pending: { label: 'Pending', color: '#f59e0b' },
-  approved: { label: 'Approved', color: '#3b82f6' },
-  preparing: { label: 'Preparing', color: '#8b5cf6' },
-  shipped: { label: 'Shipped', color: '#CE21FB' },
-  fulfilled: { label: 'Fulfilled', color: '#22c55e' },
-  rejected: { label: 'Rejected', color: '#ef4444' },
-  cancelled: { label: 'Cancelled', color: '#94a3b8' },
+  pending:   { label: 'Pending',   color: '#f59e0b', icon: 'time-outline'            },
+  approved:  { label: 'Approved',  color: '#3b82f6', icon: 'checkmark-circle-outline' },
+  rejected:  { label: 'Rejected',  color: '#ef4444', icon: 'close-circle-outline'     },
+  fulfilled: { label: 'Fulfilled', color: '#22c55e', icon: 'gift-outline'             },
 } as const;
 
 // ─── Badge Icons ────────────────────────────────────────────────────────────
@@ -69,6 +66,18 @@ export const BADGE_ICONS: Record<string, string> = {
   giving_spirit: '💝',
   skill_champion: '🏆',
 };
+
+// ─── Recognition Badges ──────────────────────────────────────────────────────
+export const RECOGNITION_BADGES = [
+  { value: 'Team Player',          emoji: '🤝', color: '#3b82f6' },
+  { value: 'Leadership',           emoji: '👑', color: '#8b5cf6' },
+  { value: 'Customer Excellence',  emoji: '⭐', color: '#f59e0b' },
+  { value: 'Innovation',           emoji: '💡', color: '#22c55e' },
+  { value: 'Going the Extra Mile', emoji: '🚀', color: '#ED6813' },
+  { value: 'Hospitality Hero',     emoji: '🏨', color: '#ef4444' },
+] as const;
+
+export type RecognitionBadge = typeof RECOGNITION_BADGES[number]['value'];
 
 // ─── Visibility Labels ─────────────────────────────────────────────────────
 export const VISIBILITY_OPTIONS = [
@@ -84,6 +93,8 @@ export const QUERY_KEYS = {
   recognition: (id: string) => ['recognition', id] as const,
   reactions: (id: string) => ['reactions', id] as const,
   comments: (id: string) => ['comments', id] as const,
+  likes: (id: string) => ['likes', id] as const,
+  recognitionComments: (id: string) => ['rec-comments', id] as const,
   leaderboard: (type: string, key: string) => ['leaderboard', type, key] as const,
   rewards: (categoryId?: string) => ['rewards', categoryId] as const,
   redemptions: ['redemptions'] as const,
@@ -96,4 +107,7 @@ export const QUERY_KEYS = {
   userBadges: (userId: string) => ['user-badges', userId] as const,
   profiles: (search: string) => ['profiles', search] as const,
   profile: (id: string) => ['profile', id] as const,
+  employees: (search: string) => ['employees', search] as const,
+  recognitionReactions: (id: string) => ['recognition-reactions', id] as const,
+  reactionBalance: (employeeId: string) => ['reaction-balance', employeeId] as const,
 } as const;
