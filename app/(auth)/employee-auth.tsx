@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   TextInput,
   Pressable,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEmployee } from '@/providers/EmployeeContext';
@@ -18,7 +18,12 @@ import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PRIMARY = '#CE21FB';
+const PURPLE      = '#6A1B9A';
+const PURPLE_DARK = '#4A148C';
+const PURPLE_MID  = '#8E24AA';
+const ACCENT      = '#CE21FB';
+
+const LAST_HOTEL_KEY = '@indabacares/last_hotel';
 
 const HOTELS = [
   'Indaba Hotel',
@@ -44,57 +49,61 @@ function HotelDropdown({
   const [open, setOpen] = useState(false);
 
   return (
-    <View className="mb-4">
-      <Text className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">
-        Hotel
-      </Text>
-
+    <View style={{ marginBottom: 12 }}>
       <Pressable
         onPress={() => setOpen((o) => !o)}
         style={[
-          styles.inputCard,
+          styles.inputField,
+          { flexDirection: 'row', alignItems: 'center' },
           hasError && { borderColor: '#ef4444', borderWidth: 1.5 },
-          open && { borderColor: PRIMARY, borderWidth: 1.5 },
+          open && { borderColor: ACCENT, borderWidth: 1.5 },
         ]}
-        className="flex-row items-center rounded-2xl border border-slate-200 bg-white px-4 py-4"
       >
-        <Text className={`flex-1 text-base ${value ? 'text-slate-900' : 'text-slate-400'}`}>
+        <Text
+          style={[
+            styles.inputText,
+            !value && { color: '#9e9e9e' },
+          ]}
+        >
           {value || 'Select your hotel'}
         </Text>
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={18}
-          color={open ? PRIMARY : '#94a3b8'}
+          color={open ? ACCENT : '#9e9e9e'}
         />
       </Pressable>
 
       {hasError && (
-        <Text className="mt-1.5 text-xs font-medium text-red-500">
-          Please select your hotel.
-        </Text>
+        <Text style={styles.errorText}>Please select your hotel.</Text>
       )}
 
       {open && (
-        <View
-          style={styles.dropdownCard}
-          className="mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white"
-        >
+        <View style={styles.dropdownCard}>
           {HOTELS.map((hotel, index) => (
             <Pressable
               key={hotel}
               onPress={() => { onChange(hotel); setOpen(false); }}
-              className={`px-4 py-3.5 active:bg-fuchsia-50 ${
-                hotel === value ? 'bg-fuchsia-50' : ''
-              } ${index < HOTELS.length - 1 ? 'border-b border-slate-100' : ''}`}
+              style={[
+                styles.dropdownItem,
+                hotel === value && { backgroundColor: '#F3E5F5' },
+                index < HOTELS.length - 1 && styles.dropdownDivider,
+              ]}
             >
-              <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {hotel === value && (
-                  <Ionicons name="checkmark-circle" size={16} color={PRIMARY} style={{ marginRight: 8 }} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={PURPLE}
+                    style={{ marginRight: 8 }}
+                  />
                 )}
                 <Text
-                  className={`text-base ${
-                    hotel === value ? 'font-semibold text-fuchsia-700' : 'text-slate-700'
-                  }`}
+                  style={[
+                    styles.dropdownItemText,
+                    hotel === value && { fontWeight: '700', color: PURPLE },
+                  ]}
                 >
                   {hotel}
                 </Text>
@@ -107,10 +116,9 @@ function HotelDropdown({
   );
 }
 
-// ─── Labelled Input Field ─────────────────────────────────────────────────────
+// ─── Field ────────────────────────────────────────────────────────────────────
 
 function Field({
-  label,
   value,
   onChangeText,
   placeholder,
@@ -120,7 +128,6 @@ function Field({
   hasError = false,
   hint,
 }: {
-  label: string;
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
@@ -133,44 +140,40 @@ function Field({
   const [hidden, setHidden] = useState(true);
 
   return (
-    <View className="mb-4">
-      <Text className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">
-        {label}
-      </Text>
+    <View style={{ marginBottom: 12 }}>
       <View
         style={[
-          styles.inputCard,
+          styles.inputField,
+          { flexDirection: 'row', alignItems: 'center' },
           hasError && { borderColor: '#ef4444', borderWidth: 1.5 },
         ]}
-        className="flex-row items-center rounded-2xl border border-slate-200 bg-white px-4"
       >
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#c4c4c4"
+          placeholderTextColor="#9e9e9e"
           autoCapitalize={autoCapitalize}
           autoCorrect={autoCorrect}
           secureTextEntry={secure ? hidden : false}
-          className="flex-1 py-4 text-base text-slate-900"
-          style={{ paddingRight: secure ? 44 : 0 }}
+          style={[styles.inputText, { flex: 1, paddingRight: secure ? 36 : 0 }]}
         />
         {secure && (
           <Pressable
             onPress={() => setHidden((h) => !h)}
             hitSlop={10}
-            className="absolute right-4 top-0 bottom-0 justify-center"
+            style={styles.eyeIcon}
           >
             <Ionicons
               name={hidden ? 'eye-outline' : 'eye-off-outline'}
               size={20}
-              color="#94a3b8"
+              color="#9e9e9e"
             />
           </Pressable>
         )}
       </View>
       {hasError && hint && (
-        <Text className="mt-1.5 text-xs font-medium text-red-500">{hint}</Text>
+        <Text style={styles.errorText}>{hint}</Text>
       )}
     </View>
   );
@@ -180,29 +183,18 @@ function Field({
 
 type Mode = 'first' | 'returning';
 
-function ModeToggle({
-  mode,
-  onChange,
-}: {
-  mode: Mode;
-  onChange: (m: Mode) => void;
-}) {
+function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   return (
-    <View className="mb-6 flex-row rounded-2xl bg-slate-100 p-1">
+    <View style={styles.toggleContainer}>
       {(['returning', 'first'] as const).map((m) => {
         const active = mode === m;
         return (
           <Pressable
             key={m}
             onPress={() => onChange(m)}
-            style={active ? [styles.toggleActive] : undefined}
-            className={`flex-1 items-center rounded-xl py-3`}
+            style={[styles.toggleTab, active && styles.toggleTabActive]}
           >
-            <Text
-              className={`text-sm font-bold tracking-wide ${
-                active ? 'text-white' : 'text-slate-400'
-              }`}
-            >
+            <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
               {m === 'returning' ? 'Login' : 'First Time'}
             </Text>
           </Pressable>
@@ -220,29 +212,38 @@ export default function EmployeeAuthScreen() {
 
   const [mode, setMode] = useState<Mode>('returning');
 
-  // ── Shared fields ────────────────────────────────────────────────────────
+  // ── Shared fields ─────────────────────────────────────────────────────────
   const [employeeCode, setEmployeeCode] = useState('');
-  const [password, setPassword] = useState('');
+  const [password,     setPassword]     = useState('');
 
   // ── First-auth-only fields ────────────────────────────────────────────────
-  const [fullName, setFullName] = useState('');
-  const [hotel, setHotel] = useState('');
+  const [fullName,  setFullName]  = useState('');
+  const [hotel,     setHotel]     = useState('');
   const [confirmPw, setConfirmPw] = useState('');
 
-  // ── Validation error flags ────────────────────────────────────────────────
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // ── Saved hotel (returning login) ─────────────────────────────────────────
+  const [savedHotel,      setSavedHotel]      = useState<string | null>(null);
+  const [showHotelPicker, setShowHotelPicker] = useState(false);
 
-  // ── UI state ─────────────────────────────────────────────────────────────
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(LAST_HOTEL_KEY)
+      .then((h) => { if (h) setSavedHotel(h); })
+      .catch(() => null);
+  }, []);
+
+  // ── Validation errors ─────────────────────────────────────────────────────
+  const [errors,      setErrors]      = useState<Record<string, string>>({});
+  const [loading,     setLoading]     = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  // ── Reset state when switching mode ──────────────────────────────────────
+  // ── Reset on mode switch ──────────────────────────────────────────────────
   const handleModeChange = (m: Mode) => {
     setMode(m);
     setErrors({});
     setGlobalError(null);
     setPassword('');
     setConfirmPw('');
+    setShowHotelPicker(false);
   };
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -258,25 +259,30 @@ export default function EmployeeAuthScreen() {
         next.hotel = 'Please select your hotel.';
       if (!password)
         next.password = 'Password is required.';
-      if (password && password.length < 6)
-        next.password = 'Password must be at least 6 characters.';
+      if (password && password.length < 8)
+        next.password = 'Password must be at least 8 characters.';
       if (!confirmPw)
         next.confirmPw = 'Please confirm your password.';
       if (password && confirmPw && password !== confirmPw)
         next.confirmPw = 'Passwords do not match.';
     } else {
-      // Returning login — hotel NOT required (stored in session from first auth)
       if (!employeeCode.trim())
         next.employeeCode = 'Employee code is required.';
       if (!password)
         next.password = 'Password is required.';
+      if (!savedHotel && !hotel)
+        next.hotel = 'Please select your hotel.';
     }
 
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  // ── Submit: First Authentication ──────────────────────────────────────────
+  // ── Persist hotel preference on success ──────────────────────────────────
+  const persistHotel = (h: string) =>
+    AsyncStorage.setItem(LAST_HOTEL_KEY, h).catch(() => null);
+
+  // ── First Authentication ──────────────────────────────────────────────────
   const handleFirstAuth = async () => {
     if (!validate()) return;
     setGlobalError(null);
@@ -290,11 +296,15 @@ export default function EmployeeAuthScreen() {
         return;
       }
 
+      await persistHotel(result.hotel);
+      setSavedHotel(result.hotel);
+
       await setEmployee({
         employee_id:   result.employee_id,
         full_name:     result.full_name,
         employee_code: result.employee_code,
         hotel:         result.hotel,
+        session_token: result.token,
       });
     } catch {
       setGlobalError('Something went wrong. Please try again.');
@@ -303,25 +313,31 @@ export default function EmployeeAuthScreen() {
     }
   };
 
-  // ── Submit: Returning Login ───────────────────────────────────────────────
+  // ── Returning Login ───────────────────────────────────────────────────────
   const handleLogin = async () => {
     if (!validate()) return;
     setGlobalError(null);
     setLoading(true);
 
+    const hotelToUse = savedHotel ?? hotel;
+
     try {
-      const result = await returningLogin(employeeCode, password);
+      const result = await returningLogin(employeeCode, hotelToUse, password);
 
       if (!result.ok) {
         setGlobalError(result.error);
         return;
       }
 
+      await persistHotel(result.hotel);
+      setSavedHotel(result.hotel);
+
       await setEmployee({
         employee_id:   result.employee_id,
         full_name:     result.full_name,
         employee_code: result.employee_code,
         hotel:         result.hotel,
+        session_token: result.token,
       });
     } catch {
       setGlobalError('Something went wrong. Please try again.');
@@ -333,228 +349,422 @@ export default function EmployeeAuthScreen() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: PRIMARY }}
-    >
-      {/* ── Hero header ── */}
-      <View
-        style={{ paddingTop: insets.top + 36, paddingBottom: 40 }}
-        className="items-center px-8"
-      >
-        {/* Logo card */}
-        <View style={styles.logoCard} className="mb-5 w-64 items-center rounded-3xl bg-white px-6 py-4">
-          <Image
-            source={require('../../assets/IndabaCaresLogo.png')}
-            style={{ width: '100%', height: 52 }}
-            resizeMode="contain"
-          />
-        </View>
+    <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
 
-        {/* Wordmark + subheading */}
-        <Text className="text-lg font-bold tracking-widest text-white/90">
-          INDABA CARES
-        </Text>
-        <Text className="mt-1 text-sm tracking-wider text-white/60">
-          Employee Recognition Platform
-        </Text>
+      {/* ── Header bar ── */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <View style={styles.headerInner}>
+          <View style={styles.headerSide}>
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </View>
+          <Text style={styles.headerTitle}>Login</Text>
+          <View style={styles.headerSide} />
+        </View>
       </View>
 
-      {/* ── Form card ── */}
-      <View style={styles.formSheet} className="flex-1 rounded-t-3xl bg-white">
+      {/* ── Scrollable content ── */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingTop: 28,
-            paddingBottom: insets.bottom + 32,
-            paddingHorizontal: 24,
-          }}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Section heading */}
-          <Text className="mb-1 text-xl font-bold text-slate-900">
-            {mode === 'first' ? 'Create Your Account' : 'Welcome Back'}
-          </Text>
-          <Text className="mb-6 text-sm text-slate-400">
-            {mode === 'first'
-              ? 'Verify your identity and set a secure password.'
-              : 'Sign in with your employee code and password.'}
-          </Text>
 
-          {/* Mode toggle */}
-          <ModeToggle mode={mode} onChange={handleModeChange} />
+          {/* ── Login card ── */}
+          <View style={styles.card}>
 
-          {/* ── First Auth form ── */}
-          {mode === 'first' && (
-            <>
-              <Field
-                label="Full Name"
-                value={fullName}
-                onChangeText={(v) => { setFullName(v); setErrors((e) => ({ ...e, fullName: '' })); setGlobalError(null); }}
-                placeholder="As registered by your manager"
-                autoCapitalize="words"
-                hasError={!!errors.fullName}
-                hint={errors.fullName}
-              />
-
-              <Field
-                label="Employee Code"
-                value={employeeCode}
-                onChangeText={(v) => { setEmployeeCode(v.toUpperCase()); setErrors((e) => ({ ...e, employeeCode: '' })); setGlobalError(null); }}
-                placeholder="e.g. IH0042"
-                autoCapitalize="characters"
-                hasError={!!errors.employeeCode}
-                hint={errors.employeeCode}
-              />
-
-              <HotelDropdown
-                value={hotel}
-                onChange={(h) => { setHotel(h); setErrors((e) => ({ ...e, hotel: '' })); setGlobalError(null); }}
-                hasError={!!errors.hotel}
-              />
-
-              <Field
-                label="Password"
-                value={password}
-                onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: '' })); setGlobalError(null); }}
-                placeholder="At least 6 characters"
-                secure
-                hasError={!!errors.password}
-                hint={errors.password}
-              />
-
-              <Field
-                label="Confirm Password"
-                value={confirmPw}
-                onChangeText={(v) => { setConfirmPw(v); setErrors((e) => ({ ...e, confirmPw: '' })); setGlobalError(null); }}
-                placeholder="Re-enter your password"
-                secure
-                hasError={!!errors.confirmPw}
-                hint={errors.confirmPw}
-              />
-            </>
-          )}
-
-          {/* ── Returning Login form ── */}
-          {mode === 'returning' && (
-            <>
-              <Field
-                label="Employee Code"
-                value={employeeCode}
-                onChangeText={(v) => { setEmployeeCode(v.toUpperCase()); setErrors((e) => ({ ...e, employeeCode: '' })); setGlobalError(null); }}
-                placeholder="e.g. IH0042"
-                autoCapitalize="characters"
-                hasError={!!errors.employeeCode}
-                hint={errors.employeeCode}
-              />
-
-              <Field
-                label="Password"
-                value={password}
-                onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: '' })); setGlobalError(null); }}
-                placeholder="Your password"
-                secure
-                hasError={!!errors.password}
-                hint={errors.password}
-              />
-            </>
-          )}
-
-          {/* ── Primary button ── */}
-          <Pressable
-            onPress={mode === 'first' ? handleFirstAuth : handleLogin}
-            disabled={loading}
-            style={[styles.primaryButton, loading && { opacity: 0.7 }]}
-            className="mt-2 items-center justify-center rounded-2xl py-4"
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              <Text className="text-base font-bold tracking-wide text-white">
-                {mode === 'first' ? 'Authenticate & Create Password' : 'Sign In'}
-              </Text>
-            )}
-          </Pressable>
-
-          {/* ── Error display ── */}
-          {globalError && (
-            <View className="mt-4 flex-row items-center rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-              <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
-              <Text className="ml-2 flex-1 text-sm font-medium text-red-600">
-                {globalError}
-              </Text>
-            </View>
-          )}
-
-          {/* ── Mode switch link ── */}
-          <Pressable
-            onPress={() => handleModeChange(mode === 'first' ? 'returning' : 'first')}
-            className="mt-5 items-center py-1"
-          >
-            <Text className="text-sm text-slate-400">
-              {mode === 'first' ? 'Already have a password?  ' : 'First time signing in?  '}
-              <Text style={{ color: PRIMARY }} className="font-bold">
-                {mode === 'first' ? 'Login' : 'Create account'}
-              </Text>
+            {/* Card header text */}
+            <Text style={styles.cardTitle}>
+              {mode === 'first' ? 'Create Account' : 'Welcome Back'}
             </Text>
-          </Pressable>
+            <Text style={styles.cardSubtitle}>
+              {mode === 'first'
+                ? 'Verify your identity and set a secure password.'
+                : 'Fill out the information below in order to access your profile'}
+            </Text>
 
-          {/* ── Footer brand mark ── */}
-          <Text className="mt-8 text-center text-xs tracking-widest text-slate-300">
-            INDABA HOSPITALITY GROUP
-          </Text>
+            {/* Mode toggle */}
+            <ModeToggle mode={mode} onChange={handleModeChange} />
+
+            {/* ── First Authentication form ── */}
+            {mode === 'first' && (
+              <>
+                <Field
+                  value={fullName}
+                  onChangeText={(v) => { setFullName(v); setErrors((e) => ({ ...e, fullName: '' })); setGlobalError(null); }}
+                  placeholder="Full name as registered"
+                  autoCapitalize="words"
+                  hasError={!!errors.fullName}
+                  hint={errors.fullName}
+                />
+
+                <Field
+                  value={employeeCode}
+                  onChangeText={(v) => { setEmployeeCode(v.toUpperCase()); setErrors((e) => ({ ...e, employeeCode: '' })); setGlobalError(null); }}
+                  placeholder="insert employee code..."
+                  autoCapitalize="characters"
+                  hasError={!!errors.employeeCode}
+                  hint={errors.employeeCode}
+                />
+
+                <HotelDropdown
+                  value={hotel}
+                  onChange={(h) => { setHotel(h); setErrors((e) => ({ ...e, hotel: '' })); setGlobalError(null); }}
+                  hasError={!!errors.hotel}
+                />
+
+                <Field
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: '' })); setGlobalError(null); }}
+                  placeholder="insert password..."
+                  secure
+                  hasError={!!errors.password}
+                  hint={errors.password}
+                />
+
+                <Field
+                  value={confirmPw}
+                  onChangeText={(v) => { setConfirmPw(v); setErrors((e) => ({ ...e, confirmPw: '' })); setGlobalError(null); }}
+                  placeholder="Confirm password"
+                  secure
+                  hasError={!!errors.confirmPw}
+                  hint={errors.confirmPw}
+                />
+              </>
+            )}
+
+            {/* ── Returning Login form ── */}
+            {mode === 'returning' && (
+              <>
+                <Field
+                  value={employeeCode}
+                  onChangeText={(v) => { setEmployeeCode(v.toUpperCase()); setErrors((e) => ({ ...e, employeeCode: '' })); setGlobalError(null); }}
+                  placeholder="insert employee code..."
+                  autoCapitalize="characters"
+                  hasError={!!errors.employeeCode}
+                  hint={errors.employeeCode}
+                />
+
+                <Field
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: '' })); setGlobalError(null); }}
+                  placeholder="insert password..."
+                  secure
+                  hasError={!!errors.password}
+                  hint={errors.password}
+                />
+
+                {savedHotel && !showHotelPicker ? (
+                  <View style={styles.savedHotelRow}>
+                    <Ionicons name="location-outline" size={14} color="#CE93D8" />
+                    <Text style={styles.savedHotelText}>
+                      Signing in at{' '}
+                      <Text style={styles.savedHotelName}>{savedHotel}</Text>
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        setShowHotelPicker(true);
+                        setSavedHotel(null);
+                        setHotel('');
+                      }}
+                      hitSlop={10}
+                    >
+                      <Text style={styles.changeHotelLink}>Change</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <HotelDropdown
+                    value={hotel}
+                    onChange={(h) => { setHotel(h); setErrors((e) => ({ ...e, hotel: '' })); setGlobalError(null); }}
+                    hasError={!!errors.hotel}
+                  />
+                )}
+              </>
+            )}
+
+            {/* ── Primary button ── */}
+            <Pressable
+              onPress={mode === 'first' ? handleFirstAuth : handleLogin}
+              disabled={loading}
+              style={[styles.signInButton, loading && { opacity: 0.7 }]}
+            >
+              {loading ? (
+                <ActivityIndicator color={PURPLE} size="small" />
+              ) : (
+                <Text style={styles.signInButtonText}>
+                  {mode === 'first' ? 'Create Account' : 'Sign In'}
+                </Text>
+              )}
+            </Pressable>
+
+            {/* ── Global error ── */}
+            {globalError && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+                <Text style={styles.errorBannerText}>{globalError}</Text>
+              </View>
+            )}
+
+            {/* ── Forgot Password / mode switch ── */}
+            <Pressable
+              onPress={() => handleModeChange(mode === 'first' ? 'returning' : 'first')}
+              style={{ marginTop: 12, alignItems: 'center' }}
+            >
+              <Text style={styles.forgotText}>
+                {mode === 'first' ? 'Already have a password?' : 'Forgot Password?'}
+              </Text>
+            </Pressable>
+
+          </View>
+
+          <Text style={styles.footerText}>INDABA HOSPITALITY GROUP</Text>
+
         </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  logoCard: {
+  // Header
+  header: {
+    backgroundColor: PURPLE,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  headerInner: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  headerSide: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  // Scroll
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+  },
+
+  // Card
+  card: {
+    width: '85%',
+    maxWidth: 420,
+    backgroundColor: PURPLE,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  formSheet: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.22,
     shadowRadius: 16,
     elevation: 12,
   },
-  inputCard: {
+  cardTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  cardSubtitle: {
+    color: '#EDE7F6',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+
+  // Mode toggle
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  toggleTab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 9,
+  },
+  toggleTabActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  toggleTextActive: {
+    color: PURPLE,
+  },
+
+  // Input field
+  inputField: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 0,
+    minHeight: 50,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
     elevation: 2,
   },
+  inputText: {
+    fontSize: 15,
+    color: '#212121',
+    paddingVertical: Platform.OS === 'android' ? 14 : 0,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  errorText: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#ffcdd2',
+  },
+
+  // Dropdown
   dropdownCard: {
+    marginTop: 6,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 8,
   },
-  toggleActive: {
-    backgroundColor: PRIMARY,
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  primaryButton: {
-    backgroundColor: PRIMARY,
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 10,
+  dropdownDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: '#424242',
+  },
+
+  // Saved hotel row
+  savedHotelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  savedHotelText: {
+    flex: 1,
+    marginLeft: 6,
+    fontSize: 12,
+    color: '#CE93D8',
+  },
+  savedHotelName: {
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  changeHotelLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EDE7F6',
+  },
+
+  // Sign In button
+  signInButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  signInButtonText: {
+    color: PURPLE,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+
+  // Error banner
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.4)',
+  },
+  errorBannerText: {
+    marginLeft: 8,
+    flex: 1,
+    fontSize: 13,
+    color: '#ffcdd2',
+    fontWeight: '500',
+  },
+
+  // Forgot password
+  forgotText: {
+    color: '#EDE7F6',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+
+  // Footer
+  footerText: {
+    marginTop: 24,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: '#bdbdbd',
+    textAlign: 'center',
   },
 });
