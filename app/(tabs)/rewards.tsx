@@ -13,34 +13,40 @@ import { RewardCard } from '@/components/rewards/RewardCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Reward } from '@/api/reward-service';
 
+const PURPLE = '#7B1FA2';
+
 // ─── Points Banner ────────────────────────────────────────────────────────────
 
 function PointsBanner({ points }: { points: number }) {
   return (
     <View
       style={{
-        backgroundColor: '#7C3AED',
+        backgroundColor: PURPLE,
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 32,
       }}
     >
-      <View className="flex-row items-center">
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View
-          className="h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+          style={{
+            height: 56,
+            width: 56,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 16,
+            backgroundColor: 'rgba(255,255,255,0.18)',
+          }}
         >
-          <Ionicons name="star" size={28} color="#fbbf24" />
+          <Ionicons name="star" size={28} color="#CE21FB" />
         </View>
-        <View className="ml-4 flex-1">
-          <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.65)' }}>
+        <View style={{ marginLeft: 16 }}>
+          <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase' }}>
             Your Points Balance
           </Text>
-          <Text className="text-4xl font-bold text-white">{points}</Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>Earn more by</Text>
-          <Text className="text-xs font-semibold text-white">getting recognized</Text>
+          <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#ffffff' }}>
+            {points}
+          </Text>
         </View>
       </View>
     </View>
@@ -55,14 +61,14 @@ export default function RewardsScreen() {
 
   if (isLoading || pointsLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#7c3aed" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
+        <ActivityIndicator size="large" color={PURPLE} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <FlatList
         data={rewards as Reward[]}
         keyExtractor={(item) => item.id}
@@ -80,18 +86,10 @@ export default function RewardsScreen() {
             <PointsBanner points={points} />
             {/* White sheet pulls up over purple */}
             <View style={{ backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -20, paddingTop: 16 }}>
-              <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#ddd6fe' }} />
               </View>
-              <View className="px-4 pb-1">
-                <Text className="text-lg font-bold text-violet-900">
-                  Rewards Catalogue
-                </Text>
-                <Text className="text-xs text-violet-400">
-                  {rewards.length} reward{rewards.length !== 1 ? 's' : ''} available
-                </Text>
-              </View>
-              <View className="mb-3 mt-3 h-px bg-violet-50" />
+              <View style={{ height: 1, backgroundColor: '#f5f0ff', marginBottom: 4 }} />
             </View>
           </View>
         }
@@ -107,7 +105,7 @@ export default function RewardsScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor="#7c3aed"
+            tintColor={PURPLE}
           />
         }
       />

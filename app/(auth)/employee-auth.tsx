@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers';
 
@@ -207,7 +206,6 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function EmployeeAuthScreen() {
-  const insets = useSafeAreaInsets();
   const { setEmployee } = useEmployee();
 
   const [mode, setMode] = useState<Mode>('returning');
@@ -350,17 +348,6 @@ export default function EmployeeAuthScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
-
-      {/* ── Header bar ── */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerInner}>
-          <View style={styles.headerSide}>
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
-          </View>
-          <Text style={styles.headerTitle}>Login</Text>
-          <View style={styles.headerSide} />
-        </View>
-      </View>
 
       {/* ── Scrollable content ── */}
       <KeyboardAvoidingView
@@ -531,34 +518,6 @@ export default function EmployeeAuthScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Header
-  header: {
-    backgroundColor: PURPLE,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  headerInner: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  headerSide: {
-    width: 40,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-
   // Scroll
   scrollContent: {
     flexGrow: 1,

@@ -4,36 +4,14 @@ import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCompanyTheme } from '@/hooks/use-company-theme';
 import { useFeatureFlags } from '@/hooks/use-feature-flags';
-import { useEmployee } from '@/providers/EmployeeContext';
 import { useUnreadCount } from '@/hooks/use-notifications';
 
-function LogoutIcon() {
-  const { clearEmployee } = useEmployee();
-  return (
-    <Pressable
-      onPress={() => clearEmployee()}
-      style={{ marginLeft: 16, height: 40, width: 40, alignItems: 'center', justifyContent: 'center' }}
-      hitSlop={8}
-    >
-      <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-    </Pressable>
-  );
-}
 
 function HeaderRight() {
   const unread = useUnreadCount();
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {/* Chat */}
-      <Pressable
-        onPress={() => router.push('/(screens)/chat')}
-        style={{ marginRight: 4, height: 40, width: 40, alignItems: 'center', justifyContent: 'center' }}
-        hitSlop={8}
-      >
-        <Ionicons name="chatbubble-ellipses-outline" size={23} color="#7c3aed" />
-      </Pressable>
-
       {/* Notifications */}
       <Pressable
         onPress={() => router.push('/(screens)/notifications')}
@@ -123,6 +101,10 @@ export default function TabLayout() {
             <Ionicons name="gift-outline" size={size} color={color} />
           ),
           href: flags.rewards_enabled ? '/(tabs)/rewards' : null,
+          headerRight: () => null,
+          headerTitleAlign: 'center',
+          headerStyle: { backgroundColor: '#7B1FA2' },
+          headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#ffffff' },
         }}
       />
       <Tabs.Screen
@@ -132,7 +114,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
-          headerLeft: () => <LogoutIcon />,
+          headerShown: false,
         }}
       />
     </Tabs>
