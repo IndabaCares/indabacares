@@ -1,60 +1,85 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { router } from 'expo-router';
+import React, { memo } from 'react';
+import { View, Text } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
-import { useAuthStore } from '@/stores/auth-store';
+import { getBadgeLevel, type LeaderboardEntry } from '@/api/leaderboard-service';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 interface LeaderboardRowProps {
-  entry: {
-    rank: number;
-    rank_change: number;
-    total_points: number;
-    user: {
-      id: string;
-      full_name: string;
-      display_name: string | null;
-      avatar_url: string | null;
-    };
-  };
+  entry: LeaderboardEntry;
 }
 
-export function LeaderboardRow({ entry }: LeaderboardRowProps) {
-  const userId = useAuthStore((s) => s.user?.id);
-  const isMe = entry.user.id === userId;
-  const change = entry.rank_change;
+const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+export const LeaderboardRow = memo(function LeaderboardRow({ entry }: LeaderboardRowProps) {
+  const { employee } = useEmployee();
+  const isMe  = entry.employee_id === employee?.employee_id;
+  const badge = getBadgeLevel(entry.points_balance);
+  const medal = RANK_MEDAL[entry.rank];
 
   return (
-    <Pressable
-      onPress={() => router.push(`/(screens)/user/${entry.user.id}`)}
-      className={`mx-4 mb-2 flex-row items-center rounded-2xl px-4 py-3 ${
-        isMe ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-slate-100'
-      }`}
+    <View
+      className="mx-4 mb-2 overflow-hidden rounded-2xl border"
+      style={{
+        borderColor: isMe ? '#c4b5fd' : '#f1f5f9',
+        backgroundColor: isMe ? '#f5f3ff' : '#fff',
+      }}
     >
-      {/* Rank */}
-      <View className="w-8 items-center">
-        <Text className={`text-sm font-bold ${isMe ? 'text-primary-600' : 'text-slate-500'}`}>
-          #{entry.rank}
-        </Text>
-      </View>
+      <View className="flex-row items-center px-4 py-3">
+        {/* Rank */}
+        <View className="w-9 items-center">
+          {medal ? (
+            <Text className="text-lg">{medal}</Text>
+          ) : (
+            <Text
+              className="text-sm font-bold"
+              style={{ color: isMe ? '#7c3aed' : '#94a3b8' }}
+            >
+              #{entry.rank}
+            </Text>
+          )}
+        </View>
 
-      {/* Avatar + Name */}
-      <Avatar uri={entry.user.avatar_url} name={entry.user.full_name} size="sm" />
-      <View className="ml-3 flex-1">
-        <Text className={`text-sm font-semibold ${isMe ? 'text-primary-800' : 'text-slate-800'}`}>
-          {entry.user.display_name || entry.user.full_name}
-          {isMe ? ' (You)' : ''}
-        </Text>
-      </View>
+        {/* Avatar */}
+        <Avatar name={entry.full_name} size="sm" />
 
-      {/* Points + Change */}
-      <View className="items-end">
-        <Text className="text-sm font-bold text-slate-800">{entry.total_points}</Text>
-        {change !== 0 && (
-          <Text className={`text-[10px] font-medium ${change > 0 ? 'text-success-500' : 'text-danger-500'}`}>
-            {change > 0 ? `↑${change}` : `↓${Math.abs(change)}`}
+        {/* Name */}
+        <View className="ml-3 flex-1">
+          <Text
+            className="text-sm font-bold"
+            style={{ color: isMe ? '#7c3aed' : '#0f172a' }}
+            numberOfLines={1}
+          >
+            {entry.full_name}
+            {isMe ? ' · You' : ''}
           </Text>
-        )}
+        </View>
+
+        {/* Badge + points */}
+        <View className="items-end">
+          {/* Badge pill */}
+          <View
+            className="mb-1 flex-row items-center rounded-full px-2 py-0.5"
+            style={{ backgroundColor: badge.color + '18' }}
+          >
+            <Text className="text-[10px]">{badge.emoji}</Text>
+            <Text
+              className="ml-1 text-[10px] font-bold"
+              style={{ color: badge.color }}
+            >
+              {badge.label}
+            </Text>
+          </View>
+          {/* Period points */}
+          <Text className="text-sm font-bold text-slate-800">
+            {entry.total_points.toLocaleString()} pts
+          </Text>
+        </View>
       </View>
-    </Pressable>
+
+      {/* Highlight bar for current user */}
+      {isMe && (
+        <View className="h-0.5" style={{ backgroundColor: '#c4b5fd50' }} />
+      )}
+    </View>
   );
-}
+});

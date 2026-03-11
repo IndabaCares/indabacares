@@ -57,7 +57,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'danger' ? '#fff' : '#CE21FB'}
+          color={variant === 'primary' || variant === 'danger' ? '#fff' : '#7c3aed'}
           className="mr-2"
         />
       ) : icon ? (

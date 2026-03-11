@@ -38,7 +38,7 @@ export default function FeedScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-slate-50 px-4 pt-4">
+      <View className="flex-1 bg-white px-4 pt-4">
         <FeedHeader />
         {[1, 2, 3].map((i) => (
           <SkeletonCard key={i} />
@@ -48,7 +48,7 @@ export default function FeedScreen() {
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-white">
       <NewItemsBanner onRefresh={handleRefresh} />
 
       <FlatList
@@ -68,7 +68,7 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={isRefetching && !isFetchingNextPage}
             onRefresh={handleRefresh}
-            tintColor="#ED6813"
+            tintColor="#7c3aed"
           />
         }
         onEndReached={handleEndReached}

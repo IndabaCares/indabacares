@@ -1,13 +1,13 @@
 // ─── Colors ─────────────────────────────────────────────────────────────────
 export const COLORS = {
-  primary: '#ED6813',
-  primaryLight: '#f28a45',
-  primaryDark: '#c45310',
+  primary: '#7C3AED',
+  primaryLight: '#8B5CF6',
+  primaryDark: '#6D28D9',
   success: '#22c55e',
   warning: '#f59e0b',
   danger: '#ef4444',
   gold: '#f59e0b',
-  background: '#fff8f3',
+  background: '#F5F3FF',
   surface: '#ffffff',
   textPrimary: '#0f172a',
   textSecondary: '#64748b',

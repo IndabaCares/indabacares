@@ -8,19 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Brand fuchsia — anchored on #CE21FB at 500
+        // Brand violet/purple — anchored on #7C3AED at 600
         primary: {
-          50:  '#fdf4ff',
-          100: '#fae8ff',
-          200: '#f3c6fe',
-          300: '#e98ffc',
-          400: '#db58fb',
-          500: '#CE21FB',
-          600: '#a518cb',
-          700: '#8312a0',
-          800: '#640d7a',
-          900: '#470957',
-          950: '#2a0535',
+          50:  '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+          950: '#2e1065',
         },
         // Warm gold — stars, achievements, leaderboard highlights
         gold: {

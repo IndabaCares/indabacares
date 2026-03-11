@@ -1,15 +1,37 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { useAuthStore } from '@/stores/auth-store';
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { useEmployee } from '@/providers/EmployeeContext';
+import { supabase } from '@/lib/supabase';
 import { MoodPromptCard } from '@/components/mood/MoodPromptCard';
 
+function usePointsBalance(employeeId: string | undefined) {
+  return useQuery({
+    queryKey: ['points-balance', employeeId],
+    queryFn: async () => {
+      if (!employeeId) return null;
+      const { data, error } = await supabase
+        .from('employees')
+        .select('points_balance')
+        .eq('id', employeeId)
+        .single();
+      if (error) throw error;
+      return (data as { points_balance: number }).points_balance;
+    },
+    enabled: !!employeeId,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function FeedHeader() {
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
+  const { data: points } = usePointsBalance(employee?.employee_id);
 
-  if (!user) return null;
+  if (!employee) return null;
 
-  const firstName = (user.displayName || user.fullName).split(' ')[0];
+  const firstName = employee.full_name.split(' ')[0];
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -18,41 +40,48 @@ export function FeedHeader() {
     <View className="mb-4">
       <View className="mb-4 flex-row items-center justify-between">
         <View>
-          <Text className="text-2xl font-bold text-slate-900">
+          <Text className="text-2xl font-bold text-violet-900">
             {greeting}, {firstName}!
           </Text>
-          <Text className="mt-0.5 text-sm text-slate-500">
-            {user.loginStreak > 1
-              ? `${user.loginStreak} day streak 🔥`
-              : "Let's make today great"}
-          </Text>
+          <Text className="mt-0.5 text-sm text-violet-400">Let's make today great</Text>
         </View>
       </View>
 
-      {/* Balance cards */}
-      <View className="mb-4 flex-row">
-        <Pressable
-          onPress={() => router.push('/(tabs)/profile')}
-          className="mr-2 flex-1 rounded-xl bg-primary-50 p-3"
-        >
-          <Text className="text-xs text-primary-600">Points</Text>
-          <Text className="text-xl font-bold text-primary-700">{user.pointsBalance}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(tabs)/rewards')}
-          className="mr-2 flex-1 rounded-xl bg-warning-50 p-3"
-        >
-          <Text className="text-xs text-warning-600">Stars</Text>
-          <Text className="text-xl font-bold text-warning-600">{user.starsBalance}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(tabs)/give')}
-          className="flex-1 rounded-xl bg-success-50 p-3"
-        >
-          <Text className="text-xs text-success-600">To Give</Text>
-          <Text className="text-xl font-bold text-success-600">{user.givingBalance}</Text>
-        </Pressable>
-      </View>
+      {/* Points balance card */}
+      <Pressable
+        onPress={() => router.push('/(screens)/wallet')}
+        className="mb-4 overflow-hidden rounded-2xl"
+        style={{
+          backgroundColor: '#7C3AED',
+          shadowColor: '#7c3aed',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 10,
+          elevation: 5,
+        }}
+      >
+        <View className="flex-row items-center px-5 py-4">
+          <View
+            className="h-11 w-11 items-center justify-center rounded-xl"
+            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+          >
+            <Ionicons name="star" size={22} color="#fbbf24" />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              Points Balance
+            </Text>
+            <Text className="text-2xl font-bold text-white">{points ?? '—'}</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/(tabs)/give')}
+            className="rounded-xl px-3 py-2"
+            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+          >
+            <Text className="text-xs font-semibold text-white">Give Recognition</Text>
+          </Pressable>
+        </View>
+      </Pressable>
 
       <MoodPromptCard />
     </View>
