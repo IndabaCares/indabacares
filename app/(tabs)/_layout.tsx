@@ -6,19 +6,20 @@ import { useCompanyTheme } from '@/hooks/use-company-theme';
 import { useFeatureFlags } from '@/hooks/use-feature-flags';
 import { useUnreadCount } from '@/hooks/use-notifications';
 
+const PURPLE = '#7B1FA2';
+const ACCENT = '#CE21FB';
 
 function HeaderRight() {
   const unread = useUnreadCount();
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {/* Notifications */}
       <Pressable
         onPress={() => router.push('/(screens)/notifications')}
         style={{ marginRight: 16, height: 40, width: 40, alignItems: 'center', justifyContent: 'center' }}
         hitSlop={8}
       >
-        <Ionicons name="notifications-outline" size={24} color="#7c3aed" />
+        <Ionicons name="notifications-outline" size={24} color={PURPLE} />
         {unread > 0 && (
           <View className="absolute -right-0.5 -top-0.5 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger-500 px-1">
             <Text className="text-[10px] font-bold text-white">
@@ -38,8 +39,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: primaryColor,
-        tabBarInactiveTintColor: '#a78bfa',
+        tabBarActiveTintColor: ACCENT,
+        tabBarInactiveTintColor: PURPLE,
         tabBarStyle: {
           height: 85,
           paddingBottom: 25,
@@ -55,9 +56,22 @@ export default function TabLayout() {
         headerRight: () => <HeaderRight />,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: '#ffffff' },
-        headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#4c1d95' },
+        headerTitleStyle: { fontWeight: '700', fontSize: 18, color: PURPLE },
       }}
     >
+      {/* 1 — Profile */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
+
+      {/* 2 — Feed */}
       <Tabs.Screen
         name="index"
         options={{
@@ -65,9 +79,42 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
-          headerTitle: 'IndabaCares',
+          headerShown: false,
         }}
       />
+
+      {/* 3 — Give (centre FAB) */}
+      <Tabs.Screen
+        name="give"
+        options={{
+          title: 'Give',
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={{
+                marginTop: -16,
+                height: 56,
+                width: 56,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 28,
+                backgroundColor: '#ffffff',
+                borderWidth: 2.5,
+                borderColor: focused ? ACCENT : PURPLE,
+                shadowColor: PURPLE,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 6,
+              }}
+            >
+              <Ionicons name="add" size={28} color={focused ? ACCENT : PURPLE} />
+            </View>
+          ),
+          tabBarLabel: () => null,
+        }}
+      />
+
+      {/* 4 — Leaders */}
       <Tabs.Screen
         name="leaderboard"
         options={{
@@ -78,21 +125,8 @@ export default function TabLayout() {
           href: flags.leaderboards_enabled ? '/(tabs)/leaderboard' : null,
         }}
       />
-      <Tabs.Screen
-        name="give"
-        options={{
-          title: 'Give',
-          tabBarIcon: ({ focused }) => (
-            <View
-              className="-mt-4 h-14 w-14 items-center justify-center rounded-full shadow-lg"
-              style={{ backgroundColor: primaryColor, opacity: focused ? 1 : 0.85 }}
-            >
-              <Ionicons name="add" size={28} color="#ffffff" />
-            </View>
-          ),
-          tabBarLabel: () => null,
-        }}
-      />
+
+      {/* 5 — Rewards */}
       <Tabs.Screen
         name="rewards"
         options={{
@@ -101,19 +135,6 @@ export default function TabLayout() {
             <Ionicons name="gift-outline" size={size} color={color} />
           ),
           href: flags.rewards_enabled ? '/(tabs)/rewards' : null,
-          headerRight: () => null,
-          headerTitleAlign: 'center',
-          headerStyle: { backgroundColor: '#7B1FA2' },
-          headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#ffffff' },
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
           headerShown: false,
         }}
       />

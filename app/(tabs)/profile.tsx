@@ -18,6 +18,7 @@ import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/utils/image';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
+import { MoodPromptCard } from '@/components/mood/MoodPromptCard';
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
@@ -29,9 +30,10 @@ const LIGHT_TEXT = '#EDE7F6';
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Pending Orders',   icon: 'receipt-outline'  as const, route: '/(screens)/orders' },
-  { label: 'Redeemed Rewards', icon: 'gift-outline'     as const, route: '/(screens)/wallet' },
-  { label: 'Mood History',     icon: 'heart-outline'    as const, route: '/(screens)/mood'   },
+  { label: 'Pending Orders',   icon: 'receipt-outline'        as const, route: '/(screens)/orders' },
+  { label: 'Redeemed Rewards', icon: 'gift-outline'           as const, route: '/(screens)/wallet' },
+  { label: 'Mood History',     icon: 'heart-outline'          as const, route: '/(screens)/mood'   },
+  { label: "FAQ's",            icon: 'help-circle-outline'    as const, route: '/(screens)/settings' },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -250,6 +252,11 @@ export default function ProfileScreen() {
             )}
           </View>
 
+        </View>
+
+        {/* ── Mood prompt ─────────────────────────────────────────────────── */}
+        <View style={styles.moodContainer}>
+          <MoodPromptCard />
         </View>
 
         {/* ── Pill tab selector ───────────────────────────────────────────── */}
@@ -536,10 +543,15 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  moodContainer: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+
   // ── Tab selector ─────────────────────────────────────────────────────────────
   tabContainer: {
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 12,
   },
 
   tabPill: {

@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
-import { MoodPromptCard } from '@/components/mood/MoodPromptCard';
+
+const PURPLE = '#7B1FA2';
+const ACCENT  = '#CE21FB';
 
 function usePointsBalance(employeeId: string | undefined) {
   return useQuery({
@@ -32,58 +34,125 @@ export function FeedHeader() {
   if (!employee) return null;
 
   const firstName = employee.full_name.split(' ')[0];
-  const hour = new Date().getHours();
-  const greeting =
+  const hour      = new Date().getHours();
+  const greeting  =
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <View className="mb-4">
-      <View className="mb-4 flex-row items-center justify-between">
-        <View>
-          <Text className="text-2xl font-bold text-violet-900">
-            {greeting}, {firstName}!
-          </Text>
-          <Text className="mt-0.5 text-sm text-violet-400">Let's make today great</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
 
-      {/* Points balance card */}
-      <Pressable
-        onPress={() => router.push('/(screens)/wallet')}
-        className="mb-4 overflow-hidden rounded-2xl"
-        style={{
-          backgroundColor: '#7C3AED',
-          shadowColor: '#7c3aed',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.25,
-          shadowRadius: 10,
-          elevation: 5,
-        }}
-      >
-        <View className="flex-row items-center px-5 py-4">
-          <View
-            className="h-11 w-11 items-center justify-center rounded-xl"
-            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
-          >
+      {/* Purple header section */}
+      <View style={styles.header}>
+
+        {/* Greeting */}
+        <Text style={styles.greeting}>{greeting}, {firstName}!</Text>
+        <Text style={styles.subtext}>Let's make today great</Text>
+
+        {/* Points card */}
+        <Pressable onPress={() => router.push('/(screens)/wallet')} style={styles.pointsCard}>
+          <View style={styles.pointsIconBox}>
             <Ionicons name="star" size={22} color="#fbbf24" />
           </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.65)' }}>
-              Points Balance
-            </Text>
-            <Text className="text-2xl font-bold text-white">{points ?? '—'}</Text>
+          <View style={styles.pointsInfo}>
+            <Text style={styles.pointsLabel}>Points Balance</Text>
+            <Text style={styles.pointsValue}>{points ?? '—'}</Text>
           </View>
-          <Pressable
-            onPress={() => router.push('/(tabs)/give')}
-            className="rounded-xl px-3 py-2"
-            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
-          >
-            <Text className="text-xs font-semibold text-white">Give Recognition</Text>
+          <Pressable onPress={() => router.push('/(tabs)/give')} style={styles.giveButton}>
+            <Text style={styles.giveButtonText}>Give Recognition</Text>
           </Pressable>
-        </View>
-      </Pressable>
+        </Pressable>
 
-      <MoodPromptCard />
+      </View>
+
+      {/* Spacer so cards start below the rounded header */}
+      <View style={styles.spacer} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 8,
+  },
+
+  header: {
+    backgroundColor: PURPLE,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  greeting: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+
+  subtext: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 2,
+    marginBottom: 16,
+  },
+
+  pointsCard: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  pointsIconBox: {
+    width: 44,
+    height: 44,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pointsInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  pointsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.65)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  pointsValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+
+  giveButton: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  giveButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+
+  spacer: {
+    height: 12,
+  },
+});

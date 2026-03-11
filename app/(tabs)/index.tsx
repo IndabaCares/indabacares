@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { View, FlatList, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFeed } from '@/hooks/use-feed';
 import { RecognitionCard } from '@/components/feed/RecognitionCard';
 import { FeedHeader } from '@/components/feed/FeedHeader';
@@ -8,6 +9,8 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useUIStore } from '@/stores/ui-store';
 import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
+
+const PURPLE = '#7B1FA2';
 
 export default function FeedScreen() {
   useReactionRealtime();
@@ -38,49 +41,50 @@ export default function FeedScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-white px-4 pt-4">
-        <FeedHeader />
-        {[1, 2, 3].map((i) => (
-          <SkeletonCard key={i} />
-        ))}
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
+        <View style={{ flex: 1, backgroundColor: '#F2F2F2', padding: 16, paddingTop: 8 }}>
+          <FeedHeader />
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <NewItemsBanner onRefresh={handleRefresh} />
-
-      <FlatList
-        data={recognitions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <RecognitionCard recognition={item as any} />}
-        ListHeaderComponent={<FeedHeader />}
-        ListEmptyComponent={
-          <EmptyState
-            icon="🎉"
-            title="No recognitions yet"
-            description="Be the first to recognize a colleague!"
-          />
-        }
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching && !isFetchingNextPage}
-            onRefresh={handleRefresh}
-            tintColor="#7c3aed"
-          />
-        }
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={
-          isFetchingNextPage ? <SkeletonCard /> : null
-        }
-        windowSize={5}
-        maxToRenderPerBatch={10}
-        removeClippedSubviews
-        initialNumToRender={8}
-      />
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
+      <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
+        <NewItemsBanner onRefresh={handleRefresh} />
+        <FlatList
+          data={recognitions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <RecognitionCard recognition={item as any} />}
+          ListHeaderComponent={<FeedHeader />}
+          ListEmptyComponent={
+            <EmptyState
+              icon="🎉"
+              title="No recognitions yet"
+              description="Be the first to recognize a colleague!"
+            />
+          }
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching && !isFetchingNextPage}
+              onRefresh={handleRefresh}
+              tintColor={PURPLE}
+            />
+          }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={isFetchingNextPage ? <SkeletonCard /> : null}
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews
+          initialNumToRender={8}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
