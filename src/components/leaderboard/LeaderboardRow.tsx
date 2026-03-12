@@ -1,85 +1,102 @@
 import React, { memo } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
-import { getBadgeLevel, type LeaderboardEntry } from '@/api/leaderboard-service';
 import { useEmployee } from '@/providers/EmployeeContext';
+import type { LeaderboardEntry } from '@/api/leaderboard-service';
+
+const PURPLE = '#7B1FA2';
 
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
 }
 
-const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
 export const LeaderboardRow = memo(function LeaderboardRow({ entry }: LeaderboardRowProps) {
   const { employee } = useEmployee();
-  const isMe  = entry.employee_id === employee?.employee_id;
-  const badge = getBadgeLevel(entry.points_balance);
-  const medal = RANK_MEDAL[entry.rank];
+  const isMe   = entry.employee_id === employee?.employee_id;
+  const delta  = entry.movement_delta ?? 0;
+  const isUp   = delta > 0;
+  const isDown = delta < 0;
+  const moveColor = isUp ? '#22C55E' : isDown ? '#EF4444' : '#9CA3AF';
 
   return (
-    <View
-      className="mx-4 mb-2 overflow-hidden rounded-2xl border"
-      style={{
-        borderColor: isMe ? '#c4b5fd' : '#f1f5f9',
-        backgroundColor: isMe ? '#f5f3ff' : '#fff',
-      }}
-    >
-      <View className="flex-row items-center px-4 py-3">
-        {/* Rank */}
-        <View className="w-9 items-center">
-          {medal ? (
-            <Text className="text-lg">{medal}</Text>
-          ) : (
-            <Text
-              className="text-sm font-bold"
-              style={{ color: isMe ? '#7c3aed' : '#94a3b8' }}
-            >
-              #{entry.rank}
-            </Text>
-          )}
-        </View>
+    <View style={[styles.card, isMe && styles.cardHighlight]}>
 
-        {/* Avatar */}
-        <Avatar name={entry.full_name} size="sm" />
-
-        {/* Name */}
-        <View className="ml-3 flex-1">
-          <Text
-            className="text-sm font-bold"
-            style={{ color: isMe ? '#7c3aed' : '#0f172a' }}
-            numberOfLines={1}
-          >
-            {entry.full_name}
-            {isMe ? ' · You' : ''}
-          </Text>
-        </View>
-
-        {/* Badge + points */}
-        <View className="items-end">
-          {/* Badge pill */}
-          <View
-            className="mb-1 flex-row items-center rounded-full px-2 py-0.5"
-            style={{ backgroundColor: badge.color + '18' }}
-          >
-            <Text className="text-[10px]">{badge.emoji}</Text>
-            <Text
-              className="ml-1 text-[10px] font-bold"
-              style={{ color: badge.color }}
-            >
-              {badge.label}
-            </Text>
-          </View>
-          {/* Period points */}
-          <Text className="text-sm font-bold text-slate-800">
-            {entry.total_points.toLocaleString()} pts
-          </Text>
-        </View>
+      {/* Movement indicator */}
+      <View style={styles.movement}>
+        <Text style={[styles.moveNumber, { color: moveColor }]}>
+          {delta !== 0 ? Math.abs(delta) : entry.rank}
+        </Text>
+        <Text style={[styles.arrow, { color: moveColor }]}>
+          {isUp ? '▲' : isDown ? '▼' : '—'}
+        </Text>
       </View>
 
-      {/* Highlight bar for current user */}
-      {isMe && (
-        <View className="h-0.5" style={{ backgroundColor: '#c4b5fd50' }} />
-      )}
+      {/* Avatar */}
+      <Avatar uri={entry.avatar_url} name={entry.full_name} size="sm" />
+
+      {/* Name + job title */}
+      <View style={styles.info}>
+        <Text style={[styles.name, isMe && styles.nameMe]} numberOfLines={1}>
+          {entry.full_name}{isMe ? ' · You' : ''}
+        </Text>
+        {entry.job_title ? (
+          <Text style={styles.jobTitle} numberOfLines={1}>{entry.job_title}</Text>
+        ) : null}
+      </View>
+
     </View>
   );
+});
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: 12,
+  },
+  cardHighlight: {
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#F5F3FF',
+  },
+  movement: {
+    width: 34,
+    alignItems: 'center',
+  },
+  moveNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  arrow: {
+    fontSize: 9,
+    lineHeight: 12,
+  },
+  info: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  nameMe: {
+    color: PURPLE,
+  },
+  jobTitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
+  },
 });

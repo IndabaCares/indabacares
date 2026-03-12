@@ -1,46 +1,67 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { PERIOD_LABELS, type PeriodType } from '@/api/leaderboard-service';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { PERIOD_LABELS, PERIOD_TABS, type PeriodType } from '@/api/leaderboard-service';
+
+const PURPLE     = '#7B1FA2';
+const PURPLE_MID = '#8E24AA';
 
 interface PeriodTabsProps {
   value: PeriodType;
   onChange: (value: PeriodType) => void;
 }
 
-const PERIODS: PeriodType[] = ['all_time', 'monthly', 'quarterly', 'annual'];
-
 export function PeriodTabs({ value, onChange }: PeriodTabsProps) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
-    >
-      {PERIODS.map((period) => {
+    <View style={styles.pill}>
+      {PERIOD_TABS.map((period) => {
         const active = value === period;
         return (
           <Pressable
             key={period}
             onPress={() => onChange(period)}
-            className="rounded-full px-4 py-2 active:opacity-70"
-            style={{
-              backgroundColor: active ? '#ffffff' : 'rgba(255,255,255,0.18)',
-              shadowColor: active ? '#4c1d95' : 'transparent',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: active ? 0.2 : 0,
-              shadowRadius: 6,
-              elevation: active ? 3 : 0,
-            }}
+            style={[styles.tab, active && styles.tabActive]}
           >
-            <Text
-              className="text-sm font-semibold"
-              style={{ color: active ? '#7c3aed' : 'rgba(255,255,255,0.85)' }}
-            >
+            <Text style={[styles.tabText, active && styles.tabTextActive]}>
               {PERIOD_LABELS[period]}
             </Text>
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    flexDirection: 'row',
+    backgroundColor: PURPLE_MID,
+    borderRadius: 20,
+    padding: 4,
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 20,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 16,
+  },
+  tabActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
+  },
+  tabTextActive: {
+    color: PURPLE,
+  },
+});

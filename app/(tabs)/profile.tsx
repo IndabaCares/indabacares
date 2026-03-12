@@ -546,12 +546,13 @@ const styles = StyleSheet.create({
   moodContainer: {
     paddingHorizontal: 16,
     marginTop: 16,
+    marginBottom: 8,
   },
 
   // ── Tab selector ─────────────────────────────────────────────────────────────
   tabContainer: {
     paddingHorizontal: 20,
-    marginTop: 12,
+    marginTop: 8,
   },
 
   tabPill: {

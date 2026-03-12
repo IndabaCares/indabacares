@@ -63,7 +63,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
@@ -123,6 +123,7 @@ export default function TabLayout() {
             <Ionicons name="trophy-outline" size={size} color={color} />
           ),
           href: flags.leaderboards_enabled ? '/(tabs)/leaderboard' : null,
+          headerShown: false,
         }}
       />
 
