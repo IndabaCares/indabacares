@@ -3,7 +3,6 @@ import { moodHistoryQuery } from '@/api/queries';
 import { submitMood } from '@/api/edge-functions';
 import { QUERY_KEYS } from '@/lib/constants';
 import { useEmployee } from '@/providers/EmployeeContext';
-import { useAuthStore } from '@/stores/auth-store';
 import { useUIStore } from '@/stores/ui-store';
 import type { SubmitMoodRequest } from '@/types/api';
 
@@ -25,13 +24,11 @@ export function useMoodHistory() {
 
 export function useSubmitMood() {
   const queryClient = useQueryClient();
-  const setMoodSubmitted = useAuthStore((s) => s.setMoodSubmitted);
   const showToast = useUIStore((s) => s.showToast);
 
   return useMutation({
     mutationFn: (body: SubmitMoodRequest) => submitMood(body),
     onSuccess: (data) => {
-      setMoodSubmitted(true);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.moodHistory });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
       showToast({

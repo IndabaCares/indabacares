@@ -48,7 +48,7 @@ export default function UserProfileScreen() {
 
       {/* Points */}
       <View className="mx-4 mt-4 flex-row items-center rounded-2xl bg-white p-4">
-        <Ionicons name="trophy" size={22} color="#CE21FB" />
+        <Ionicons name="trophy" size={22} color="#ED6813" />
         <Text className="ml-3 text-sm text-slate-500">Points</Text>
         <Text className="ml-auto text-lg font-bold text-primary-600">
           {(profile as any).points_balance}

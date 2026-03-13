@@ -1,18 +1,15 @@
 import React, { memo, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/ui/Avatar';
-import { formatRelativeTime } from '@/utils/format';
-import { useLikes, useToggleLike } from '@/hooks/use-likes';
-import { useEmployee } from '@/providers/EmployeeContext';
 import { RECOGNITION_BADGES } from '@/lib/constants';
 import { CommentSheet } from './CommentSheet';
 import { RecognitionReactionBar } from './RecognitionReactionBar';
+import { useLikes, useToggleLike } from '@/hooks/use-likes';
+import { useEmployee } from '@/providers/EmployeeContext';
 import type { RecognitionFeedItem } from '@/api/queries';
 
-interface RecognitionCardProps {
-  recognition: RecognitionFeedItem;
-}
+const PURPLE = '#7B1FA2';
 
 function getBadgeConfig(badge: string) {
   return (
@@ -24,6 +21,31 @@ function getBadgeConfig(badge: string) {
   );
 }
 
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface RecognitionCardProps {
+  recognition: RecognitionFeedItem;
+}
+
 export const RecognitionCard = memo(function RecognitionCard({
   recognition,
 }: RecognitionCardProps) {
@@ -33,110 +55,92 @@ export const RecognitionCard = memo(function RecognitionCard({
   const { data: likes = [] } = useLikes(recognition.id);
   const toggleLike = useToggleLike(recognition.id);
 
-  const myLike = likes.find((l) => l.employee_id === employee?.employee_id);
-  const liked = !!myLike;
+  const myLike    = likes.find((l) => l.employee_id === employee?.employee_id);
+  const liked     = !!myLike;
   const likeCount = likes.length;
-
   const commentsCount = recognition.comments_count?.[0]?.count ?? 0;
-  const badgeConfig = getBadgeConfig(recognition.badge);
+  const badgeConfig   = getBadgeConfig(recognition.badge);
 
-  const handleLike = () => {
-    toggleLike.mutate({ likeId: myLike?.id ?? null });
-  };
+  const handleLike = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
 
   return (
     <>
-      <View className="mb-3 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-        {/* ── Card Header ────────────────────────────────────────── */}
-        <View className="px-4 pt-4 pb-3">
-          {/* Sender row */}
-          <View className="flex-row items-center">
-            <Avatar name={recognition.sender.full_name} size="md" />
-            <View className="ml-3 flex-1">
-              <Text className="text-sm font-bold text-slate-800">
-                {recognition.sender.full_name}
-              </Text>
-              {recognition.sender.position && (
-                <Text className="text-xs text-slate-400" numberOfLines={1}>
-                  {recognition.sender.position}
-                </Text>
-              )}
-            </View>
-            <Text className="text-xs text-slate-400">
-              {formatRelativeTime(recognition.created_at)}
-            </Text>
+      <View style={s.card}>
+
+        {/* ── Sender row ─────────────────────────────────── */}
+        <View style={s.senderRow}>
+          <Avatar name={recognition.sender.full_name} size="md" />
+          <View style={s.senderInfo}>
+            <Text style={s.senderName}>{recognition.sender.full_name}</Text>
+            {recognition.sender.position && (
+              <Text style={s.senderTitle}>{recognition.sender.position}</Text>
+            )}
           </View>
-
-          {/* Badge pill */}
-          <View className="mt-3 self-start flex-row items-center rounded-full px-3 py-1.5"
-            style={{ backgroundColor: badgeConfig.color + '18' }}>
-            <Text className="text-sm">{badgeConfig.emoji}</Text>
-            <Text
-              className="ml-1.5 text-xs font-semibold"
-              style={{ color: badgeConfig.color }}
-            >
-              {recognition.badge}
-            </Text>
-          </View>
-
-          {/* Receiver line */}
-          <View className="mt-2.5 flex-row items-center">
-            <Ionicons name="arrow-forward-circle" size={16} color="#ED6813" />
-            <Text className="ml-1.5 text-sm text-slate-500">
-              Recognizing{' '}
-              <Text className="font-bold text-slate-800">
-                {recognition.receiver.full_name}
-              </Text>
-            </Text>
-          </View>
-
-          {/* Message */}
-          <Text className="mt-2.5 text-base leading-6 text-slate-700" numberOfLines={5}>
-            {recognition.message}
-          </Text>
-
-          {/* Reactions */}
-          <RecognitionReactionBar recognitionId={recognition.id} />
+          <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
         </View>
 
-        {/* ── Divider ───────────────────────────────────────────── */}
-        <View className="mx-4 h-px bg-slate-100" />
+        {/* ── Badge pill ──────────────────────────────────── */}
+        <View style={[s.badgePill, { backgroundColor: badgeConfig.color + '18' }]}>
+          <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
+          <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
+        </View>
 
-        {/* ── Action Bar ────────────────────────────────────────── */}
-        <View className="flex-row px-2 py-1">
-          {/* Like */}
+        {/* ── Recipient card ──────────────────────────────── */}
+        <View style={s.recipientCard}>
+          <Ionicons name="arrow-forward-circle" size={17} color={PURPLE} />
+          <Text style={s.recognisingLabel}> Recognising </Text>
+          <Avatar name={recognition.receiver.full_name} size="xs" />
+          <View style={s.recipientTextWrap}>
+            <Text style={s.recipientName}>{recognition.receiver.full_name}</Text>
+            {recognition.receiver.position && (
+              <Text style={s.recipientTitle} numberOfLines={1}>
+                {' · '}{recognition.receiver.position}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* ── Message ─────────────────────────────────────── */}
+        <Text style={s.message}>{recognition.message}</Text>
+
+        {/* ── Emoji reactions ─────────────────────────────── */}
+        <RecognitionReactionBar recognitionId={recognition.id} />
+
+        {/* ── Date/time ───────────────────────────────────── */}
+        <Text style={s.dateText}>{formatDateTime(recognition.created_at)}</Text>
+
+        {/* ── Divider ─────────────────────────────────────── */}
+        <View style={s.divider} />
+
+        {/* ── Action bar ──────────────────────────────────── */}
+        <View style={s.actionBar}>
           <Pressable
             onPress={handleLike}
             disabled={toggleLike.isPending}
-            className="flex-1 flex-row items-center justify-center py-2 active:opacity-60"
+            style={s.actionBtn}
           >
             <Ionicons
               name={liked ? 'heart' : 'heart-outline'}
               size={20}
-              color={liked ? '#ED6813' : '#94a3b8'}
+              color={liked ? '#ef4444' : '#94a3b8'}
             />
-            <Text
-              className="ml-1.5 text-sm font-medium"
-              style={{ color: liked ? '#ED6813' : '#94a3b8' }}
-            >
+            <Text style={[s.actionText, liked && { color: '#ef4444' }]}>
               {likeCount > 0 ? likeCount : 'Like'}
             </Text>
           </Pressable>
 
-          {/* Comment */}
           <Pressable
             onPress={() => setShowComments(true)}
-            className="flex-1 flex-row items-center justify-center py-2 active:opacity-60"
+            style={s.actionBtn}
           >
             <Ionicons name="chatbubble-outline" size={19} color="#94a3b8" />
-            <Text className="ml-1.5 text-sm font-medium text-slate-400">
+            <Text style={s.actionText}>
               {commentsCount > 0 ? commentsCount : 'Comment'}
             </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* Comment bottom sheet */}
       <CommentSheet
         recognitionId={recognition.id}
         visible={showComments}
@@ -144,4 +148,137 @@ export const RecognitionCard = memo(function RecognitionCard({
       />
     </>
   );
+});
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#ede9fe',
+    marginBottom: 14,
+    padding: 16,
+    shadowColor: '#7B1FA2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  // Sender
+  senderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  senderInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  senderName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e1b4b',
+  },
+  senderTitle: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 1,
+  },
+  timeAgo: {
+    fontSize: 11,
+    color: '#94a3b8',
+  },
+
+  // Badge
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  badgeEmoji: { fontSize: 14 },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 5,
+  },
+
+  // Recipient
+  recipientCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f7ff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 12,
+  },
+  recognisingLabel: {
+    fontSize: 13,
+    color: '#64748b',
+  },
+  recipientTextWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  recipientName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e1b4b',
+  },
+  recipientTitle: {
+    fontSize: 12,
+    color: '#94a3b8',
+    flex: 1,
+  },
+
+  // Message
+  message: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#334155',
+    marginBottom: 4,
+  },
+
+  // Date
+  dateText: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 10,
+    marginBottom: 12,
+  },
+
+  // Divider
+  divider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginBottom: 4,
+  },
+
+  // Actions
+  actionBar: {
+    flexDirection: 'row',
+    paddingTop: 4,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  actionText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94a3b8',
+  },
 });

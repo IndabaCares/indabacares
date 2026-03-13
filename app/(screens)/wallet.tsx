@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '@/stores/auth-store';
+import { useQuery } from '@tanstack/react-query';
+import { useEmployee } from '@/providers/EmployeeContext';
+import { supabase } from '@/lib/supabase';
 import { useStarTransactions, type StarTransaction } from '@/hooks/use-star-transactions';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -9,16 +11,13 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatRelativeTime } from '@/utils/format';
 
 const TX_TYPE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  receive: { icon: 'arrow-down-circle', color: '#22c55e', label: 'Received' },
-  redeem: { icon: 'cart', color: '#ef4444', label: 'Redeemed' },
-  refund: { icon: 'refresh-circle', color: '#3b82f6', label: 'Refunded' },
-  boost_bonus: { icon: 'rocket', color: '#f59e0b', label: 'Boost Bonus' },
-  adjust: { icon: 'build', color: '#8b5cf6', label: 'Adjustment' },
+  recognition_received: { icon: 'arrow-down-circle', color: '#22c55e', label: 'Recognition' },
+  admin_bonus:          { icon: 'gift',              color: '#8b5cf6', label: 'Bonus'       },
+  campaign_reward:      { icon: 'rocket',            color: '#f59e0b', label: 'Campaign'    },
 };
 
 function TransactionRow({ tx }: { tx: StarTransaction }) {
   const config = TX_TYPE_CONFIG[tx.type] || { icon: 'ellipse', color: '#94a3b8', label: tx.type };
-  const isPositive = tx.amount > 0;
 
   return (
     <View className="flex-row items-center py-3">
@@ -30,28 +29,36 @@ function TransactionRow({ tx }: { tx: StarTransaction }) {
       </View>
       <View className="ml-3 flex-1">
         <Text className="text-sm font-medium text-slate-800" numberOfLines={1}>
-          {tx.description}
+          {config.label}
         </Text>
         <Text className="text-[10px] text-slate-400">
-          {config.label} · {formatRelativeTime(tx.created_at)}
+          {formatRelativeTime(tx.created_at)}
         </Text>
       </View>
-      <View className="items-end">
-        <Text
-          className={`text-sm font-bold ${isPositive ? 'text-success-600' : 'text-danger-500'}`}
-        >
-          {isPositive ? '+' : ''}{tx.amount}
-        </Text>
-        <Text className="text-[10px] text-slate-400">
-          bal: {tx.balance_after}
-        </Text>
-      </View>
+      <Text className="text-sm font-bold text-success-600">+{tx.amount}</Text>
     </View>
   );
 }
 
 export default function WalletScreen() {
-  const user = useAuthStore((s) => s.user);
+  const { employee } = useEmployee();
+
+  const { data: balanceData } = useQuery({
+    queryKey: ['points-balance', employee?.employee_id],
+    queryFn: async () => {
+      if (!employee) return null;
+      const { data, error } = await supabase
+        .from('employees')
+        .select('points_balance')
+        .eq('id', employee.employee_id)
+        .single();
+      if (error) throw error;
+      return (data as { points_balance: number }).points_balance;
+    },
+    enabled: !!employee,
+    staleTime: 60 * 1000,
+  });
+
   const { data: transactions = [], isLoading, refetch, isRefetching } = useStarTransactions();
 
   return (
@@ -62,17 +69,16 @@ export default function WalletScreen() {
       contentContainerStyle={{ paddingBottom: 100 }}
       ListHeaderComponent={
         <View className="px-4 pt-4">
-          {/* Balance Card */}
           <Card className="mb-4 items-center py-6">
-            <Ionicons name="star" size={36} color="#f59e0b" />
+            <Ionicons name="trophy" size={36} color="#ED6813" />
             <Text className="mt-2 text-3xl font-bold text-slate-900">
-              {user?.starsBalance ?? 0}
+              {balanceData ?? 0}
             </Text>
-            <Text className="text-sm text-slate-500">Star Balance</Text>
+            <Text className="text-sm text-slate-500">Points Balance</Text>
           </Card>
 
           <Text className="mb-2 px-1 text-xs font-semibold uppercase text-slate-400">
-            Transaction History
+            Points History
           </Text>
         </View>
       }
@@ -87,9 +93,9 @@ export default function WalletScreen() {
       ListEmptyComponent={
         !isLoading ? (
           <EmptyState
-            icon="⭐"
-            title="No transactions yet"
-            description="Your star transactions will appear here as you receive and redeem stars."
+            icon="🏆"
+            title="No points yet"
+            description="Points appear here when you receive recognitions."
           />
         ) : (
           <View className="px-4">
@@ -98,7 +104,7 @@ export default function WalletScreen() {
         )
       }
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#CE21FB" />
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ED6813" />
       }
     />
   );

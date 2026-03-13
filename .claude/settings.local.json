@@ -19,7 +19,29 @@
       "Bash(wc:*)",
       "Bash(npx create-expo-app@latest:*)",
       "Bash(npm view:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(xargs grep:*)",
+      "Bash(ls:*)",
+      "Bash(npx jest:*)",
+      "Bash(do:*)",
+      "Bash(node:*)",
+      "Bash(netstat -ano | findstr :8081)",
+      "Bash(taskkill /PID 17748 /F)",
+      "Bash(cmd.exe /c \"taskkill /PID 17748 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 17748 /F 2>&1\")",
+      "Bash(cmd.exe /c \"taskkill /PID 17748 /F\" 2>&1; echo \"exit: $?\")",
+      "Bash(cmd /c \"taskkill /PID 17748 /F\")",
+      "Bash(cmd /c \"netstat -ano | findstr :8081\")",
+      "Bash(cmd /c \"netstat -ano | findstr \\\\\"8081 19000 19001 19002\\\\\"\")",
+      "Bash(cmd /c \"tasklist | findstr /i \\\\\"node ngrok expo\\\\\"\")",
+      "Bash(cmd /c \"tasklist | findstr node.exe\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -l \"department\" C:/Users/Personel/Desktop/IndabaCares/supabase/migrations/*.sql)",
+      "Bash(npx expo:*)",
+      "Bash(cat -n \"/c/Users/Personel/Desktop/IndabaCares/app/\\(tabs\\)/leaderboard.tsx\" | head -20)",
+      "Bash(ls \"/c/Users/Personel/Desktop/IndabaCares/app/\\(tabs\\)/\")"
     ]
   }
 }

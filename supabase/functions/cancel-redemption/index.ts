@@ -1,24 +1,23 @@
 /**
  * Edge Function: cancel-redemption
  *
- * Allows a user to cancel their own pending redemption order.
- *   - Only pending orders can be cancelled
- *   - Stars are refunded atomically via process_refund()
- *   - Audit logged for traceability
+ * Allows an employee to cancel their own pending redemption order.
+ *   - Only pending orders can be self-cancelled
+ *   - Points are refunded atomically via process_refund()
+ *   - Action is recorded in audit_logs
  *
  * Security:
- *   - Authenticated users only
- *   - Users can only cancel their own orders
- *   - Rate limited to prevent abuse
+ *   - Employee session required (withEmployeeAuth)
+ *   - Ownership enforced: redemption must match employee_id AND hotel from session
+ *   - Only pending status can be cancelled (others are rejected with a clear message)
  */
 
 import {
-  withAuth,
+  withEmployeeAuth,
   jsonResponse,
   errorResponse,
-  type AuthContext,
+  type EmployeeAuthContext,
 } from "../_shared/auth-middleware.ts";
-import { notify } from "../_shared/notifications.ts";
 import { writeAuditLog } from "../_shared/audit.ts";
 import { enforceRateLimit } from "../_shared/rate-limit.ts";
 
@@ -27,18 +26,18 @@ interface CancelRequest {
 }
 
 Deno.serve(
-  withAuth(async (req: Request, ctx: AuthContext): Promise<Response> => {
+  withEmployeeAuth(async (req: Request, ctx: EmployeeAuthContext): Promise<Response> => {
     if (req.method !== "POST") {
       return errorResponse("Method not allowed", 405);
     }
 
-    const { user, adminClient } = ctx;
+    const { employee, adminClient } = ctx;
 
-    // ── Rate limit: max 10 cancellations per user per hour ────
+    // ── Rate limit: max 10 cancellations per employee per hour ───────
     const rateLimited = await enforceRateLimit(adminClient, {
-      identifier: user.id,
-      action: "cancel_redemption",
-      maxAttempts: 10,
+      identifier:    employee.employee_id,
+      action:        "cancel_redemption",
+      maxAttempts:   10,
       windowMinutes: 60,
     });
     if (rateLimited) return rateLimited;
@@ -49,34 +48,31 @@ Deno.serve(
       return errorResponse("redemptionId is required");
     }
 
-    // ── Fetch the redemption (must belong to this user) ────────
+    // ── Fetch the redemption — ownership + hotel enforced ────────────
     const { data: redemption, error: fetchError } = await adminClient
       .from("redemptions")
-      .select(`
-        id, user_id, reward_id, star_cost, status,
-        reward:rewards ( name )
-      `)
+      .select("id, employee_id, reward_id, status, hotel, reward:rewards ( name, points_cost )")
       .eq("id", body.redemptionId)
-      .eq("user_id", user.id)
-      .eq("company_id", user.companyId)
+      .eq("employee_id", employee.employee_id)
+      .eq("hotel",       employee.hotel)
       .single();
 
     if (fetchError || !redemption) {
       return errorResponse("Redemption not found", 404);
     }
 
-    // ── Only pending orders can be self-cancelled ──────────────
+    // ── Only pending orders can be self-cancelled ────────────────────
     if (redemption.status !== "pending") {
       return errorResponse(
         `Cannot cancel an order with status "${redemption.status}". Only pending orders can be cancelled.`
       );
     }
 
-    // ── Process refund atomically ──────────────────────────────
+    // ── Process refund atomically ────────────────────────────────────
     const { error: refundError } = await adminClient.rpc("process_refund", {
       p_redemption_id: body.redemptionId,
-      p_company_id: user.companyId,
-      p_reason: "Cancelled by user",
+      p_hotel:         employee.hotel,
+      p_reason:        "Cancelled by employee",
     });
 
     if (refundError) {
@@ -84,11 +80,11 @@ Deno.serve(
       return errorResponse("Failed to process refund. Please try again.", 500);
     }
 
-    // ── Update redemption status ───────────────────────────────
+    // ── Update redemption status ─────────────────────────────────────
     const { error: updateError } = await adminClient
       .from("redemptions")
       .update({
-        status: "cancelled",
+        status:       "cancelled",
         cancelled_at: new Date().toISOString(),
       })
       .eq("id", body.redemptionId);
@@ -98,44 +94,33 @@ Deno.serve(
       return errorResponse("Refund processed but status update failed.", 500);
     }
 
-    // ── Audit log ──────────────────────────────────────────────
+    // ── Audit log ────────────────────────────────────────────────────
     await writeAuditLog(adminClient, {
-      companyId: user.companyId,
-      actorId: user.id,
-      action: "redemption.cancel",
+      hotel:      employee.hotel,
+      actorId:    employee.employee_id,
+      action:     "redemption.cancel",
       targetType: "redemption",
-      targetId: body.redemptionId,
-      metadata: {
-        star_cost: redemption.star_cost,
-        reward_name: redemption.reward?.name,
+      targetId:   body.redemptionId,
+      metadata:   {
+        reward_name:  redemption.reward?.name,
+        points_cost:  redemption.reward?.points_cost,
       },
       req,
     });
 
-    // ── Notify user of successful cancellation ─────────────────
-    await notify(adminClient, {
-      companyId: user.companyId,
-      userId: user.id,
-      type: "system",
-      title: "Order cancelled",
-      body: `Your order for "${redemption.reward?.name}" has been cancelled. ${redemption.star_cost} stars refunded.`,
-      referenceType: "redemption",
-      referenceId: body.redemptionId,
-    });
-
-    // ── Fetch updated balance ──────────────────────────────────
-    const { data: updatedProfile } = await adminClient
-      .from("profiles")
-      .select("stars_balance")
-      .eq("id", user.id)
+    // ── Fetch updated points balance ─────────────────────────────────
+    const { data: updatedEmployee } = await adminClient
+      .from("employees")
+      .select("points_balance")
+      .eq("id", employee.employee_id)
       .single();
 
     return jsonResponse({
-      redemptionId: body.redemptionId,
-      status: "cancelled",
-      starsRefunded: redemption.star_cost,
-      starsBalance: updatedProfile?.stars_balance,
-      message: `Order cancelled. ${redemption.star_cost} stars refunded to your balance.`,
+      redemptionId:  body.redemptionId,
+      status:        "cancelled",
+      pointsRefunded: redemption.reward?.points_cost ?? 0,
+      pointsBalance:  updatedEmployee?.points_balance ?? 0,
+      message:        `Order cancelled. Points have been refunded to your balance.`,
     });
   })
 );

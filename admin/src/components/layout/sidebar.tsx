@@ -3,23 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/stores/auth-store';
 import {
   LayoutDashboard,
   Users,
-  Building2,
-  Award,
-  SmilePlus,
-  ThumbsUp,
-  Heart,
-  Trophy,
-  Brain,
-  Wallet,
   Gift,
-  Tag,
   ClipboardList,
-  FileText,
-  Settings,
+  BarChart3,
+  Megaphone,
+  Zap,
   ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
@@ -28,9 +19,8 @@ import { Button } from '@/components/ui/button';
 
 interface NavItem {
   label: string;
-  href: string;
-  icon: LucideIcon;
-  superAdminOnly?: boolean;
+  href:  string;
+  icon:  LucideIcon;
 }
 
 interface NavSection {
@@ -38,123 +28,111 @@ interface NavSection {
   items: NavItem[];
 }
 
-const NAV_SECTIONS: NavSection[] = [
+const NAV: NavSection[] = [
   {
     title: 'Main',
     items: [
-      { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-      { label: 'Users', href: '/users', icon: Users },
-      { label: 'Departments', href: '/departments', icon: Building2 },
+      { label: 'Dashboard',     href: '/',               icon: LayoutDashboard },
     ],
   },
   {
-    title: 'Analytics',
+    title: 'Manage',
     items: [
-      { label: 'Recognitions', href: '/recognitions', icon: Award },
-      { label: 'Mood & Happiness', href: '/mood', icon: SmilePlus },
+      { label: 'Employees',     href: '/employees',      icon: Users           },
+      { label: 'Rewards',       href: '/rewards',        icon: Gift            },
+      { label: 'Redemptions',   href: '/redemptions',    icon: ClipboardList   },
+      { label: 'Campaigns',     href: '/campaigns',      icon: Zap             },
     ],
   },
   {
-    title: 'Configuration',
+    title: 'Reporting',
     items: [
-      { label: 'Thumbs Up Types', href: '/gamification/thumbs-up-types', icon: ThumbsUp },
-      { label: 'Company Values', href: '/gamification/company-values', icon: Heart },
-      { label: 'Badges', href: '/gamification/badges', icon: Trophy },
-      { label: 'Skills', href: '/gamification/skills', icon: Brain },
-      { label: 'Budgets', href: '/gamification/budgets', icon: Wallet },
+      { label: 'Analytics',     href: '/analytics',      icon: BarChart3       },
     ],
   },
   {
-    title: 'Rewards',
+    title: 'Communication',
     items: [
-      { label: 'Reward Catalog', href: '/rewards', icon: Gift },
-      { label: 'Categories', href: '/rewards/categories', icon: Tag },
-      { label: 'Redemption Queue', href: '/rewards/redemptions', icon: ClipboardList },
-    ],
-  },
-  {
-    title: 'System',
-    items: [
-      { label: 'Audit Logs', href: '/audit-logs', icon: FileText, superAdminOnly: true },
-      { label: 'Settings', href: '/settings', icon: Settings, superAdminOnly: true },
+      { label: 'Notifications', href: '/notifications',  icon: Megaphone       },
     ],
   },
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
-  const isSuperAdmin = user?.role === 'super_admin';
+  const pathname    = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
       className={cn(
         'flex h-screen flex-col border-r bg-card transition-all duration-200',
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? 'w-16' : 'w-60',
       )}
     >
-      <div className="flex h-14 items-center justify-between border-b px-4">
+      {/* Logo */}
+      <div className="flex h-14 items-center justify-between border-b px-3">
         {!collapsed && (
-          <span className="text-lg font-bold tracking-tight">IndabaCares</span>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600">
+              <span className="text-xs font-bold text-white">IC</span>
+            </div>
+            <span className="text-sm font-bold tracking-tight">IndabaCares</span>
+          </div>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
-          onClick={() => setCollapsed(!collapsed)}
+          className="ml-auto h-8 w-8 shrink-0"
+          onClick={() => setCollapsed((c) => !c)}
         >
           <ChevronLeft
-            className={cn(
-              'h-4 w-4 transition-transform',
-              collapsed && 'rotate-180'
-            )}
+            className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')}
           />
         </Button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-4">
-        {NAV_SECTIONS.map((section) => {
-          const visibleItems = section.items.filter(
-            (item) => !item.superAdminOnly || isSuperAdmin
-          );
-          if (visibleItems.length === 0) return null;
+      {/* Navigation */}
+      <nav className="flex-1 space-y-5 overflow-y-auto px-2 py-4">
+        {NAV.map((section) => (
+          <div key={section.title}>
+            {!collapsed && (
+              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {section.title}
+              </p>
+            )}
+            {section.items.map((item) => {
+              const active =
+                item.href === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(item.href);
+              const Icon = item.icon;
 
-          return (
-            <div key={section.title} className="mb-6">
-              {!collapsed && (
-                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {section.title}
-                </p>
-              )}
-              {visibleItems.map((item) => {
-                const isActive =
-                  item.href === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(item.href);
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      'mb-0.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{item.label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
+
+      {!collapsed && (
+        <div className="border-t px-4 py-3">
+          <p className="text-[10px] text-muted-foreground">Admin Portal v1.0</p>
+        </div>
+      )}
     </aside>
   );
 }

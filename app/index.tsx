@@ -1,28 +1,27 @@
-import { Redirect } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
-import { useAuthStore } from '@/stores/auth-store';
+import { Redirect } from 'expo-router';
+import { useEmployee } from '@/providers/EmployeeContext';
 
+/**
+ * Root index — defers routing to AuthProvider.
+ *
+ * Shows a spinner while the employee session is being rehydrated from
+ * AsyncStorage. Once isLoaded is true, AuthProvider's useEffect fires and
+ * redirects to the correct route:
+ *   employee set  → /(tabs)
+ *   employee null → /(auth)/employee-auth
+ */
 export default function Index() {
-  const session    = useAuthStore((s) => s.session);
-  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const { isLoaded } = useEmployee();
 
-  if (!isHydrated) {
+  if (!isLoaded) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#CE21FB" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
+        <ActivityIndicator size="large" color="#7B1FA2" />
       </View>
     );
   }
 
-  if (!session) {
-    return <Redirect href="/(auth)/employee-auth" />;
-  }
-
-  const isLinked = !!session.user?.app_metadata?.company_id;
-
-  if (!isLinked) {
-    return <Redirect href="/(onboarding)/employee-code" />;
-  }
-
-  return <Redirect href="/(tabs)" />;
+  // AuthProvider handles the redirect once isLoaded; this is a safe fallback.
+  return <Redirect href="/(auth)/employee-auth" />;
 }

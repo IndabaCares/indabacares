@@ -1,125 +1,290 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRewardDetail, useRedeemReward } from '@/hooks/use-rewards';
-import { useAuthStore } from '@/stores/auth-store';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useRewardDetail, useEmployeePoints, useRedeemReward } from '@/hooks/use-rewards';
 import { RedeemConfirmation } from '@/components/rewards/RedeemConfirmation';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { formatDate } from '@/utils/format';
+
+// ─── Status badge colours ─────────────────────────────────────────────────────
+
+const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> = {
+  pending:   { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
+  approved:  { bg: '#dbeafe', text: '#1e40af', label: 'Approved' },
+  fulfilled: { bg: '#dcfce7', text: '#166534', label: 'Fulfilled' },
+  cancelled: { bg: '#f1f5f9', text: '#64748b', label: 'Cancelled' },
+};
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function RewardDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets  = useSafeAreaInsets();
   const [showConfirm, setShowConfirm] = useState(false);
-  const starsBalance = useAuthStore((s) => s.user?.starsBalance ?? 0);
+  const [successInfo, setSuccessInfo] = useState<{
+    redemptionId: string;
+    newBalance: number;
+  } | null>(null);
 
   const { data: reward, isLoading } = useRewardDetail(id);
-  const redeemReward = useRedeemReward();
+  const { data: points = 0 }        = useEmployeePoints();
+  const redeemMutation               = useRedeemReward();
 
   if (isLoading || !reward) {
     return (
       <View className="flex-1 bg-white p-4">
         <SkeletonCard />
+        <SkeletonCard />
       </View>
     );
   }
 
-  const outOfStock = reward.stock !== null && reward.stock <= 0;
-  const canAfford = starsBalance >= reward.star_cost;
+  const outOfStock = reward.stock <= 0;
+  const canAfford  = points >= reward.points_required;
 
   const handleRedeem = () => {
-    redeemReward.mutate(reward.id, {
-      onSuccess: () => setShowConfirm(false),
+    redeemMutation.mutate(reward.id, {
+      onSuccess: (result) => {
+        if (result.ok) {
+          setShowConfirm(false);
+          setSuccessInfo({
+            redemptionId: result.redemption_id!,
+            newBalance:   result.new_balance!,
+          });
+        }
+        // If not ok, result.error is shown in the RedeemConfirmation
+      },
     });
   };
 
-  if (showConfirm) {
+  // ── Success overlay ───────────────────────────────────────────────────────
+
+  if (successInfo) {
     return (
-      <View className="flex-1 justify-center bg-white">
-        <RedeemConfirmation
-          reward={reward}
-          onConfirm={handleRedeem}
-          onCancel={() => setShowConfirm(false)}
-          loading={redeemReward.isPending}
-        />
+      <View
+        className="flex-1 items-center justify-center bg-white px-8"
+        style={{ paddingBottom: insets.bottom }}
+      >
+        <View
+          className="mb-6 h-24 w-24 items-center justify-center rounded-full"
+          style={{ backgroundColor: '#f3e8ff' }}
+        >
+          <Ionicons name="checkmark-circle" size={56} color="#ED6813" />
+        </View>
+        <Text className="mb-2 text-2xl font-bold text-slate-900">Redeemed!</Text>
+        <Text className="mb-1 text-center text-base text-slate-600">
+          {reward.title}
+        </Text>
+        <Text className="mb-6 text-center text-sm text-slate-400">
+          Your new balance:{' '}
+          <Text className="font-bold text-slate-700">{successInfo.newBalance} pts</Text>
+        </Text>
+
+        <Pressable
+          onPress={() => router.push('/(tabs)/rewards' as any)}
+          className="w-full items-center rounded-2xl py-4 active:opacity-80"
+          style={{
+            backgroundColor: '#ED6813',
+            shadowColor: '#ED6813',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
+            elevation: 5,
+          }}
+        >
+          <Text className="text-base font-bold text-white">Back to Catalogue</Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      {reward.image_url ? (
-        <Image
-          source={{ uri: reward.image_url }}
-          className="h-64 w-full"
-          contentFit="cover"
-        />
-      ) : (
-        <View className="h-64 w-full items-center justify-center bg-slate-100">
-          <Ionicons name="gift" size={64} color="#94a3b8" />
-        </View>
-      )}
-
-      <View className="p-6">
-        <Text className="text-2xl font-bold text-slate-900">{reward.name}</Text>
-
-        <View className="mt-3 flex-row items-center">
-          <Ionicons name="star" size={24} color="#f59e0b" />
-          <Text className="ml-2 text-2xl font-bold text-warning-600">
-            {reward.star_cost}
-          </Text>
-          <Text className="ml-1 text-sm text-slate-400">stars</Text>
-        </View>
-
-        {(reward as any).category && (
-          <View className="mt-2 self-start rounded-full bg-slate-100 px-3 py-1">
-            <Text className="text-xs font-medium text-slate-500">
-              {(reward as any).category.name}
-            </Text>
+    <>
+      <ScrollView
+        className="flex-1 bg-white"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+      >
+        {/* Hero image */}
+        {reward.image_url ? (
+          <Image
+            source={{ uri: reward.image_url }}
+            className="h-64 w-full"
+            contentFit="cover"
+          />
+        ) : (
+          <View className="h-64 w-full items-center justify-center bg-slate-100">
+            <Ionicons name="gift" size={72} color="#cbd5e1" />
           </View>
         )}
 
-        {reward.description && (
-          <Text className="mt-4 text-base leading-6 text-slate-600">
-            {reward.description}
-          </Text>
-        )}
+        <View className="px-5 pt-5">
+          {/* Title */}
+          <Text className="text-2xl font-bold text-slate-900">{reward.title}</Text>
 
-        {/* Stock info */}
-        {reward.stock !== null && (
+          {/* Points cost */}
+          <View className="mt-3 flex-row items-center">
+            <View
+              className="flex-row items-center rounded-xl px-3 py-1.5"
+              style={{ backgroundColor: canAfford ? '#fef9c3' : '#fee2e2' }}
+            >
+              <Ionicons
+                name="flash"
+                size={18}
+                color={canAfford ? '#ca8a04' : '#ef4444'}
+              />
+              <Text
+                className="ml-1.5 text-lg font-bold"
+                style={{ color: canAfford ? '#92400e' : '#ef4444' }}
+              >
+                {reward.points_required} points
+              </Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          {reward.description && (
+            <Text className="mt-4 text-base leading-7 text-slate-600">
+              {reward.description}
+            </Text>
+          )}
+
+          {/* Stock status */}
           <View className="mt-4 flex-row items-center">
             <Ionicons
               name={outOfStock ? 'close-circle' : 'checkmark-circle'}
               size={18}
               color={outOfStock ? '#ef4444' : '#22c55e'}
             />
-            <Text className={`ml-1 text-sm ${outOfStock ? 'text-danger-500' : 'text-success-600'}`}>
+            <Text
+              className="ml-1.5 text-sm font-medium"
+              style={{ color: outOfStock ? '#ef4444' : '#16a34a' }}
+            >
               {outOfStock ? 'Out of stock' : `${reward.stock} remaining`}
             </Text>
           </View>
-        )}
 
-        {/* Balance info */}
-        <Card className="mt-6 flex-row items-center justify-between">
-          <Text className="text-sm text-slate-500">Your balance</Text>
-          <View className="flex-row items-center">
-            <Ionicons name="star" size={16} color="#f59e0b" />
-            <Text className="ml-1 text-base font-bold text-slate-800">
-              {starsBalance}
-            </Text>
+          {/* Balance card */}
+          <View className="mt-5 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+            <View className="flex-row items-center justify-between px-4 py-3">
+              <Text className="text-sm text-slate-500">Your balance</Text>
+              <View className="flex-row items-center">
+                <Ionicons name="flash" size={14} color="#f59e0b" />
+                <Text className="ml-1 text-sm font-bold text-slate-800">{points} pts</Text>
+              </View>
+            </View>
+            {!outOfStock && (
+              <>
+                <View className="h-px bg-slate-200" />
+                <View className="flex-row items-center justify-between px-4 py-3">
+                  <Text className="text-sm text-slate-500">After redemption</Text>
+                  <Text
+                    className="text-sm font-bold"
+                    style={{ color: canAfford ? '#16a34a' : '#ef4444' }}
+                  >
+                    {points - reward.points_required} pts
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
-        </Card>
 
-        <Button
-          title={outOfStock ? 'Out of Stock' : !canAfford ? 'Not Enough Stars' : 'Redeem Reward'}
+          {!canAfford && !outOfStock && (
+            <View className="mt-3 flex-row items-center rounded-xl bg-amber-50 px-4 py-3">
+              <Ionicons name="information-circle" size={16} color="#d97706" />
+              <Text className="ml-2 flex-1 text-sm text-amber-700">
+                You need {reward.points_required - points} more points.
+                Keep collecting recognitions!
+              </Text>
+            </View>
+          )}
+
+          <Text className="mt-4 text-xs text-slate-400">
+            Added {formatDate(reward.created_at)}
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Redeem CTA — fixed bottom */}
+      <View
+        className="absolute bottom-0 left-0 right-0 border-t border-slate-100 bg-white px-5"
+        style={{ paddingBottom: insets.bottom + 12, paddingTop: 12 }}
+      >
+        <Pressable
           onPress={() => setShowConfirm(true)}
           disabled={outOfStock || !canAfford}
-          size="lg"
-          className="mt-6"
-        />
+          className="items-center justify-center rounded-2xl py-4 active:opacity-80"
+          style={{
+            backgroundColor:
+              outOfStock || !canAfford ? '#e2e8f0' : '#ED6813',
+            shadowColor: '#ED6813',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: outOfStock || !canAfford ? 0 : 0.35,
+            shadowRadius: 10,
+            elevation: outOfStock || !canAfford ? 0 : 5,
+          }}
+        >
+          <Text
+            className="text-base font-bold"
+            style={{ color: outOfStock || !canAfford ? '#94a3b8' : '#fff' }}
+          >
+            {outOfStock
+              ? 'Out of Stock'
+              : !canAfford
+              ? `Need ${reward.points_required - points} more pts`
+              : 'Redeem Reward'}
+          </Text>
+        </Pressable>
       </View>
-    </ScrollView>
+
+      {/* Confirmation modal */}
+      <Modal
+        visible={showConfirm}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowConfirm(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/40"
+          onPress={() => setShowConfirm(false)}
+        />
+        <View
+          className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white"
+          style={{ paddingBottom: insets.bottom + 8 }}
+        >
+          {/* Handle */}
+          <View className="items-center pt-3 pb-1">
+            <View className="h-1 w-10 rounded-full bg-slate-200" />
+          </View>
+
+          <RedeemConfirmation
+            reward={reward}
+            pointsBalance={points}
+            onConfirm={handleRedeem}
+            onCancel={() => setShowConfirm(false)}
+            loading={redeemMutation.isPending}
+          />
+
+          {/* Show RPC error */}
+          {redeemMutation.isSuccess && !redeemMutation.data.ok && (
+            <View className="mx-5 mb-3 flex-row items-center rounded-xl bg-red-50 px-4 py-3">
+              <Ionicons name="alert-circle" size={16} color="#ef4444" />
+              <Text className="ml-2 flex-1 text-sm text-red-600">
+                {redeemMutation.data.error}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Modal>
+    </>
   );
 }

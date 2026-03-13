@@ -76,7 +76,7 @@ export default function RecognitionDetailScreen() {
           </View>
           <View
             className="items-center rounded-full px-3 py-1.5"
-            style={{ backgroundColor: (thumbsUp?.color || '#CE21FB') + '20' }}
+            style={{ backgroundColor: (thumbsUp?.color || '#ED6813') + '20' }}
           >
             <Text className="text-sm">
               {thumbsUp?.icon} {thumbsUp?.name}

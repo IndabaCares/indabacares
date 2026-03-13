@@ -1,18 +1,23 @@
 /**
  * Audit logging helper for Edge Functions.
- * Every admin or sensitive action is recorded immutably.
+ * Every sensitive action is recorded immutably in public.audit_logs.
+ *
+ * NOTE: audit_logs.company_id column still exists (FK to companies was dropped
+ * by CASCADE in migration 030 but the column itself was not removed).
+ * hotel is stored in company_id for now — a future migration should rename
+ * the column or add a dedicated hotel column.
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AuditEntry {
-  companyId: string;
-  actorId: string | null;
-  action: string;          // e.g. 'user.invite', 'user.role_change', 'user.deactivate'
-  targetType?: string;     // e.g. 'profile', 'reward'
-  targetId?: string;
-  metadata?: Record<string, unknown>;  // before/after snapshots
-  req?: Request;           // to extract IP and user-agent
+  hotel:       string;        // tenant identifier (stored in company_id column)
+  actorId:     string | null; // employee_id of the acting employee
+  action:      string;        // e.g. 'redemption.cancel', 'recognition.boost'
+  targetType?: string;        // e.g. 'redemption', 'recognition'
+  targetId?:   string;
+  metadata?:   Record<string, unknown>;
+  req?:        Request;       // to extract IP and user-agent
 }
 
 export async function writeAuditLog(
@@ -25,18 +30,18 @@ export async function writeAuditLog(
   const userAgent = entry.req?.headers.get("user-agent") || null;
 
   const { error } = await adminClient.from("audit_logs").insert({
-    company_id: entry.companyId,
-    actor_id: entry.actorId,
-    action: entry.action,
-    target_type: entry.targetType,
-    target_id: entry.targetId,
-    metadata: entry.metadata || {},
-    ip_address: ipAddress,
-    user_agent: userAgent,
+    company_id:  entry.hotel,       // hotel stored here until column is renamed
+    actor_id:    entry.actorId,
+    action:      entry.action,
+    target_type: entry.targetType  ?? null,
+    target_id:   entry.targetId    ?? null,
+    metadata:    entry.metadata    ?? {},
+    ip_address:  ipAddress,
+    user_agent:  userAgent,
   });
 
   if (error) {
-    // Log but don't throw — audit failures should not break business logic
+    // Non-fatal — audit failure must not break business logic
     console.error("Audit log write failed:", error);
   }
 }

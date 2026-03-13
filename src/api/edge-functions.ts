@@ -1,13 +1,17 @@
 /**
- * Typed wrappers for all Supabase Edge Functions.
- * These go through supabase.functions.invoke() which attaches the auth token.
+ * Typed wrappers for Supabase Edge Functions.
+ *
+ * NOTE: All Edge Functions listed here use `withAuth` middleware which validates
+ * a Supabase Auth JWT. Employee auth users have no Supabase Auth session, so
+ * these calls will return 401 until the Edge Functions are rewritten to accept
+ * the x-session-token header instead.
+ *
+ * TODO: Migrate each Edge Function to a new `withEmployeeAuth` middleware that
+ * validates x-session-token against employee_active_sessions.
  */
 
 import { supabase } from '@/lib/supabase';
 import type {
-  AuthMeResponse,
-  ClaimEmployeeCodeRequest,
-  ClaimEmployeeCodeResponse,
   SendRecognitionRequest,
   SendRecognitionResponse,
   SubmitMoodRequest,
@@ -41,10 +45,9 @@ async function invoke<T>(
   });
 
   if (error) {
-    // Try to extract the real error message from the response context
     const context = (error as any).context;
     let message = error.message || 'Edge function call failed';
-    let status = (error as { status?: number }).status || 500;
+    const status = (error as { status?: number }).status || 500;
 
     if (context && typeof context.json === 'function') {
       try {
@@ -56,7 +59,6 @@ async function invoke<T>(
     throw new EdgeFunctionCallError(message, status);
   }
 
-  // If data contains an error field, it's a structured error from the function
   if (data && typeof data === 'object' && 'error' in data) {
     const errData = data as EdgeFunctionError;
     throw new EdgeFunctionCallError(errData.error, 400);
@@ -65,21 +67,7 @@ async function invoke<T>(
   return data as T;
 }
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
-
-export async function authMe(): Promise<AuthMeResponse> {
-  return invoke<AuthMeResponse>('auth-me', undefined, 'GET');
-}
-
-// ─── Onboarding ──────────────────────────────────────────────────────────────
-
-export async function claimEmployeeCode(
-  body: ClaimEmployeeCodeRequest
-): Promise<ClaimEmployeeCodeResponse> {
-  return invoke<ClaimEmployeeCodeResponse>('claim-employee-code', body);
-}
-
-// ─── Recognition ────────────────────────────────────────────────────────────
+// ─── Recognition ─────────────────────────────────────────────────────────────
 
 export async function sendRecognition(
   body: SendRecognitionRequest
@@ -93,13 +81,13 @@ export async function boostRecognition(
   return invoke<BoostRecognitionResponse>('boost-recognition', body);
 }
 
-// ─── Mood ────────────────────────────────────────────────────────────────────
+// ─── Mood ─────────────────────────────────────────────────────────────────────
 
 export async function submitMood(body: SubmitMoodRequest): Promise<SubmitMoodResponse> {
   return invoke<SubmitMoodResponse>('submit-mood', body);
 }
 
-// ─── Rewards ────────────────────────────────────────────────────────────────
+// ─── Rewards ──────────────────────────────────────────────────────────────────
 
 export async function redeemReward(
   body: RedeemRewardRequest

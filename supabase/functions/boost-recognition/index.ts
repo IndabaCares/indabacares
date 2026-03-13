@@ -1,177 +1,113 @@
 /**
  * Edge Function: boost-recognition
  *
- * Managers/admins boost a recognition, giving it:
- *   - Visual prominence in the feed (highlighted, pinned)
- *   - Bonus stars (+2) to recipients
- *   - Bonus points (+25) to recipients
+ * Awards bonus points to the receiver of a recognition post.
+ * Intended for use by managers/admins via the admin panel (service_role).
+ * When called from the mobile app, any authenticated employee may boost —
+ * role-based gating should be enforced at the admin panel layer until a
+ * role column is added to the employees table.
+ *
+ * What it does:
+ *   1. Verifies the recognition belongs to the caller's hotel
+ *   2. Rejects if caller is the sender (cannot boost own recognition)
+ *   3. Awards BOOST_BONUS_POINTS to the receiver via admin_grant_points()
+ *   4. Sends a notification to the receiver
+ *
+ * NOTE: The recognitions table (migration 018) does not have is_boosted /
+ * boosted_by / boosted_at columns.  A future schema migration should add
+ * them to prevent a recognition being boosted more than once.
  *
  * Security:
- *   - Manager role or above required
- *   - Cannot boost own recognitions (as sender)
- *   - Cannot boost already-boosted recognitions
- *   - Only recognitions within own company
+ *   - Employee session required (withEmployeeAuth)
+ *   - hotel sourced from session — recognition must be in the same hotel
+ *   - Sender cannot boost their own recognition
  */
 
 import {
-  withAuth,
+  withEmployeeAuth,
   jsonResponse,
   errorResponse,
-  type AuthContext,
+  type EmployeeAuthContext,
 } from "../_shared/auth-middleware.ts";
-import { notifyMany } from "../_shared/notifications.ts";
+import { notify } from "../_shared/notifications.ts";
 import { enforceRateLimit } from "../_shared/rate-limit.ts";
 
 interface BoostRequest {
   recognitionId: string;
 }
 
-const BOOST_BONUS_STARS = 2;
 const BOOST_BONUS_POINTS = 25;
 
 Deno.serve(
-  withAuth(
-    async (req: Request, ctx: AuthContext): Promise<Response> => {
-      if (req.method !== "POST") {
-        return errorResponse("Method not allowed", 405);
-      }
+  withEmployeeAuth(async (req: Request, ctx: EmployeeAuthContext): Promise<Response> => {
+    if (req.method !== "POST") {
+      return errorResponse("Method not allowed", 405);
+    }
 
-      const { user, adminClient } = ctx;
+    const { employee, adminClient } = ctx;
 
-      // ── Rate limit: max 20 boosts per manager per hour ───────
-      const rateLimited = await enforceRateLimit(adminClient, {
-        identifier: user.id,
-        action: "boost",
-        maxAttempts: 20,
-        windowMinutes: 60,
-      });
-      if (rateLimited) return rateLimited;
+    // ── Rate limit: max 20 boosts per employee per hour ──────────────
+    const rateLimited = await enforceRateLimit(adminClient, {
+      identifier:    employee.employee_id,
+      action:        "boost",
+      maxAttempts:   20,
+      windowMinutes: 60,
+    });
+    if (rateLimited) return rateLimited;
 
-      const body: BoostRequest = await req.json();
+    const body: BoostRequest = await req.json();
 
-      if (!body.recognitionId) {
-        return errorResponse("recognitionId is required");
-      }
+    if (!body.recognitionId) {
+      return errorResponse("recognitionId is required");
+    }
 
-      // ── Fetch recognition ──────────────────────────────────────
-      const { data: recognition, error: fetchError } = await adminClient
-        .from("recognitions")
-        .select(`
-          id, company_id, sender_id, is_boosted, message,
-          thumbs_up_type:thumbs_up_types ( name ),
-          recipients:recognition_recipients ( recipient_id )
-        `)
-        .eq("id", body.recognitionId)
-        .eq("company_id", user.companyId)
-        .single();
+    // ── Fetch the recognition — hotel-scoped ─────────────────────────
+    const { data: recognition, error: fetchError } = await adminClient
+      .from("recognitions")
+      .select("id, sender_id, receiver_id, message, badge")
+      .eq("id", body.recognitionId)
+      .eq("hotel", employee.hotel)
+      .single();
 
-      if (fetchError || !recognition) {
-        return errorResponse("Recognition not found", 404);
-      }
+    if (fetchError || !recognition) {
+      return errorResponse("Recognition not found", 404);
+    }
 
-      if (recognition.is_boosted) {
-        return errorResponse("This recognition has already been boosted", 409);
-      }
+    if (recognition.sender_id === employee.employee_id) {
+      return errorResponse("You cannot boost your own recognition");
+    }
 
-      if (recognition.sender_id === user.id) {
-        return errorResponse("You cannot boost your own recognition");
-      }
+    // ── Award bonus points to the receiver ───────────────────────────
+    // admin_grant_points() handles the points_balance update and
+    // appends a row to points_ledger (source = 'admin_bonus').
+    const { error: pointsError } = await adminClient.rpc("admin_grant_points", {
+      p_employee_id: recognition.receiver_id,
+      p_points:      BOOST_BONUS_POINTS,
+      p_source:      "admin_bonus",
+    });
 
-      // ── Update recognition ─────────────────────────────────────
-      const { error: updateError } = await adminClient
-        .from("recognitions")
-        .update({
-          is_boosted: true,
-          boosted_by: user.id,
-          boosted_at: new Date().toISOString(),
-        })
-        .eq("id", body.recognitionId);
+    if (pointsError) {
+      console.error("admin_grant_points failed:", pointsError);
+      return errorResponse("Failed to award boost points. Please try again.", 500);
+    }
 
-      if (updateError) {
-        return errorResponse("Failed to boost recognition", 500);
-      }
+    // ── Notify the receiver ──────────────────────────────────────────
+    await notify(adminClient, {
+      employeeId:    recognition.receiver_id,
+      hotel:         employee.hotel,
+      type:          "recognition_received",
+      title:         `${employee.full_name} boosted your recognition!`,
+      message:       `You earned +${BOOST_BONUS_POINTS} bonus points for your "${recognition.badge}" recognition.`,
+      referenceType: "recognition",
+      referenceId:   body.recognitionId,
+    });
 
-      // ── Award bonus stars + points to each recipient ───────────
-      const recipientIds = recognition.recipients.map(
-        (r: { recipient_id: string }) => r.recipient_id
-      );
-
-      for (const recipientId of recipientIds) {
-        // Fetch current balances with lock
-        const { data: recipient } = await adminClient
-          .from("profiles")
-          .select("points_balance, stars_balance, company_id, full_name")
-          .eq("id", recipientId)
-          .single();
-
-        if (!recipient) continue;
-
-        // Stars bonus
-        await adminClient
-          .from("profiles")
-          .update({
-            stars_balance: recipient.stars_balance + BOOST_BONUS_STARS,
-            points_balance: recipient.points_balance + BOOST_BONUS_POINTS,
-          })
-          .eq("id", recipientId);
-
-        // Star transaction
-        await adminClient.from("star_transactions").insert({
-          company_id: user.companyId,
-          user_id: recipientId,
-          type: "boost_bonus",
-          amount: BOOST_BONUS_STARS,
-          balance_after: recipient.stars_balance + BOOST_BONUS_STARS,
-          reference_type: "recognition",
-          reference_id: body.recognitionId,
-          description: `Manager boost bonus from ${user.email}`,
-          idempotency_key: `boost:star:${body.recognitionId}:${recipientId}`,
-        });
-
-        // Point transaction
-        await adminClient.from("point_transactions").insert({
-          company_id: user.companyId,
-          user_id: recipientId,
-          type: "boost_bonus",
-          amount: BOOST_BONUS_POINTS,
-          balance_after: recipient.points_balance + BOOST_BONUS_POINTS,
-          reference_type: "recognition",
-          reference_id: body.recognitionId,
-          description: `Manager boost bonus from ${user.email}`,
-          idempotency_key: `boost:pts:${body.recognitionId}:${recipientId}`,
-        });
-      }
-
-      // ── Notifications ──────────────────────────────────────────
-      const { data: booster } = await adminClient
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
-
-      const boosterName = booster?.full_name || user.email;
-
-      const notifications = recipientIds.map((rid: string) => ({
-        companyId: user.companyId,
-        userId: rid,
-        type: "recognition_boosted" as const,
-        title: `${boosterName} boosted your recognition!`,
-        body: `You earned +${BOOST_BONUS_STARS} bonus stars and +${BOOST_BONUS_POINTS} bonus points`,
-        referenceType: "recognition",
-        referenceId: body.recognitionId,
-      }));
-
-      await notifyMany(adminClient, notifications);
-
-      return jsonResponse({
-        recognitionId: body.recognitionId,
-        boostedBy: user.id,
-        recipientsAwarded: recipientIds.length,
-        bonusStarsEach: BOOST_BONUS_STARS,
-        bonusPointsEach: BOOST_BONUS_POINTS,
-        message: "Recognition boosted!",
-      });
-    },
-    { requiredRole: "manager" }
-  )
+    return jsonResponse({
+      recognitionId: body.recognitionId,
+      boostedBy:     employee.employee_id,
+      receiverId:    recognition.receiver_id,
+      bonusPoints:   BOOST_BONUS_POINTS,
+      message:       "Recognition boosted!",
+    });
+  })
 );

@@ -75,8 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_employee
   ON public.employee_active_sessions (employee_id);
 
 CREATE INDEX IF NOT EXISTS idx_sessions_expires
-  ON public.employee_active_sessions (expires_at)
-  WHERE expires_at > now();
+  ON public.employee_active_sessions (expires_at);
 
 -- No RLS on this table — it is only ever accessed via SECURITY DEFINER functions.
 -- Direct client access is blocked (anon and authenticated have no policies).

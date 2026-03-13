@@ -1,60 +1,42 @@
 /**
  * Auth middleware for Edge Functions.
  *
- * Provides:
- *   - JWT validation and user extraction
- *   - Role-based access control (RBAC)
- *   - Tenant isolation verification
- *   - Account status enforcement
- *   - CORS handling
- *   - Standardized error responses
+ * Replaces the old JWT-based withAuth middleware with withEmployeeAuth,
+ * which validates the x-session-token header against employee_active_sessions.
+ *
+ * Auth model:
+ *   - No Supabase Auth JWT — employees authenticate via employee_code + password
+ *   - Sessions are stored in employee_active_sessions (migration 032)
+ *   - x-session-token header carries the session UUID on every request
+ *   - validate_session() RPC resolves the employee and checks expiry
+ *   - All DB writes use adminClient (service_role) — RLS is enforced at the
+ *     DB layer via current_employee_hotel() / current_employee_id()
  */
 
-import { createUserClient, createAdminClient, AuthError } from "./supabase-client.ts";
+import { createAdminClient } from "./supabase-client.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type AppRole = "employee" | "manager" | "admin" | "super_admin";
-
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  companyId: string;
-  role: AppRole;
+export interface AuthenticatedEmployee {
+  employee_id:   string;
+  full_name:     string;
+  employee_code: string;
+  hotel:         string;
 }
 
-export interface AuthContext {
-  user: AuthenticatedUser;
-  userClient: SupabaseClient;   // RLS-scoped to this user
-  adminClient: SupabaseClient;  // service_role for server-side writes
+export interface EmployeeAuthContext {
+  employee:    AuthenticatedEmployee;
+  adminClient: SupabaseClient;  // service_role — bypasses RLS for server-side ops
 }
 
-interface HandlerOptions {
-  /** Minimum role required. Defaults to 'employee' (any authenticated user). */
-  requiredRole?: AppRole;
-  /** Allow unauthenticated access (for public endpoints like signup). */
-  allowAnonymous?: boolean;
-}
-
-// ─── Role Hierarchy ──────────────────────────────────────────────────────────
-
-const ROLE_LEVEL: Record<AppRole, number> = {
-  employee: 0,
-  manager: 1,
-  admin: 2,
-  super_admin: 3,
-};
-
-export function hasMinimumRole(userRole: AppRole, requiredRole: AppRole): boolean {
-  return ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole];
-}
-
-// ─── CORS ────────────────────────────────────────────────────────────────────
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+//
+// x-session-token must be listed here so the browser's preflight check passes.
 
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 
@@ -62,130 +44,97 @@ function corsResponse(): Response {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-// ─── Error Response ──────────────────────────────────────────────────────────
+// ─── Response helpers ─────────────────────────────────────────────────────────
 
-export function errorResponse(message: string, status: number = 400): Response {
+export function errorResponse(message: string, status = 400): Response {
   return new Response(
     JSON.stringify({ error: message }),
-    {
-      status,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    }
+    { status, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
   );
 }
 
-export function jsonResponse(data: unknown, status: number = 200): Response {
+export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(
     JSON.stringify(data),
-    {
-      status,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    }
+    { status, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
   );
 }
 
-// ─── Core Middleware ─────────────────────────────────────────────────────────
+// ─── Core middleware ──────────────────────────────────────────────────────────
 
 /**
- * Wraps an Edge Function handler with authentication, authorization,
- * CORS handling, and error handling.
+ * Wraps an Edge Function handler with employee session authentication,
+ * CORS handling, and top-level error catching.
  *
  * Usage:
- *   Deno.serve(withAuth(async (req, ctx) => {
- *     const { user, adminClient } = ctx;
+ *   Deno.serve(withEmployeeAuth(async (req, ctx) => {
+ *     const { employee, adminClient } = ctx;
  *     // ... business logic ...
  *     return jsonResponse({ ok: true });
- *   }, { requiredRole: 'admin' }));
+ *   }));
+ *
+ * Rejects with 401 when:
+ *   - x-session-token header is missing
+ *   - Token is not found in employee_active_sessions
+ *   - Token has expired
+ *   - The bound employee account is inactive
  */
-export function withAuth(
-  handler: (req: Request, ctx: AuthContext) => Promise<Response>,
-  options: HandlerOptions = {}
+export function withEmployeeAuth(
+  handler: (req: Request, ctx: EmployeeAuthContext) => Promise<Response>
 ): (req: Request) => Promise<Response> {
-  const { requiredRole = "employee", allowAnonymous = false } = options;
 
   return async (req: Request): Promise<Response> => {
-    // Handle CORS preflight
+    // ── CORS preflight ────────────────────────────────────────────────────
     if (req.method === "OPTIONS") {
       return corsResponse();
     }
 
     try {
-      // ── 1. Extract and validate JWT ──────────────────────────────────
-      const authHeader = req.headers.get("Authorization");
+      // ── 1. Extract session token ──────────────────────────────────────
+      const sessionToken = req.headers.get("x-session-token");
 
-      if (!authHeader && !allowAnonymous) {
-        return errorResponse("Missing Authorization header", 401);
+      if (!sessionToken) {
+        return errorResponse("Missing x-session-token header", 401);
       }
 
-      if (!authHeader && allowAnonymous) {
-        // Anonymous path: only adminClient is available
-        const adminClient = createAdminClient();
-        const ctx: AuthContext = {
-          user: { id: "", email: "", companyId: "", role: "employee" },
-          userClient: adminClient,
-          adminClient,
-        };
-        return await handler(req, ctx);
+      // ── 2. Validate UUID format (fast fail before DB round-trip) ──────
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(sessionToken)) {
+        return errorResponse("Invalid session token format", 401);
       }
 
-      // ── 2. Get user from JWT ─────────────────────────────────────────
-      const userClient = createUserClient(req);
-      const { data: { user: supabaseUser }, error: authError } =
-        await userClient.auth.getUser();
-
-      if (authError || !supabaseUser) {
-        return errorResponse("Invalid or expired token", 401);
-      }
-
-      // ── 3. Extract claims from app_metadata ──────────────────────────
-      const appMeta = supabaseUser.app_metadata || {};
-      const companyId = appMeta.company_id as string;
-      const role = (appMeta.role as AppRole) || "employee";
-
-      if (!companyId) {
-        return errorResponse("User has no company assignment. Contact your administrator.", 403);
-      }
-
-      // ── 4. Check role authorization ──────────────────────────────────
-      if (!hasMinimumRole(role, requiredRole)) {
-        return errorResponse(
-          `Insufficient permissions. Required: ${requiredRole}, current: ${role}`,
-          403
-        );
-      }
-
-      // ── 5. Verify account is active ──────────────────────────────────
+      // ── 3. Validate against employee_active_sessions ──────────────────
+      //    validate_session() checks expiry and employee.status = 'active'.
+      //    It JOINs to employees so hotel is resolved in one query.
       const adminClient = createAdminClient();
-      const { data: profile, error: profileError } = await adminClient
-        .from("profiles")
-        .select("is_active")
-        .eq("id", supabaseUser.id)
-        .single();
 
-      if (profileError || !profile) {
-        return errorResponse("Profile not found", 404);
+      const { data: session, error: rpcError } = await adminClient.rpc(
+        "validate_session",
+        { p_session_token: sessionToken }
+      );
+
+      if (rpcError) {
+        console.error("validate_session RPC error:", rpcError);
+        return errorResponse("Authentication failed", 500);
       }
 
-      if (!profile.is_active) {
-        return errorResponse("Account is deactivated. Contact your administrator.", 403);
+      if (!session?.ok) {
+        return errorResponse(session?.error ?? "Session expired or invalid", 401);
       }
 
-      // ── 6. Build context and call handler ────────────────────────────
-      const user: AuthenticatedUser = {
-        id: supabaseUser.id,
-        email: supabaseUser.email!,
-        companyId,
-        role,
+      // ── 4. Build employee context and invoke handler ──────────────────
+      const employee: AuthenticatedEmployee = {
+        employee_id:   session.employee_id,
+        full_name:     session.full_name,
+        employee_code: session.employee_code,
+        hotel:         session.hotel,
       };
 
-      const ctx: AuthContext = { user, userClient, adminClient };
+      return await handler(req, { employee, adminClient });
 
-      return await handler(req, ctx);
     } catch (err) {
-      if (err instanceof AuthError) {
-        return errorResponse(err.message, err.status);
-      }
-      console.error("Unhandled error:", err);
+      console.error("Unhandled error in withEmployeeAuth:", err);
       return errorResponse("Internal server error", 500);
     }
   };

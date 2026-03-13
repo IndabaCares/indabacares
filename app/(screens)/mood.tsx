@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubmitMood, useMoodHistory } from '@/hooks/use-mood';
-import { useAuthStore } from '@/stores/auth-store';
 import { MOOD_MAP, type MoodValue } from '@/lib/constants';
 import { Button } from '@/components/ui/Button';
 import { TextInput } from '@/components/ui/TextInput';
@@ -11,12 +10,14 @@ import { formatDate } from '@/utils/format';
 
 export default function MoodScreen() {
   const insets = useSafeAreaInsets();
-  const moodSubmittedToday = useAuthStore((s) => s.moodSubmittedToday);
   const [selectedMood, setSelectedMood] = useState<MoodValue | null>(null);
   const [note, setNote] = useState('');
 
   const submitMood = useSubmitMood();
   const { data: history = [] } = useMoodHistory();
+
+  const today = new Date().toISOString().split('T')[0];
+  const moodSubmittedToday = history.some((e: any) => e.entry_date === today);
 
   const handleSubmit = () => {
     if (!selectedMood) return;

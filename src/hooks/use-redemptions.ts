@@ -1,42 +1,60 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { redemptionsQuery } from '@/api/queries';
-import { cancelRedemption } from '@/api/edge-functions';
-import { QUERY_KEYS } from '@/lib/constants';
+import {
+  getRedemptions,
+  approveRedemption,
+  rejectRedemption,
+  fulfillRedemption,
+} from '@/api/reward-service';
+import { REWARD_QUERY_KEYS } from '@/hooks/use-rewards';
 import { useEmployee } from '@/providers/EmployeeContext';
-import { useAuthStore } from '@/stores/auth-store';
-import { useUIStore } from '@/stores/ui-store';
+
+// ─── Employee hooks ───────────────────────────────────────────────────────────
 
 export function useRedemptions() {
   const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: [...QUERY_KEYS.redemptions, employee?.employee_id],
-    queryFn: async () => {
-      if (!employee) return [];
-      const { data, error } = await redemptionsQuery(employee.employee_id);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!employee,
+    queryKey: ['redemptions', employee?.employee_id],
+    queryFn:  () => getRedemptions(employee!.employee_id),
+    enabled:  !!employee,
     staleTime: 2 * 60 * 1000,
   });
 }
 
-export function useCancelRedemption() {
+// ─── Admin hooks ──────────────────────────────────────────────────────────────
+
+function useAdminMutation(
+  fn: (id: string, extra?: string) => Promise<{ ok: boolean; error?: string }>,
+) {
   const queryClient = useQueryClient();
-  const updateBalances = useAuthStore((s) => s.updateBalances);
-  const showToast = useUIStore((s) => s.showToast);
+  const { employee } = useEmployee();
 
   return useMutation({
-    mutationFn: (redemptionId: string) => cancelRedemption({ redemptionId }),
-    onSuccess: (data) => {
-      updateBalances({ starsBalance: data.starsBalance });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.redemptions });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
-      showToast({ type: 'success', message: data.message });
-    },
-    onError: (error: Error) => {
-      showToast({ type: 'error', message: error.message });
+    mutationFn: ({ redemptionId, reason }: { redemptionId: string; reason?: string }) =>
+      fn(redemptionId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['redemptions'] });
+      if (employee) {
+        // Balance may have changed on reject
+        queryClient.invalidateQueries({
+          queryKey: REWARD_QUERY_KEYS.points(employee.employee_id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: REWARD_QUERY_KEYS.rewards(employee.hotel),
+        });
+      }
     },
   });
+}
+
+export function useApproveRedemption() {
+  return useAdminMutation((id) => approveRedemption(id));
+}
+
+export function useRejectRedemption() {
+  return useAdminMutation((id, reason) => rejectRedemption(id, reason));
+}
+
+export function useFulfillRedemption() {
+  return useAdminMutation((id) => fulfillRedemption(id));
 }

@@ -3,98 +3,122 @@ import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { recognitionDetailQuery } from '@/api/queries';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useUIStore } from '@/stores/ui-store';
 import { QUERY_KEYS } from '@/lib/constants';
 import { notificationHaptic } from '@/lib/haptics';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
- * Global realtime subscriptions.
+ * Global realtime subscriptions — scoped to the employee's hotel.
  * Mounted once in RealtimeProvider.
  *
  * Channels:
- * 1. feed-realtime      — new recognitions → prepend to cache + banner
- * 2. notifications-rt   — new notifications → toast + badge + haptic
- * 3. leaderboard-rt     — leaderboard changes → invalidate queries
+ *   feed-realtime        — INSERT on recognitions (hotel)   → prepend to feed cache
+ *   notifications-rt     — INSERT on notifications (employee_id) → toast + badge count
+ *   leaderboard-rt       — INSERT on points_ledger (hotel)  → invalidate leaderboard
  *
- * Also tracks connection status for reconnection UI.
+ * Guard: requires a valid EmployeeContext session.
+ * All channel filters use values sourced from the validated session —
+ * never from untrusted client input.
  */
 export function useGlobalRealtime() {
-  const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
-  const company = useAuthStore((s) => s.company);
-  const incrementUnread = useAuthStore((s) => s.incrementUnread);
+  const queryClient           = useQueryClient();
+  const { employee }          = useEmployee();
   const incrementNewFeedItems = useUIStore((s) => s.incrementNewFeedItems);
-  const showToast = useUIStore((s) => s.showToast);
-  const setRealtimeStatus = useUIStore((s) => s.setRealtimeStatus);
+  const showToast             = useUIStore((s) => s.showToast);
+  const setRealtimeStatus     = useUIStore((s) => s.setRealtimeStatus);
+
+  // Ref so the disconnect timer can be cleared correctly across re-renders
+  // and inside the status callback without stale-closure issues.
+  const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user || !company) return;
+    // ── Guard ────────────────────────────────────────────────────────────
+    if (!employee) return;
 
-    let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    const { hotel, employee_id } = employee;
 
-    // ── Channel 1: Feed (new recognitions) ────────────────────────────────
+    // ── Channel 1: Feed (new recognitions in this hotel) ─────────────────
     const feedChannel = supabase
       .channel('feed-realtime')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event:  'INSERT',
           schema: 'public',
-          table: 'recognitions',
-          filter: `company_id=eq.${company.id}`,
+          table:  'recognitions',
+          filter: `hotel=eq.${hotel}`,
         },
         async (payload) => {
-          // Always increment the "new items" counter for the banner
-          if (payload.new.sender_id !== user.id) {
-            incrementNewFeedItems();
-          }
+          // Ignore own sends — already in cache from the optimistic update
+          if (payload.new.sender_id === employee_id) return;
 
-          // Prepend the full recognition to feed cache for instant display
-          if (payload.new.sender_id !== user.id) {
-            try {
-              const { data } = await recognitionDetailQuery(payload.new.id);
-              if (data) {
-                queryClient.setQueryData(QUERY_KEYS.feed, (old: any) => {
-                  if (!old?.pages?.[0]) return old;
-                  return {
-                    ...old,
-                    pages: [[data, ...old.pages[0]], ...old.pages.slice(1)],
-                  };
-                });
-              }
-            } catch {
-              // Fallback: just show banner, user can pull to refresh
+          incrementNewFeedItems();
+
+          try {
+            const { data } = await recognitionDetailQuery(payload.new.id);
+            if (data) {
+              queryClient.setQueryData(QUERY_KEYS.feed, (old: any) => {
+                if (!old?.pages?.[0]) return old;
+                return {
+                  ...old,
+                  pages: [[data, ...old.pages[0]], ...old.pages.slice(1)],
+                };
+              });
             }
+          } catch {
+            // Non-fatal: the "new items" banner is already shown;
+            // the user can pull-to-refresh to load the post.
           }
         }
       )
       .subscribe((status) => {
-        handleChannelStatus(status, setRealtimeStatus, disconnectTimer, queryClient);
+        switch (status) {
+          case 'SUBSCRIBED':
+            setRealtimeStatus('connected');
+            if (disconnectTimerRef.current) {
+              clearTimeout(disconnectTimerRef.current);
+              disconnectTimerRef.current = null;
+            }
+            // Refresh stale data that may have arrived while disconnected
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.feed });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
+            queryClient.invalidateQueries({ queryKey: ['leaderboard'], exact: false });
+            break;
+
+          case 'CHANNEL_ERROR':
+          case 'TIMED_OUT':
+            setRealtimeStatus('reconnecting');
+            // Mark as fully disconnected after 30 s if no reconnect
+            disconnectTimerRef.current = setTimeout(
+              () => setRealtimeStatus('disconnected'),
+              30_000
+            );
+            break;
+
+          case 'CLOSED':
+            setRealtimeStatus('disconnected');
+            break;
+        }
       });
 
-    // ── Channel 2: Notifications ──────────────────────────────────────────
+    // ── Channel 2: Notifications for this employee ────────────────────────
+    // Filtered by employee_id so the client only receives its own rows.
+    // The notifications_own_select RLS policy enforces this at the DB layer too.
     const notifChannel = supabase
       .channel('notifications-realtime')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event:  'INSERT',
           schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          table:  'notifications',
+          filter: `employee_id=eq.${employee_id}`,
         },
         (payload) => {
-          incrementUnread();
-          showToast({
-            type: 'info',
-            message: payload.new.title,
-            duration: 4000,
-          });
           queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
-
-          // Haptic feedback when app is active
+          showToast({ type: 'info', message: payload.new.title, duration: 4000 });
           if (AppState.currentState === 'active') {
             notificationHaptic();
           }
@@ -102,104 +126,117 @@ export function useGlobalRealtime() {
       )
       .subscribe();
 
-    // ── Channel 3: Leaderboard ────────────────────────────────────────────
+    // ── Channel 3: Leaderboard (points changes in this hotel) ─────────────
+    // Listens to points_ledger INSERTs rather than leaderboard_cache
+    // (leaderboard_cache was dropped in migration 030).
+    // Any point award in the hotel may shift rankings — invalidate the
+    // leaderboard query family so the next focus re-fetches.
     const leaderboardChannel = supabase
       .channel('leaderboard-realtime')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event:  'INSERT',
           schema: 'public',
-          table: 'leaderboard_cache',
-          filter: `company_id=eq.${company.id}`,
+          table:  'points_ledger',
+          filter: `hotel=eq.${hotel}`,
         },
         () => {
-          queryClient.invalidateQueries({
-            queryKey: ['leaderboard'],
-            exact: false,
-          });
+          queryClient.invalidateQueries({ queryKey: ['leaderboard'], exact: false });
         }
       )
       .subscribe();
 
     return () => {
-      if (disconnectTimer) clearTimeout(disconnectTimer);
+      if (disconnectTimerRef.current) {
+        clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
       supabase.removeChannel(feedChannel);
       supabase.removeChannel(notifChannel);
       supabase.removeChannel(leaderboardChannel);
     };
-  }, [user?.id, company?.id]);
+  }, [employee?.employee_id, employee?.hotel]);
 }
 
 /**
- * Per-recognition realtime subscriptions (reactions + comments + typing).
- * Mounted on recognition detail screen.
+ * Per-recognition realtime subscriptions (likes + comments + typing indicator).
+ * Mounted on the recognition detail screen.
+ *
+ * Table references updated for migration 018:
+ *   reactions  (dropped) → recognition_likes
+ *   comments   (dropped) → recognition_comments
  */
 export function useRecognitionRealtime(recognitionId: string) {
-  const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
+  const queryClient  = useQueryClient();
+  const { employee } = useEmployee();
+
   const [typingUsers, setTypingUsers] = useState<
     Array<{ userId: string; fullName: string }>
   >([]);
+
   const typingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelRef   = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!recognitionId) return;
 
     const channel = supabase
       .channel(`recognition-${recognitionId}`)
-      // Reactions changes
+      // Likes (was: reactions table — dropped in migration 018)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event:  '*',
           schema: 'public',
-          table: 'reactions',
+          table:  'recognition_likes',
           filter: `recognition_id=eq.${recognitionId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reactions(recognitionId) });
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.likes(recognitionId),
+          });
         }
       )
-      // Comments changes
+      // Comments (was: comments table — dropped in migration 018)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event:  '*',
           schema: 'public',
-          table: 'comments',
+          table:  'recognition_comments',
           filter: `recognition_id=eq.${recognitionId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.comments(recognitionId) });
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.recognitionComments(recognitionId),
+          });
         }
       )
-      // Typing indicators via broadcast
+      // Typing indicator broadcast (ephemeral — not persisted to DB)
       .on('broadcast', { event: 'typing' }, (payload) => {
         const { userId, fullName } = payload.payload as {
-          userId: string;
+          userId:   string;
           fullName: string;
         };
-        // Ignore own typing
-        if (userId === user?.id) return;
 
-        // Add or refresh this user's typing state
+        // Don't show the local employee's own typing indicator
+        if (userId === employee?.employee_id) return;
+
         setTypingUsers((prev) => {
-          const exists = prev.some((t) => t.userId === userId);
-          if (!exists) return [...prev, { userId, fullName }];
-          return prev;
+          if (prev.some((t) => t.userId === userId)) return prev;
+          return [...prev, { userId, fullName }];
         });
 
-        // Clear previous timer for this user
+        // Auto-clear typing indicator after 3 s of silence
         const existingTimer = typingTimers.current.get(userId);
         if (existingTimer) clearTimeout(existingTimer);
 
-        // Auto-expire after 3 seconds
         const timer = setTimeout(() => {
           setTypingUsers((prev) => prev.filter((t) => t.userId !== userId));
           typingTimers.current.delete(userId);
         }, 3000);
+
         typingTimers.current.set(userId, timer);
       })
       .subscribe();
@@ -207,54 +244,24 @@ export function useRecognitionRealtime(recognitionId: string) {
     channelRef.current = channel;
 
     return () => {
-      // Clean up all typing timers
       typingTimers.current.forEach((timer) => clearTimeout(timer));
       typingTimers.current.clear();
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [recognitionId, user?.id]);
+  }, [recognitionId, employee?.employee_id]);
 
-  // Broadcast typing event (called from CommentInput)
   const sendTyping = useCallback(() => {
-    if (!channelRef.current || !user) return;
+    if (!channelRef.current || !employee) return;
     channelRef.current.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: user.id, fullName: user.fullName },
+      type:    'broadcast',
+      event:   'typing',
+      payload: {
+        userId:   employee.employee_id,
+        fullName: employee.full_name,
+      },
     });
-  }, [user?.id, user?.fullName]);
+  }, [employee?.employee_id, employee?.full_name]);
 
   return { typingUsers, sendTyping };
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function handleChannelStatus(
-  status: string,
-  setRealtimeStatus: (s: 'connecting' | 'connected' | 'reconnecting' | 'disconnected') => void,
-  disconnectTimer: ReturnType<typeof setTimeout> | null,
-  queryClient: ReturnType<typeof useQueryClient>
-) {
-  switch (status) {
-    case 'SUBSCRIBED':
-      setRealtimeStatus('connected');
-      if (disconnectTimer) clearTimeout(disconnectTimer);
-      // Invalidate queries on reconnect to catch missed events
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.feed });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'], exact: false });
-      break;
-    case 'CHANNEL_ERROR':
-    case 'TIMED_OUT':
-      setRealtimeStatus('reconnecting');
-      // After 30s of failure, show "disconnected" state
-      disconnectTimer = setTimeout(() => {
-        setRealtimeStatus('disconnected');
-      }, 30000);
-      break;
-    case 'CLOSED':
-      setRealtimeStatus('disconnected');
-      break;
-  }
 }

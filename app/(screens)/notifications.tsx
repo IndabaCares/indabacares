@@ -1,68 +1,259 @@
-import React from 'react';
-import { View, FlatList, RefreshControl } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ActivityIndicator,
+  Switch,
+  StyleSheet,
+} from 'react-native';
+import { Stack, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNotifications, useMarkRead, useMarkAllRead } from '@/hooks/use-notifications';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Button } from '@/components/ui/Button';
-import { SkeletonCard } from '@/components/ui/Skeleton';
-import { routeFromNotification } from '@/utils/notification-router';
+import type { AppNotification } from '@/api/notification-service';
+
+const PURPLE      = '#7B1FA2';
+const PURPLE_SOFT = '#ede9fe';
+const PURPLE_MID  = '#ddd6fe';
+
+const PREF_KEY = '@indabacares/notif_recognition';
+
+// ─── Navigation helper ────────────────────────────────────────────────────────
+
+function navigateFromNotification(n: AppNotification) {
+  switch (n.type) {
+    case 'recognition_received':
+      router.push('/(tabs)/');
+      break;
+    case 'reward_approved':
+    case 'reward_rejected':
+      router.push('/(screens)/orders');
+      break;
+    default:
+      break;
+  }
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function NotificationsScreen() {
   const { data: notifications = [], isLoading, refetch, isRefetching } = useNotifications();
-  const markRead = useMarkRead();
+  const markRead    = useMarkRead();
   const markAllRead = useMarkAllRead();
 
-  const hasUnread = notifications.some((n: any) => !n.is_read);
+  const [recognitionEnabled, setRecognitionEnabled] = useState(true);
 
-  const handlePress = (notification: any) => {
-    if (!notification.is_read) {
-      markRead.mutate(notification.id);
-    }
-    routeFromNotification({
-      type: notification.type,
-      referenceType: notification.reference_type,
-      referenceId: notification.reference_id,
+  // Load saved preference
+  useEffect(() => {
+    AsyncStorage.getItem(PREF_KEY).then((val) => {
+      if (val !== null) setRecognitionEnabled(val === 'true');
     });
+  }, []);
+
+  function handleToggle(val: boolean) {
+    setRecognitionEnabled(val);
+    AsyncStorage.setItem(PREF_KEY, String(val));
+  }
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handlePress = (n: AppNotification) => {
+    if (!n.read) markRead.mutate(n.id);
+    navigateFromNotification(n);
   };
 
-  return (
-    <View className="flex-1 bg-white">
-      {hasUnread && (
-        <View className="border-b border-slate-100 px-4 py-2">
-          <Button
-            title="Mark all as read"
-            variant="ghost"
-            size="sm"
-            onPress={() => markAllRead.mutate()}
-            loading={markAllRead.isPending}
-          />
-        </View>
-      )}
+  // Split unread / earlier
+  const unread  = notifications.filter((n) => !n.read);
+  const earlier = notifications.filter((n) =>  n.read);
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }) => (
-          <NotificationItem notification={item as any} onPress={() => handlePress(item)} />
-        )}
-        ListEmptyComponent={
-          isLoading ? (
-            <View className="px-4 pt-4">
-              {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+  type ListItem = AppNotification | { _section: string };
+
+  const listData: ListItem[] = [
+    ...(unread.length  > 0 ? [{ _section: `New (${unread.length})` } as ListItem, ...unread]  : []),
+    ...(earlier.length > 0 ? [{ _section: 'Earlier' }               as ListItem, ...earlier] : []),
+  ];
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if ('_section' in item) {
+      return <Text style={s.sectionLabel}>{item._section}</Text>;
+    }
+    return (
+      <>
+        <NotificationItem notification={item} onPress={() => handlePress(item)} />
+        <View style={s.divider} />
+      </>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+          <ActivityIndicator size="large" color={PURPLE} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={s.screen}>
+        <FlatList
+          data={listData}
+          keyExtractor={(item, i) => ('_section' in item ? item._section : item.id)}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={PURPLE} />
+          }
+          ListHeaderComponent={
+            <View>
+              {/* ── Purple header ────────────────────── */}
+              <View style={s.header}>
+                <Pressable onPress={() => router.replace('/(tabs)/profile' as any)} style={s.backBtn} hitSlop={12}>
+                  <Ionicons name="chevron-back" size={22} color="#fff" />
+                </Pressable>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.headerTitle}>Notifications</Text>
+                  {unreadCount > 0 && (
+                    <Text style={s.headerSub}>{unreadCount} unread</Text>
+                  )}
+                </View>
+                {unreadCount > 0 && (
+                  <Pressable
+                    onPress={() => markAllRead.mutate()}
+                    disabled={markAllRead.isPending}
+                    style={s.markAllBtn}
+                  >
+                    {markAllRead.isPending
+                      ? <ActivityIndicator size="small" color={PURPLE} />
+                      : <Text style={s.markAllText}>Mark all read</Text>}
+                  </Pressable>
+                )}
+              </View>
+
+              {/* ── White sheet ──────────────────────── */}
+              <View style={s.sheet}>
+                <View style={s.sheetHandle} />
+
+                {/* ── Notification preferences ─────── */}
+                <Text style={[s.prefsTitle, { textTransform: 'lowercase' }]}>Toggle to receive notifications</Text>
+
+                <View style={s.prefContainer}>
+                  <View style={s.prefRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.prefLabel}>Recognitions</Text>
+                      <Text style={s.prefSub}>Receive instant notification when you are recognised</Text>
+                    </View>
+                    <Switch
+                      value={recognitionEnabled}
+                      onValueChange={handleToggle}
+                      trackColor={{ false: '#e2e8f0', true: PURPLE_MID }}
+                      thumbColor={recognitionEnabled ? PURPLE : '#cbd5e1'}
+                      ios_backgroundColor="#e2e8f0"
+                    />
+                  </View>
+                </View>
+              </View>
             </View>
-          ) : (
-            <EmptyState
-              icon="🔔"
-              title="No notifications"
-              description="You're all caught up!"
-            />
-          )
-        }
-        ItemSeparatorComponent={() => <View className="h-px bg-slate-50" />}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#CE21FB" />
-        }
-      />
-    </View>
+          }
+        />
+      </View>
+    </SafeAreaView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: PURPLE },
+  screen: { flex: 1, backgroundColor: '#ffffff' },
+
+  // Header
+  header: {
+    backgroundColor: PURPLE,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 12,
+  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 1 },
+  markAllBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  markAllText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+
+  // White sheet
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -20,
+    paddingTop: 12,
+  },
+  sheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: PURPLE_MID,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+
+  // Preferences
+  prefsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  prefContainer: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: PURPLE_MID,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  prefRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  prefLabel: { fontSize: 17, fontWeight: '700', color: '#1e1b4b' },
+  prefSub:   { fontSize: 12, color: '#94a3b8', marginTop: 3 },
+
+  // List
+  sectionLabel: {
+    backgroundColor: '#f8f7ff',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: '#94a3b8',
+  },
+  divider: { height: 1, backgroundColor: '#f1f5f9', marginHorizontal: 20 },
+
+});

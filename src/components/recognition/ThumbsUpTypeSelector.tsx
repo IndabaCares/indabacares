@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-nati
 import { useQuery } from '@tanstack/react-query';
 import { thumbsUpTypesQuery } from '@/api/queries';
 import { QUERY_KEYS } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 interface ThumbsUpType {
   id: string;
@@ -20,22 +20,22 @@ interface ThumbsUpTypeSelectorProps {
 }
 
 export function ThumbsUpTypeSelector({ selectedId, onSelect }: ThumbsUpTypeSelectorProps) {
-  const company = useAuthStore((s) => s.company);
+  const { employee } = useEmployee();
 
   const { data: types = [], isLoading } = useQuery({
     queryKey: QUERY_KEYS.thumbsUpTypes,
     queryFn: async () => {
-      if (!company) return [];
-      const { data, error } = await thumbsUpTypesQuery(company.id);
+      if (!employee) return [];
+      const { data, error } = await thumbsUpTypesQuery(employee.hotel);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!company,
+    enabled: !!employee,
     staleTime: Infinity,
   });
 
   if (isLoading) {
-    return <ActivityIndicator className="py-4" color="#CE21FB" />;
+    return <ActivityIndicator className="py-4" color="#ED6813" />;
   }
 
   return (

@@ -8,8 +8,8 @@ import {
   StyleSheet,
   Platform,
   Alert,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,8 +30,6 @@ const LIGHT_TEXT = '#EDE7F6';
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Pending Orders',   icon: 'receipt-outline'        as const, route: '/(screens)/orders' },
-  { label: 'Redeemed Rewards', icon: 'gift-outline'           as const, route: '/(screens)/wallet' },
   { label: 'Mood History',     icon: 'heart-outline'          as const, route: '/(screens)/mood'   },
   { label: "FAQ's",            icon: 'help-circle-outline'    as const, route: '/(screens)/settings' },
 ];
@@ -45,7 +43,7 @@ export default function ProfileScreen() {
   const [jobTitle,      setJobTitle]      = useState<string | null>(null);
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
   const [uploading,     setUploading]     = useState(false);
-  const [activeTab,     setActiveTab]     = useState<'gamification' | 'skills'>('gamification');
+  const [activeTab,     setActiveTab]     = useState<'gamification' | 'announcements'>('gamification');
   const [menuOpen,      setMenuOpen]      = useState(false);
 
   const { data: reactionBalance, isLoading: reactionLoading } = useReactionBalance();
@@ -89,53 +87,58 @@ export default function ProfileScreen() {
 
   async function handleUploadFromSource(source: 'camera' | 'library') {
     if (!employee) return;
-    try {
-      let result: ImagePicker.ImagePickerResult;
 
-      if (source === 'camera') {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Camera access is needed to take a photo.');
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          aspect:        [1, 1],
-          quality:       0.8,
-        });
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Photo library access is needed to choose a photo.');
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect:        [1, 1],
-          quality:       0.8,
-        });
-      }
+    let result: ImagePicker.ImagePickerResult;
 
-      if (result.canceled || !result.assets[0]) return;
-
-      setUploading(true);
-
-      const uri               = result.assets[0].uri;
-      const path              = `${employee.employee_id}/avatar`;
-      const { publicUrl }     = await uploadImage(uri, 'avatars', path);
-
-      const { data: rpcData } = await (supabase.rpc as any)(
-        'update_employee_avatar',
-        { p_photo_url: publicUrl },
-      );
-      const rpcResult = rpcData as { ok: boolean; error?: string } | null;
-
-      if (rpcResult?.ok === false) {
-        Alert.alert('Upload Error', rpcResult?.error ?? 'Could not save photo.');
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera access is needed to take a photo.');
         return;
       }
+      result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect:        [1, 1],
+        quality:       0.8,
+      });
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Photo library access is needed to choose a photo.');
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect:        [1, 1],
+        quality:       0.8,
+      });
+    }
 
+    if (result.canceled || !result.assets[0]) return;
+
+    const uri  = result.assets[0].uri;
+    const path = `${employee.employee_id}/avatar`;
+
+    // Show local image immediately
+    setPhotoUrl(uri);
+    setUploading(true);
+
+    try {
+      const { publicUrl } = await uploadImage(uri, 'avatars', path);
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        'update_employee_avatar' as any,
+        { p_photo_url: publicUrl },
+      );
+      if (rpcError) throw new Error(rpcError.message);
+
+      const rpcResult = rpcData as { ok: boolean; error?: string } | null;
+      if (rpcResult?.ok === false) {
+        throw new Error(rpcResult?.error ?? 'Could not save photo.');
+      }
+
+      // Swap to the persisted remote URL
       setPhotoUrl(`${publicUrl}?t=${Date.now()}`);
     } catch (err: any) {
       Alert.alert('Upload Failed', err.message ?? 'Something went wrong.');
@@ -195,15 +198,22 @@ export default function ProfileScreen() {
 
           {/* Avatar — tappable */}
           <Pressable onPress={handleAvatarPress} style={styles.avatarWrapper}>
-            {uploading ? (
-              <View style={styles.avatar}>
-                <ActivityIndicator color="#ffffff" size="large" />
-              </View>
-            ) : photoUrl ? (
-              <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+            {photoUrl ? (
+              <Image
+                source={{ uri: photoUrl }}
+                style={styles.avatarImage}
+                contentFit="cover"
+                onError={() => setPhotoUrl(null)}
+              />
             ) : (
               <View style={styles.avatar}>
                 <Text style={styles.avatarInitials}>{initials}</Text>
+              </View>
+            )}
+            {/* Spinner overlaid on top — never hides the photo */}
+            {uploading && (
+              <View style={styles.avatarSpinner}>
+                <ActivityIndicator color="#ffffff" size="small" />
               </View>
             )}
             <View style={styles.cameraBadge}>
@@ -221,18 +231,13 @@ export default function ProfileScreen() {
 
           {/* Points balance pill */}
           <View style={styles.pointsPill}>
-            <Ionicons name="trophy" size={22} color={ACCENT} />
+            <Ionicons name="star" size={22} color="#fbbf24" />
             {pointsBalance === null ? (
               <ActivityIndicator size="small" color={ACCENT} style={{ marginLeft: 6 }} />
             ) : (
               <Text style={styles.pointsPillText}>{pointsBalance} pts</Text>
             )}
           </View>
-
-          {/* Recognition hint */}
-          <Text style={styles.recognitionHint}>
-            Your recognition left to use. Resets every month.
-          </Text>
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -262,7 +267,7 @@ export default function ProfileScreen() {
         {/* ── Pill tab selector ───────────────────────────────────────────── */}
         <View style={styles.tabContainer}>
           <View style={styles.tabPill}>
-            {(['gamification', 'skills'] as const).map((tab) => {
+            {(['gamification', 'announcements'] as const).map((tab) => {
               const active = activeTab === tab;
               return (
                 <Pressable
@@ -271,7 +276,7 @@ export default function ProfileScreen() {
                   style={[styles.tabButton, active && styles.tabButtonActive]}
                 >
                   <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab === 'gamification' ? 'Gamification' : 'Skills'}
+                    {tab === 'gamification' ? 'Gamification' : 'Announcements'}
                   </Text>
                 </Pressable>
               );
@@ -290,15 +295,12 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {activeTab === 'skills' && (
-            <Pressable
-              onPress={() => router.push('/(screens)/skills')}
-              style={styles.skillsCard}
-            >
-              <Ionicons name="bar-chart-outline" size={32} color={PURPLE_MID} />
-              <Text style={styles.skillsCardTitle}>View Skills</Text>
-              <Text style={styles.skillsCardSub}>See your skill scores and ratings</Text>
-            </Pressable>
+          {activeTab === 'announcements' && (
+            <View style={styles.skillsCard}>
+              <Ionicons name="megaphone-outline" size={32} color={PURPLE_MID} />
+              <Text style={styles.skillsCardTitle}>Announcements</Text>
+              <Text style={styles.skillsCardSub}>Company announcements will appear here</Text>
+            </View>
           )}
 
         </View>
@@ -435,6 +437,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  avatarSpinner: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 45,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   cameraBadge: {
     position: 'absolute',
     bottom: 2,
@@ -474,7 +485,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    marginBottom: 14,
+    marginBottom: 10,
     gap: 8,
   },
 
@@ -483,14 +494,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
     letterSpacing: 0.2,
-  },
-
-  recognitionHint: {
-    fontSize: 12,
-    color: '#ffffff',
-    textAlign: 'center',
-    opacity: 0.8,
-    marginBottom: 10,
   },
 
   // ── Stats row ────────────────────────────────────────────────────────────────

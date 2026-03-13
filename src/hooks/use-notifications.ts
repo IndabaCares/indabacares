@@ -1,59 +1,119 @@
+/**
+ * Notification hooks
+ *
+ * useNotifications      — full inbox list
+ * useUnreadCount        — lightweight badge count (polls every 60 s)
+ * useMarkRead           — mark single notification read
+ * useMarkAllRead        — mark all read
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationsQuery, markNotificationRead, markAllNotificationsRead } from '@/api/queries';
-import { QUERY_KEYS } from '@/lib/constants';
+import {
+  getNotifications,
+  getUnreadCount,
+  markRead,
+  markAllRead,
+} from '@/api/notification-service';
 import { useEmployee } from '@/providers/EmployeeContext';
-import { useAuthStore } from '@/stores/auth-store';
+
+// ─── Query keys ───────────────────────────────────────────────────────────────
+
+const NOTIF_KEY      = (id: string) => ['notifications', id] as const;
+const UNREAD_KEY     = (id: string) => ['notifications', id, 'unread'] as const;
+
+// ─── useNotifications ─────────────────────────────────────────────────────────
 
 export function useNotifications() {
   const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: [...QUERY_KEYS.notifications, employee?.employee_id],
-    queryFn: async () => {
-      if (!employee) return [];
-      const { data, error } = await notificationsQuery(employee.employee_id);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!employee,
-    staleTime: 60 * 1000,
+    queryKey: NOTIF_KEY(employee?.employee_id ?? ''),
+    queryFn:  () => getNotifications(employee!.employee_id),
+    enabled:  !!employee,
+    staleTime: 30 * 1000,
   });
 }
+
+// ─── useUnreadCount ───────────────────────────────────────────────────────────
+
+export function useUnreadCount(): number {
+  const { employee } = useEmployee();
+
+  const { data = 0 } = useQuery({
+    queryKey:       UNREAD_KEY(employee?.employee_id ?? ''),
+    queryFn:        () => getUnreadCount(employee!.employee_id),
+    enabled:        !!employee,
+    staleTime:      15 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
+  return data;
+}
+
+// ─── useMarkRead ──────────────────────────────────────────────────────────────
 
 export function useMarkRead() {
-  const queryClient = useQueryClient();
+  const queryClient  = useQueryClient();
   const { employee } = useEmployee();
-  const setUnreadCount = useAuthStore((s) => s.setUnreadCount);
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await markNotificationRead(id);
-      if (error) throw error;
+    mutationFn: (id: string) => markRead(id),
+
+    // Optimistic update: flip read flag in the list cache immediately
+    onMutate: async (id: string) => {
+      const key = NOTIF_KEY(employee?.employee_id ?? '');
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData(key);
+
+      queryClient.setQueryData(key, (old: any[] = []) =>
+        old.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+
+      return { prev, key };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
-      const cached = queryClient.getQueryData<any[]>(QUERY_KEYS.notifications);
-      if (cached) {
-        setUnreadCount(cached.filter((n: any) => !n.is_read).length);
-      }
+
+    onError: (_err, _id, ctx: any) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+
+    onSettled: () => {
+      if (!employee) return;
+      queryClient.invalidateQueries({ queryKey: NOTIF_KEY(employee.employee_id) });
+      queryClient.invalidateQueries({ queryKey: UNREAD_KEY(employee.employee_id) });
     },
   });
 }
 
+// ─── useMarkAllRead ───────────────────────────────────────────────────────────
+
 export function useMarkAllRead() {
-  const queryClient = useQueryClient();
+  const queryClient  = useQueryClient();
   const { employee } = useEmployee();
-  const setUnreadCount = useAuthStore((s) => s.setUnreadCount);
 
   return useMutation({
-    mutationFn: async () => {
-      if (!employee) return;
-      const { error } = await markAllNotificationsRead(employee.employee_id);
-      if (error) throw error;
+    mutationFn: () => markAllRead(employee!.employee_id),
+
+    onMutate: async () => {
+      const key = NOTIF_KEY(employee?.employee_id ?? '');
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData(key);
+
+      queryClient.setQueryData(key, (old: any[] = []) =>
+        old.map((n) => ({ ...n, read: true })),
+      );
+      queryClient.setQueryData(UNREAD_KEY(employee?.employee_id ?? ''), 0);
+
+      return { prev, key };
     },
-    onSuccess: () => {
-      setUnreadCount(0);
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
+
+    onError: (_err, _v, ctx: any) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+
+    onSettled: () => {
+      if (!employee) return;
+      queryClient.invalidateQueries({ queryKey: NOTIF_KEY(employee.employee_id) });
+      queryClient.invalidateQueries({ queryKey: UNREAD_KEY(employee.employee_id) });
     },
   });
 }

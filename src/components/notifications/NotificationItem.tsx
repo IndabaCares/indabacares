@@ -1,65 +1,107 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { formatRelativeTime } from '@/utils/format';
-import type { NotificationType } from '@/types/database';
+import type { AppNotification } from '@/api/notification-service';
 
 interface NotificationItemProps {
-  notification: {
-    id: string;
-    type: NotificationType;
-    title: string;
-    body: string | null;
-    is_read: boolean;
-    created_at: string;
-  };
-  onPress: () => void;
+  notification: AppNotification;
+  onPress:      () => void;
 }
 
-const TYPE_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string }> = {
-  recognition_received: { name: 'thumbs-up', color: '#CE21FB' },
-  recognition_boosted: { name: 'rocket', color: '#f59e0b' },
-  reaction: { name: 'heart', color: '#ef4444' },
-  comment: { name: 'chatbubble', color: '#3b82f6' },
-  badge_earned: { name: 'ribbon', color: '#8b5cf6' },
-  reward_approved: { name: 'checkmark-circle', color: '#22c55e' },
-  reward_fulfilled: { name: 'gift', color: '#22c55e' },
-  reward_rejected: { name: 'close-circle', color: '#ef4444' },
-  budget_reset: { name: 'refresh', color: '#CE21FB' },
-  system: { name: 'information-circle', color: '#64748b' },
+// ─── Icon config per type ─────────────────────────────────────────────────────
+
+const TYPE_CONFIG: Record<
+  string,
+  { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }
+> = {
+  recognition_received: {
+    icon:  'star',
+    color: '#7B1FA2',
+    bg:    '#ede9fe',
+  },
+  reward_approved: {
+    icon:  'checkmark-circle',
+    color: '#22c55e',
+    bg:    '#dcfce7',
+  },
+  reward_rejected: {
+    icon:  'close-circle',
+    color: '#ef4444',
+    bg:    '#fee2e2',
+  },
+  admin_announcement: {
+    icon:  'megaphone',
+    color: '#7B1FA2',
+    bg:    '#ede9fe',
+  },
 };
 
+const FALLBACK = { icon: 'notifications' as const, color: '#7B1FA2', bg: '#ede9fe' };
+
+// ─── Relative time ────────────────────────────────────────────────────────────
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7)  return `${d}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function NotificationItem({ notification, onPress }: NotificationItemProps) {
-  const icon = TYPE_ICONS[notification.type] || TYPE_ICONS.system;
+  const cfg = TYPE_CONFIG[notification.type] ?? FALLBACK;
+  const unread = !notification.read;
 
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row px-4 py-3.5 active:bg-slate-50 ${
-        !notification.is_read ? 'bg-primary-50/30' : ''
-      }`}
+      style={({ pressed }) => ({
+        backgroundColor: pressed ? '#f5f3ff' : unread ? '#faf8ff' : '#ffffff',
+      })}
+      className="flex-row px-4 py-3.5"
     >
+      {/* Icon */}
       <View
         className="mr-3 h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: icon.color + '15' }}
+        style={{ backgroundColor: cfg.bg }}
       >
-        <Ionicons name={icon.name} size={20} color={icon.color} />
+        <Ionicons name={cfg.icon} size={20} color={cfg.color} />
       </View>
-      <View className="flex-1">
-        <Text className={`text-sm ${notification.is_read ? 'text-slate-700' : 'font-semibold text-slate-900'}`}>
+
+      {/* Content */}
+      <View className="flex-1 justify-center">
+        <Text
+          className="text-sm leading-snug"
+          style={{ color: '#0f172a', fontWeight: unread ? '700' : '400' }}
+          numberOfLines={2}
+        >
           {notification.title}
         </Text>
-        {notification.body && (
-          <Text className="mt-0.5 text-xs text-slate-500" numberOfLines={2}>
-            {notification.body}
+        {!!notification.message && (
+          <Text
+            className="mt-0.5 text-xs leading-snug text-slate-500"
+            numberOfLines={2}
+          >
+            {notification.message}
           </Text>
         )}
         <Text className="mt-1 text-[10px] text-slate-400">
-          {formatRelativeTime(notification.created_at)}
+          {relativeTime(notification.created_at)}
         </Text>
       </View>
-      {!notification.is_read && (
-        <View className="ml-2 h-2.5 w-2.5 self-center rounded-full bg-primary-500" />
+
+      {/* Unread dot */}
+      {unread && (
+        <View
+          className="ml-3 mt-1 h-2 w-2 self-start rounded-full"
+          style={{ backgroundColor: '#7B1FA2' }}
+        />
       )}
     </Pressable>
   );

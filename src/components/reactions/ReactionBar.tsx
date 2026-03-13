@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { ReactionPicker } from './ReactionPicker';
 
 interface Reaction {
@@ -16,7 +16,8 @@ interface ReactionBarProps {
 }
 
 export function ReactionBar({ reactions, onAdd, onRemove }: ReactionBarProps) {
-  const userId = useAuthStore((s) => s.user?.id);
+  const { employee } = useEmployee();
+  const userId = employee?.employee_id;
   const [showPicker, setShowPicker] = useState(false);
 
   // Group reactions by emoji

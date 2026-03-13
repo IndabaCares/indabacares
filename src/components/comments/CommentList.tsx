@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { formatRelativeTime } from '@/utils/format';
-import { useAuthStore } from '@/stores/auth-store';
+import { useEmployee } from '@/providers/EmployeeContext';
 
 interface Comment {
   id: string;
@@ -22,7 +22,8 @@ interface CommentListProps {
 }
 
 export function CommentList({ comments, onDelete }: CommentListProps) {
-  const userId = useAuthStore((s) => s.user?.id);
+  const { employee } = useEmployee();
+  const userId = employee?.employee_id;
 
   if (comments.length === 0) {
     return (

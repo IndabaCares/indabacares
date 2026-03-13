@@ -39,7 +39,7 @@ export function useUpdateProfile() {
   const showToast = useUIStore((s) => s.showToast);
 
   return useMutation({
-    mutationFn: async (data: { display_name?: string; position?: string; avatar_url?: string }) => {
+    mutationFn: async (data: { full_name?: string; hotel?: string }) => {
       if (!employee) throw new Error('Not authenticated');
       const { error } = await updateEmployeeProfile(employee.employee_id, data);
       if (error) throw error;

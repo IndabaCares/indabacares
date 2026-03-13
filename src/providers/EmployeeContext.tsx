@@ -4,7 +4,7 @@
  * Provides the authenticated employee record to the entire React tree.
  *
  * Session token lifecycle:
- *   Login  → createSession() creates a Supabase session row + persists token
+ *   Login  → setEmployee() receives token from auth RPC → saveSession()
  *   Boot   → loadSession() restores token from AsyncStorage + reactivates header
  *   Verify → validateSessionWithDB() confirms employee is still active
  *   Logout → clearSession() revokes server-side row + clears header
@@ -23,7 +23,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import {
-  createSession,
+  saveSession,
   loadSession,
   clearSession,
   validateSessionWithDB,
@@ -43,15 +43,13 @@ interface EmployeeContextValue {
    */
   isLoaded: boolean;
   /**
-   * Login: creates a server-side session, persists it, and activates the
-   * x-session-token header on the Supabase client.
+   * Login: persists session and activates the x-session-token header.
+   * Receives the full session including the token returned by the auth RPC.
    */
-  setEmployee: (
-    identity: Omit<AuthenticatedEmployee, 'session_token'>
-  ) => Promise<void>;
+  setEmployee: (identity: AuthenticatedEmployee) => Promise<void>;
   /**
    * Logout: revokes the server-side session, clears AsyncStorage, and
-   * removes the header.  AuthProvider redirects to /(auth)/employee-auth.
+   * removes the header.
    */
   clearEmployee: () => Promise<void>;
 }
@@ -76,28 +74,23 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function boot() {
-      // Step 1 — fast local read (~5 ms); also reactivates x-session-token header
       const session = await loadSession();
 
       if (cancelled) return;
 
       if (session) {
-        // Step 2 — optimistically trust the stored session
         setEmployeeState(session);
       }
 
-      // Step 3 — unblock routing immediately
       setIsLoaded(true);
 
       if (!session) return;
 
-      // Step 4 — background DB validation
       const valid = await validateSessionWithDB(session);
 
       if (cancelled) return;
 
       if (!valid) {
-        // Employee inactive or token expired — evict session
         setEmployeeState(null);
         await clearSession(session.session_token);
       }
@@ -111,28 +104,20 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── setEmployee — called after successful authentication ──────────────────
+  //
+  // The token comes directly from the auth RPC response.
+  // No separate create_employee_session call needed.
 
-  const setEmployee = useCallback(
-    async (identity: Omit<AuthenticatedEmployee, 'session_token'>) => {
-      // createSession: makes server-side row, persists to AsyncStorage,
-      // and activates the token in the Supabase fetch adapter
-      const session = await createSession(
-        identity.employee_id,
-        identity.full_name,
-        identity.employee_code,
-        identity.hotel,
-      );
-      setEmployeeState(session);
-    },
-    [],
-  );
+  const setEmployee = useCallback(async (identity: AuthenticatedEmployee) => {
+    await saveSession(identity);
+    setEmployeeState(identity);
+  }, []);
 
   // ── clearEmployee — logout ────────────────────────────────────────────────
 
   const clearEmployee = useCallback(async () => {
     const token = employee?.session_token;
     setEmployeeState(null);
-    // clearSession: revokes server-side row, removes AsyncStorage, clears header
     await clearSession(token);
   }, [employee]);
 
