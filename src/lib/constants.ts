@@ -72,7 +72,7 @@ export const RECOGNITION_BADGES = [
   { value: 'Team Player',          emoji: '🤝', color: '#3b82f6' },
   { value: 'Leadership',           emoji: '👑', color: '#8b5cf6' },
   { value: 'Customer Excellence',  emoji: '⭐', color: '#f59e0b' },
-  { value: 'Innovation',           emoji: '💡', color: '#22c55e' },
+  { value: 'You Legend',           emoji: '💡', color: '#22c55e' },
   { value: 'Going the Extra Mile', emoji: '🚀', color: '#ED6813' },
   { value: 'Hospitality Hero',     emoji: '🏨', color: '#ef4444' },
 ] as const;

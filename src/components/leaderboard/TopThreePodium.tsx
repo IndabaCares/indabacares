@@ -23,25 +23,28 @@ interface CardProps {
 
 function PodiumCard({ entry, rank, isMe }: CardProps) {
   const isCenter   = rank === 1;
-  const avatarSize = isCenter ? 88 : 64;
-  const badgeSize  = isCenter ? 26 : 20;
+  const avatarSize = isCenter ? 80 : 70;
+  const ringSize   = avatarSize + 8;
+  const badgeSize  = isCenter ? 24 : 20;
   const badgeColor = rank === 1 ? BADGE_GOLD : rank === 2 ? BADGE_SILVER : BADGE_BRONZE;
   const ringColor  = isMe ? ACCENT : 'rgba(255,255,255,0.55)';
 
   return (
     <View style={[styles.card, isCenter && styles.cardCenter]}>
 
-      {/* Avatar / placeholder */}
-      <View style={{ position: 'relative', alignSelf: 'center' }}>
+      {/* Avatar + overlays */}
+      <View style={{ position: 'relative', alignSelf: 'center', width: ringSize, height: ringSize }}>
+
+        {/* Ring */}
         <View
           style={[
             styles.avatarRing,
             {
-              width:        avatarSize + 10,
-              height:       avatarSize + 10,
-              borderRadius: (avatarSize + 10) / 2,
-              borderColor:  ringColor,
-              borderWidth:  isMe ? 3 : 2,
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
+              borderColor: ringColor,
+              borderWidth: isMe ? 3 : 2,
             },
           ]}
         >
@@ -52,7 +55,6 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
               resizeMode="cover"
             />
           ) : (
-            /* Placeholder circle — always visible */
             <View
               style={[
                 styles.placeholder,
@@ -64,18 +66,29 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
           )}
         </View>
 
-        {/* Rank badge */}
+        {/* Rank badge — top-right edge */}
         <View
           style={[
-            styles.badge,
+            styles.rankBadge,
             { width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2, backgroundColor: badgeColor },
           ]}
         >
-          <Text style={[styles.badgeText, { fontSize: isCenter ? 12 : 10 }]}>{rank}</Text>
+          <Text style={[styles.rankText, { fontSize: isCenter ? 11 : 9 }]}>{rank}</Text>
         </View>
+
+        {/* Points pill — bottom-right edge */}
+        {entry && (
+          <View style={styles.pointsPill}>
+            <Text style={styles.pointsStar}>⭐</Text>
+            <Text style={styles.pointsNum}>{entry.total_points >= 1000
+              ? `${(entry.total_points / 1000).toFixed(1)}k`
+              : entry.total_points}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {/* Full name */}
+      {/* Name */}
       <Text style={[styles.name, isCenter && styles.nameLarge]} numberOfLines={2}>
         {entry?.full_name ?? '—'}
       </Text>
@@ -84,16 +97,6 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
       <Text style={[styles.jobTitle, isCenter && styles.jobTitleLarge]} numberOfLines={1}>
         {entry?.job_title ?? (entry ? '' : 'No ranking yet')}
       </Text>
-
-      {/* Points — only when data present */}
-      {entry && (
-        <View style={styles.pointsRow}>
-          <Text style={[styles.points, isCenter && styles.pointsLarge]}>
-            {entry.total_points.toLocaleString()}
-          </Text>
-          <Text style={{ fontSize: 11, marginLeft: 3 }}>⭐</Text>
-        </View>
-      )}
 
     </View>
   );
@@ -127,29 +130,29 @@ export function TopThreePodium({ entries }: TopThreePodiumProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
 
   topRow: {
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 6,
   },
 
   bottomRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
+    gap: 12,
   },
 
   card: {
     alignItems: 'center',
-    flex: 1,
+    width: 120,
   },
 
   cardCenter: {
-    flex: 0,
-    width: 170,
+    width: 130,
   },
 
   avatarRing: {
@@ -164,60 +167,60 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
-  badge: {
+  // Rank number — top-right edge of avatar ring
+  rankBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 2,
+    top: -2,
+    right: -2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#ffffff',
+    zIndex: 2,
   },
-
-  badgeText: {
+  rankText: {
     color: '#ffffff',
     fontWeight: '800',
   },
+
+  // Points pill — bottom-right edge of avatar ring
+  pointsPill: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    zIndex: 2,
+  },
+  pointsStar: { fontSize: 9 },
+  pointsNum:  { fontSize: 9, fontWeight: '800', color: '#fff', marginLeft: 2 },
 
   name: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 9,
-    lineHeight: 17,
+    marginTop: 6,
+    lineHeight: 16,
   },
-
   nameLarge: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 19,
   },
 
   jobTitle: {
-    color: 'rgba(255,255,255,0.68)',
-    fontWeight: '400',
-    fontSize: 11,
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 10,
     textAlign: 'center',
     marginTop: 2,
   },
-
   jobTitleLarge: {
-    fontSize: 12,
-  },
-
-  pointsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-
-  points: {
-    color: '#ffffff',
-    fontWeight: '800',
-    fontSize: 12,
-  },
-
-  pointsLarge: {
-    fontSize: 14,
+    fontSize: 11,
   },
 });

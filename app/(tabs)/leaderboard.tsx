@@ -20,6 +20,21 @@ import type { LeaderboardEntry } from '@/api/leaderboard-service';
 
 const PURPLE = '#7B1FA2';
 
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
+const MOCK_ENTRIES: LeaderboardEntry[] = [
+  { rank: 1,  employee_id: 'm1',  full_name: 'Lerato Dlamini',      employee_code: 'EMP002', total_points: 3840, points_balance: 3840, job_title: 'Guest Relations',        avatar_url: 'https://randomuser.me/api/portraits/women/44.jpg',  movement_delta:  2 },
+  { rank: 2,  employee_id: 'm2',  full_name: 'Sipho Mahlangu',      employee_code: 'EMP004', total_points: 3510, points_balance: 3510, job_title: 'Senior Concierge',       avatar_url: 'https://randomuser.me/api/portraits/men/32.jpg',    movement_delta:  1 },
+  { rank: 3,  employee_id: 'm3',  full_name: 'Zanele Mokoena',      employee_code: 'EMP010', total_points: 3200, points_balance: 3200, job_title: 'Bellhop',                avatar_url: 'https://randomuser.me/api/portraits/women/68.jpg',  movement_delta: -1 },
+  { rank: 4,  employee_id: 'm4',  full_name: 'Keamogetswe Tau',     employee_code: 'EMP011', total_points: 2980, points_balance: 2980, job_title: 'Night Shift Supervisor', avatar_url: 'https://randomuser.me/api/portraits/women/12.jpg',  movement_delta:  3 },
+  { rank: 5,  employee_id: 'm5',  full_name: 'Lungelo Zulu',        employee_code: 'EMP012', total_points: 2740, points_balance: 2740, job_title: 'Head Waiter',            avatar_url: 'https://randomuser.me/api/portraits/men/75.jpg',    movement_delta:  0 },
+  { rank: 6,  employee_id: 'm6',  full_name: 'Chanel Mostert',      employee_code: 'EMP013', total_points: 2520, points_balance: 2520, job_title: 'Front Desk Agent',       avatar_url: 'https://randomuser.me/api/portraits/women/55.jpg',  movement_delta: -2 },
+  { rank: 7,  employee_id: 'm7',  full_name: 'Ayanda Khumalo',      employee_code: 'EMP006', total_points: 2310, points_balance: 2310, job_title: 'Breakfast Attendant',    avatar_url: 'https://randomuser.me/api/portraits/women/29.jpg',  movement_delta:  1 },
+  { rank: 8,  employee_id: 'm8',  full_name: 'Ruan Pretorius',      employee_code: 'EMP008', total_points: 2100, points_balance: 2100, job_title: 'Housekeeping',           avatar_url: 'https://randomuser.me/api/portraits/men/18.jpg',    movement_delta:  0 },
+  { rank: 9,  employee_id: 'm9',  full_name: 'Precious Ndlovu',     employee_code: 'EMP014', total_points: 1870, points_balance: 1870, job_title: 'Reservations Agent',     avatar_url: 'https://randomuser.me/api/portraits/women/82.jpg',  movement_delta: -1 },
+  { rank: 10, employee_id: 'm10', full_name: 'Dirk Visser',         employee_code: 'EMP015', total_points: 1650, points_balance: 1650, job_title: 'Spa Therapist',          avatar_url: 'https://randomuser.me/api/portraits/men/60.jpg',    movement_delta:  2 },
+];
+
 // ─── My rank strip ────────────────────────────────────────────────────────────
 
 function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
@@ -42,13 +57,31 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 
 export default function LeaderboardScreen() {
   const [period, setPeriod] = useState<PeriodType>('monthly');
-  const { data: entries = [], isLoading, refetch, isRefetching } = useLeaderboard(period);
+  const { data: liveEntries = [], isLoading, refetch, isRefetching } = useLeaderboard(period);
+
+  const isMock  = !isLoading && liveEntries.length === 0;
+  const entries = isMock ? MOCK_ENTRIES : liveEntries;
 
   const topThree = entries.slice(0, 3) as LeaderboardEntry[];
   const rest     = entries.slice(3)   as LeaderboardEntry[];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.screen}>
+
+      {/* ── Frozen purple header ─────────────────────────────── */}
+      <View style={styles.header}>
+        {isLoading ? (
+          <View style={styles.loadingInner}>
+            <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
+          </View>
+        ) : (
+          <TopThreePodium entries={topThree} />
+        )}
+        <PeriodTabs value={period} onChange={setPeriod} />
+      </View>
+
+      {/* ── Scrollable cards list ────────────────────────────── */}
       <FlatList
         style={styles.list}
         data={isLoading ? [] : rest}
@@ -61,27 +94,7 @@ export default function LeaderboardScreen() {
         }
         ListHeaderComponent={
           <>
-            {/* ── Purple header — always full height, mirrors profile ── */}
-            <View style={styles.header}>
-
-              {isLoading ? (
-                <View style={styles.loadingInner}>
-                  <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
-                </View>
-              ) : (
-                /* Triangular podium — renders placeholders when entries are empty */
-                <TopThreePodium entries={topThree} />
-              )}
-
-              {/* Period tabs live inside the header at the bottom */}
-              <PeriodTabs value={period} onChange={setPeriod} />
-
-            </View>
-
-            {/* My rank strip below header */}
             {!isLoading && entries.length > 0 && <MyRankStrip entries={entries} />}
-
-            {/* Divider */}
             {!isLoading && rest.length > 0 && (
               <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />
@@ -92,7 +105,7 @@ export default function LeaderboardScreen() {
           </>
         }
         ListEmptyComponent={
-          !isLoading ? (
+          !isLoading && !isMock ? (
             <EmptyState
               icon="🏆"
               title="No rankings yet"
@@ -101,6 +114,7 @@ export default function LeaderboardScreen() {
           ) : null
         }
       />
+      </View>
     </SafeAreaView>
   );
 }
@@ -111,6 +125,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: PURPLE,
+  },
+
+  screen: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
   },
 
   list: {

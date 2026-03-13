@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   ActivityIndicator,
   StyleSheet,
@@ -165,11 +164,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.screen}>
 
         {/* ── Purple header card ──────────────────────────────────────────── */}
         <View style={styles.header}>
@@ -305,7 +300,7 @@ export default function ProfileScreen() {
 
         </View>
 
-      </ScrollView>
+      </View>
 
       {/* ── Dropdown menu overlay ────────────────────────────────────────── */}
       {menuOpen && (
@@ -365,13 +360,9 @@ const styles = StyleSheet.create({
     backgroundColor: PURPLE,
   },
 
-  scrollView: {
+  screen: {
     flex: 1,
     backgroundColor: '#F2F2F2',
-  },
-
-  scrollContent: {
-    paddingBottom: 100,
   },
 
   // ── Header ──────────────────────────────────────────────────────────────────
@@ -594,6 +585,7 @@ const styles = StyleSheet.create({
 
   // ── Content area ─────────────────────────────────────────────────────────────
   content: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
   },

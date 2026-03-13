@@ -26,7 +26,7 @@ const VALID_BADGES = [
   "Team Player",
   "Leadership",
   "Customer Excellence",
-  "Innovation",
+  "You Legend",
   "Going the Extra Mile",
   "Hospitality Hero",
 ] as const;

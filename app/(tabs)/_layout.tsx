@@ -6,8 +6,11 @@ import { useCompanyTheme } from '@/hooks/use-company-theme';
 import { useFeatureFlags } from '@/hooks/use-feature-flags';
 import { useUnreadCount } from '@/hooks/use-notifications';
 
-const PURPLE = '#7B1FA2';
-const ACCENT = '#CE21FB';
+const PURPLE    = '#7B1FA2';
+const ACCENT    = '#CE21FB';
+const NAV_BG    = '#1a0533';
+const NAV_INACT = '#c4b5fd';
+const NAV_ACT   = '#ffffff';
 
 function HeaderRight() {
   const unread = useUnreadCount();
@@ -39,15 +42,15 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: ACCENT,
-        tabBarInactiveTintColor: PURPLE,
+        tabBarActiveTintColor: NAV_ACT,
+        tabBarInactiveTintColor: NAV_INACT,
         tabBarStyle: {
           height: 85,
           paddingBottom: 25,
           paddingTop: 8,
           borderTopWidth: 1,
-          borderTopColor: '#ede9fe',
-          backgroundColor: '#ffffff',
+          borderTopColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: NAV_BG,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -99,7 +102,7 @@ export default function TabLayout() {
                 borderRadius: 28,
                 backgroundColor: '#ffffff',
                 borderWidth: 2.5,
-                borderColor: focused ? ACCENT : PURPLE,
+                borderColor: focused ? NAV_ACT : NAV_INACT,
                 shadowColor: PURPLE,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.2,
@@ -107,10 +110,11 @@ export default function TabLayout() {
                 elevation: 6,
               }}
             >
-              <Ionicons name="add" size={28} color={focused ? ACCENT : PURPLE} />
+              <Ionicons name="add" size={28} color={focused ? NAV_ACT : NAV_INACT} />
             </View>
           ),
           tabBarLabel: () => null,
+          headerShown: false,
         }}
       />
 

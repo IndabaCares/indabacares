@@ -146,7 +146,7 @@ export default function OrdersScreen() {
               {/* Purple header */}
               <View style={styles.header}>
                 <Pressable
-                  onPress={() => router.replace('/(tabs)/' as any)}
+                  onPress={() => router.replace('/(tabs)/rewards' as any)}
                   style={styles.backBtn}
                   hitSlop={12}
                 >
