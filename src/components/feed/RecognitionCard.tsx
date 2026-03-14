@@ -7,6 +7,8 @@ import { CommentSheet } from './CommentSheet';
 import { RecognitionReactionBar } from './RecognitionReactionBar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { useSubmitResponse } from '@/hooks/use-recognition-response';
+import { ResponsePicker } from './ResponsePicker';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
@@ -60,8 +62,17 @@ export const RecognitionCard = memo(function RecognitionCard({
   const likeCount = likes.length;
   const commentsCount = recognition.comments_count?.[0]?.count ?? 0;
   const badgeConfig   = getBadgeConfig(recognition.badge);
+  const isRecipient   = employee?.employee_id === recognition.receiver.id;
+
+  const [localResponse, setLocalResponse] = useState<string | null>(recognition.recipient_response ?? null);
+  const submitResponse = useSubmitResponse(recognition.id);
 
   const handleLike = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
+
+  const handleResponse = (text: string) => {
+    setLocalResponse(text);
+    submitResponse.mutate(text);
+  };
 
   return (
     <>
@@ -102,6 +113,14 @@ export const RecognitionCard = memo(function RecognitionCard({
 
         {/* ── Message ─────────────────────────────────────── */}
         <Text style={s.message}>{recognition.message}</Text>
+
+        {/* ── Recipient response ──────────────────────────── */}
+        <ResponsePicker
+          response={localResponse}
+          isRecipient={isRecipient}
+          onSelect={handleResponse}
+          loading={submitResponse.isPending}
+        />
 
         {/* ── Emoji reactions ─────────────────────────────── */}
         <RecognitionReactionBar recognitionId={recognition.id} />

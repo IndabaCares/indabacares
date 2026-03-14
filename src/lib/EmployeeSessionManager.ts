@@ -30,6 +30,7 @@ export interface EmployeeSession {
   full_name:     string;
   employee_code: string;
   hotel:         string;
+  department:    string | null;
   session_token: string;   // UUID returned by the auth RPC
 }
 
@@ -80,12 +81,14 @@ export async function loadSession(): Promise<EmployeeSession | null> {
 
 export async function clearSession(token?: string): Promise<void> {
   if (token) {
-    await supabase
-      .rpc('revoke_employee_session', { p_token: token })
-      .catch(() => null);
+    try {
+      await supabase.rpc('revoke_employee_session', { p_token: token });
+    } catch {
+      // best-effort revocation — proceed with local logout regardless
+    }
   }
 
-  await AsyncStorage.removeItem(SESSION_KEY).catch(() => null);
+  try { await AsyncStorage.removeItem(SESSION_KEY); } catch {}
   setSessionToken(null);
 }
 

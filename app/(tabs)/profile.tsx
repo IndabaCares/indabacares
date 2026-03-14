@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,11 +27,25 @@ const PURPLE_MID = '#9C27B0';
 const ACCENT     = '#CE21FB';
 const LIGHT_TEXT = '#EDE7F6';
 
+// ─── Status tiers ─────────────────────────────────────────────────────────────
+
+const STATUS_TIERS = [
+  { label: 'Gold',   min: 50, icon: 'trophy' as const, color: '#fbbf24' },
+  { label: 'Silver', min: 20, icon: 'trophy' as const, color: '#cbd5e1' },
+  { label: 'Bronze', min: 5,  icon: 'trophy' as const, color: '#cd7f32' },
+];
+
+function getStatus(weeklyRecognitions: number) {
+  for (const tier of STATUS_TIERS) {
+    if (weeklyRecognitions >= tier.min) return tier;
+  }
+  return { label: 'Unranked', icon: 'trophy-outline' as const, color: 'rgba(255,255,255,0.4)' };
+}
+
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Mood History',     icon: 'heart-outline'          as const, route: '/(screens)/mood'   },
-  { label: "FAQ's",            icon: 'help-circle-outline'    as const, route: '/(screens)/settings' },
+  { label: "FAQ's", icon: 'help-circle-outline' as const, route: '/(screens)/faq' },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -220,19 +235,64 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{employee.full_name}</Text>
 
           {/* Job title */}
-          <Text style={styles.subtitle}>
-            {jobTitle ?? employee.hotel}
-          </Text>
+          {jobTitle ? (
+            <Text style={styles.subtitle}>{jobTitle}</Text>
+          ) : null}
 
-          {/* Points balance pill */}
-          <View style={styles.pointsPill}>
-            <Ionicons name="star" size={22} color="#fbbf24" />
-            {pointsBalance === null ? (
-              <ActivityIndicator size="small" color={ACCENT} style={{ marginLeft: 6 }} />
-            ) : (
-              <Text style={styles.pointsPillText}>{pointsBalance} pts</Text>
-            )}
+          {/* Hotel & Department */}
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{employee.hotel}</Text>
+            <View style={styles.metaDivider} />
+            <Text style={styles.metaText}>{employee.department ?? '—'}</Text>
           </View>
+
+          {/* Points + Status pills */}
+          {(() => {
+            const MOCK_WEEKLY = 7; // mock: 7 recognitions this week → Bronze
+            const status = getStatus(MOCK_WEEKLY);
+            return (
+              <View style={styles.pillsRow}>
+
+                {/* Points pill */}
+                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
+                  <Text style={styles.pillHeader}>Recognition Points</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="star" size={16} color="#fbbf24" />
+                    {pointsBalance === null ? (
+                      <ActivityIndicator size="small" color={ACCENT} />
+                    ) : (
+                      <Text style={styles.pillText}>{pointsBalance} pts</Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Streak pill */}
+                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
+                  <Text style={styles.pillHeader}>Reward Wallet</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="cash-outline" size={16} color="#34d399" />
+                    {pointsBalance === null ? (
+                      <ActivityIndicator size="small" color={ACCENT} />
+                    ) : (
+                      <Text style={styles.pillText}>{pointsBalance} pts</Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Status pill */}
+                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
+                  <Text style={styles.pillHeader}>Status</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name={status.icon} size={16} color={status.color} />
+                    <Text style={[styles.pillText, { color: status.color }]}>
+                      {status.label}
+                    </Text>
+                  </View>
+                </View>
+
+              </View>
+            );
+          })()}
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -271,7 +331,7 @@ export default function ProfileScreen() {
                   style={[styles.tabButton, active && styles.tabButtonActive]}
                 >
                   <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab === 'gamification' ? 'Gamification' : 'Announcements'}
+                    {tab === 'gamification' ? 'Achievements' : 'Announcements'}
                   </Text>
                 </Pressable>
               );
@@ -280,13 +340,83 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Content area ────────────────────────────────────────────────── */}
-        <View style={styles.content}>
+        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
           {activeTab === 'gamification' && (
-            <View style={styles.skillsCard}>
-              <Ionicons name="game-controller-outline" size={32} color={PURPLE_MID} />
-              <Text style={styles.skillsCardTitle}>Gamification</Text>
-              <Text style={styles.skillsCardSub}>New games will launch soon</Text>
+            <View style={styles.achieveCard}>
+
+              {/* ── Badges ──────────────────────────────────────────────── */}
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
+                  <Ionicons name="ribbon-outline" size={20} color="#d97706" />
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Badges Earned</Text>
+                  <Text style={styles.achieveSub}>Keep recognising to unlock more</Text>
+                </View>
+                <Text style={styles.achieveValue}>3</Text>
+              </View>
+
+              <View style={styles.achieveDivider} />
+
+              {/* ── Recognitions Received ───────────────────────────────── */}
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
+                  <Ionicons name="star-outline" size={20} color={PURPLE} />
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Recognitions Received</Text>
+                  <Text style={styles.achieveSub}>Total shout-outs from your team</Text>
+                </View>
+                <Text style={styles.achieveValue}>{pointsBalance !== null ? Math.floor((pointsBalance ?? 0) / 10) : '—'}</Text>
+              </View>
+
+              <View style={styles.achieveDivider} />
+
+              {/* ── Status & Progress ───────────────────────────────────── */}
+              {(() => {
+                const MOCK_WEEKLY = 7;
+                const status = getStatus(MOCK_WEEKLY);
+                const nextTier = STATUS_TIERS.find((t) => t.min > MOCK_WEEKLY);
+                const progress = nextTier
+                  ? Math.min(MOCK_WEEKLY / nextTier.min, 1)
+                  : 1;
+                return (
+                  <View>
+                    <View style={styles.achieveRow}>
+                      <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
+                        <Ionicons name={status.icon} size={20} color={status.color} />
+                      </View>
+                      <View style={styles.achieveInfo}>
+                        <Text style={styles.achieveLabel}>Status — {status.label}</Text>
+                        <Text style={styles.achieveSub}>
+                          {nextTier
+                            ? `${MOCK_WEEKLY}/${nextTier.min} recognitions to ${nextTier.label}`
+                            : 'You have reached the top tier!'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.progressBg}>
+                      <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: status.color }]} />
+                    </View>
+                  </View>
+                );
+              })()}
+
+              <View style={styles.achieveDivider} />
+
+              {/* ── Milestones ──────────────────────────────────────────── */}
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#dcfce7' }]}>
+                  <Ionicons name="flag-outline" size={20} color="#16a34a" />
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Milestones</Text>
+                  <Text style={styles.achieveSub}>Next: 10 recognitions sent</Text>
+                </View>
+                <Text style={styles.achieveValue}>2 / 5</Text>
+              </View>
+
             </View>
           )}
 
@@ -298,7 +428,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-        </View>
+        </ScrollView>
 
       </View>
 
@@ -335,9 +465,10 @@ export default function ProfileScreen() {
             <View style={styles.dropdownDivider} />
 
             <Pressable
-              onPress={() => {
+              onPress={async () => {
                 setMenuOpen(false);
-                clearEmployee();
+                await clearEmployee();
+                router.replace('/(auth)/employee-auth');
               }}
               style={styles.dropdownItem}
             >
@@ -457,35 +588,76 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 1,
   },
 
   subtitle: {
     fontSize: 14,
     color: LIGHT_TEXT,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 2,
   },
 
-  // ── Points pill ──────────────────────────────────────────────────────────────
-  pointsPill: {
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  metaText: {
+    fontSize: 12,
+    color: LIGHT_TEXT,
+    fontWeight: '500',
+  },
+
+  metaDivider: {
+    width: 1,
+    height: 10,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+
+  // ── Pills row ─────────────────────────────────────────────────────────────────
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 10,
     alignSelf: 'center',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 10,
-    gap: 8,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 7,
   },
 
-  pointsPillText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  pillText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: '#ffffff',
-    letterSpacing: 0.2,
   },
+
+  pillHeader: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+
 
   // ── Stats row ────────────────────────────────────────────────────────────────
   statsRow: {
@@ -585,7 +757,6 @@ const styles = StyleSheet.create({
 
   // ── Content area ─────────────────────────────────────────────────────────────
   content: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
@@ -615,6 +786,76 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#94a3b8',
     marginTop: 4,
+  },
+
+  // Achievements card
+  achieveCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  achieveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    gap: 12,
+  },
+
+  achieveIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  achieveInfo: {
+    flex: 1,
+  },
+
+  achieveLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+
+  achieveSub: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+
+  achieveValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: PURPLE,
+  },
+
+  achieveDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+  },
+
+  progressBg: {
+    height: 6,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 3,
+    marginBottom: 14,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
   },
 
   // ── Dropdown ─────────────────────────────────────────────────────────────────

@@ -1,11 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 
-const PURPLE = '#7B1FA2';
+const PURPLE      = '#7B1FA2';
+const PURPLE_SOFT = '#f3e8ff';
 
+interface FeedHeaderProps {
+  searchTerm:      string;
+  onSearchChange:  (term: string) => void;
+}
 
-export function FeedHeader() {
+export function FeedHeader({ searchTerm, onSearchChange }: FeedHeaderProps) {
   const { employee } = useEmployee();
 
   const firstName = employee?.full_name.split(' ')[0];
@@ -15,8 +21,6 @@ export function FeedHeader() {
 
   return (
     <View style={styles.container}>
-
-      {/* Purple header section */}
       <View style={styles.header}>
 
         {/* Greeting */}
@@ -27,16 +31,37 @@ export function FeedHeader() {
           </>
         ) : null}
 
-      </View>
+        {/* Search bar */}
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={16} color={PURPLE} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name, badge, department, date…"
+            placeholderTextColor="#a78bca"
+            value={searchTerm}
+            onChangeText={onSearchChange}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+          />
+          {searchTerm.length > 0 && (
+            <Ionicons
+              name="close-circle"
+              size={16}
+              color="#a78bca"
+              onPress={() => onSearchChange('')}
+            />
+          )}
+        </View>
 
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 0,
-  },
+  container: { marginBottom: 0 },
 
   header: {
     backgroundColor: PURPLE,
@@ -44,7 +69,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 28,
+    paddingBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -62,7 +87,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.65)',
     marginTop: 2,
-    marginBottom: 16,
+    marginBottom: 14,
   },
 
+  searchBox: {
+    flexDirection:    'row',
+    alignItems:       'center',
+    backgroundColor:  '#ffffff',
+    borderRadius:     14,
+    paddingHorizontal: 12,
+    paddingVertical:   9,
+    gap: 8,
+  },
+
+  searchIcon: { marginRight: 2 },
+
+  searchInput: {
+    flex:      1,
+    fontSize:  14,
+    color:     '#1e1b4b',
+    padding:   0,
+  },
 });

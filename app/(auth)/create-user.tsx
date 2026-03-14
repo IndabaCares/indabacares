@@ -244,6 +244,7 @@ export default function CreateUserScreen() {
         full_name:     result.full_name,
         employee_code: result.employee_code,
         hotel:         result.hotel,
+        department:    result.department,
         session_token: result.token,
       });
     } catch {

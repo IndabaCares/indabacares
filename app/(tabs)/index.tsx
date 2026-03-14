@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
+import { useFeedSearch } from '@/hooks/use-feed-search';
 import { RecognitionCard } from '@/components/feed/RecognitionCard';
 import { FeedHeader } from '@/components/feed/FeedHeader';
 import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
@@ -10,6 +11,8 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useUIStore } from '@/stores/ui-store';
 import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
 import { RECOGNITION_BADGES } from '@/lib/constants';
+import { ResponsePicker } from '@/components/feed/ResponsePicker';
+import { useEmployee } from '@/providers/EmployeeContext';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE      = '#7B1FA2';
@@ -24,9 +27,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Hospitality Hero',
     hotel: 'demo',
     created_at: new Date(Date.now() - 25 * 60_000).toISOString(),
-    sender:   { id: 's1', full_name: 'Marius Bonthuys',    employee_code: 'EMP001', position: 'Front Office Manager' },
-    receiver: { id: 'r1', full_name: 'Lerato Dlamini',     employee_code: 'EMP002', position: 'Guest Relations' },
+    sender:   { id: 's1', full_name: 'Marius Bonthuys',    employee_code: 'EMP001', position: 'Front Office Manager', department: 'Front Office' },
+    receiver: { id: 'r1', full_name: 'Lerato Dlamini',     employee_code: 'EMP002', position: 'Guest Relations',      department: 'Front Office' },
     likes_count: [{ count: 7 }], comments_count: [{ count: 3 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-2',
@@ -34,9 +38,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Leadership',
     hotel: 'demo',
     created_at: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
-    sender:   { id: 's2', full_name: 'Thandi Nkosi',       employee_code: 'EMP003', position: 'HR Manager' },
-    receiver: { id: 'r2', full_name: 'Sipho Mahlangu',     employee_code: 'EMP004', position: 'Senior Concierge' },
+    sender:   { id: 's2', full_name: 'Thandi Nkosi',       employee_code: 'EMP003', position: 'HR Manager',           department: 'Human Resources' },
+    receiver: { id: 'r2', full_name: 'Sipho Mahlangu',     employee_code: 'EMP004', position: 'Senior Concierge',     department: 'Concierge' },
     likes_count: [{ count: 12 }], comments_count: [{ count: 5 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-3',
@@ -44,9 +49,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Innovation',
     hotel: 'demo',
     created_at: new Date(Date.now() - 5 * 60 * 60_000).toISOString(),
-    sender:   { id: 's3', full_name: 'Johan van der Berg', employee_code: 'EMP005', position: 'F&B Supervisor' },
-    receiver: { id: 'r3', full_name: 'Ayanda Khumalo',     employee_code: 'EMP006', position: 'Breakfast Attendant' },
+    sender:   { id: 's3', full_name: 'Johan van der Berg', employee_code: 'EMP005', position: 'F&B Supervisor',       department: 'Food & Beverage' },
+    receiver: { id: 'r3', full_name: 'Ayanda Khumalo',     employee_code: 'EMP006', position: 'Breakfast Attendant',  department: 'Food & Beverage' },
     likes_count: [{ count: 4 }], comments_count: [{ count: 1 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-4',
@@ -54,9 +60,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Going the Extra Mile',
     hotel: 'demo',
     created_at: new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
-    sender:   { id: 's4', full_name: 'Nomsa Sithole',      employee_code: 'EMP007', position: 'Events Coordinator' },
-    receiver: { id: 'r4', full_name: 'Ruan Pretorius',     employee_code: 'EMP008', position: 'Housekeeping' },
+    sender:   { id: 's4', full_name: 'Nomsa Sithole',      employee_code: 'EMP007', position: 'Events Coordinator',  department: 'Events' },
+    receiver: { id: 'r4', full_name: 'Ruan Pretorius',     employee_code: 'EMP008', position: 'Housekeeping',        department: 'Housekeeping' },
     likes_count: [{ count: 9 }], comments_count: [{ count: 2 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-5',
@@ -64,9 +71,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Customer Excellence',
     hotel: 'demo',
     created_at: new Date(Date.now() - 26 * 60 * 60_000).toISOString(),
-    sender:   { id: 's5', full_name: 'Pieter Engelbrecht', employee_code: 'EMP009', position: 'Duty Manager' },
-    receiver: { id: 'r5', full_name: 'Zanele Mokoena',     employee_code: 'EMP010', position: 'Bellhop' },
+    sender:   { id: 's5', full_name: 'Pieter Engelbrecht', employee_code: 'EMP009', position: 'Duty Manager',        department: 'Operations' },
+    receiver: { id: 'r5', full_name: 'Zanele Mokoena',     employee_code: 'EMP010', position: 'Bellhop',            department: 'Guest Services' },
     likes_count: [{ count: 15 }], comments_count: [{ count: 6 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-6',
@@ -74,9 +82,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Team Player',
     hotel: 'demo',
     created_at: new Date(Date.now() - 30 * 60 * 60_000).toISOString(),
-    sender:   { id: 's6', full_name: 'Lerato Dlamini',     employee_code: 'EMP002', position: 'Guest Relations' },
-    receiver: { id: 'r6', full_name: 'Keamogetswe Tau',    employee_code: 'EMP011', position: 'Night Shift Supervisor' },
+    sender:   { id: 's6', full_name: 'Lerato Dlamini',     employee_code: 'EMP002', position: 'Guest Relations',     department: 'Front Office' },
+    receiver: { id: 'r6', full_name: 'Keamogetswe Tau',    employee_code: 'EMP011', position: 'Night Shift Supervisor', department: 'Operations' },
     likes_count: [{ count: 21 }], comments_count: [{ count: 8 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-7',
@@ -84,9 +93,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Leadership',
     hotel: 'demo',
     created_at: new Date(Date.now() - 36 * 60 * 60_000).toISOString(),
-    sender:   { id: 's7', full_name: 'Ayanda Khumalo',     employee_code: 'EMP006', position: 'Breakfast Attendant' },
-    receiver: { id: 'r7', full_name: 'Lungelo Zulu',       employee_code: 'EMP012', position: 'Head Waiter' },
+    sender:   { id: 's7', full_name: 'Ayanda Khumalo',     employee_code: 'EMP006', position: 'Breakfast Attendant', department: 'Food & Beverage' },
+    receiver: { id: 'r7', full_name: 'Lungelo Zulu',       employee_code: 'EMP012', position: 'Head Waiter',        department: 'Food & Beverage' },
     likes_count: [{ count: 6 }], comments_count: [{ count: 0 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-8',
@@ -94,9 +104,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Innovation',
     hotel: 'demo',
     created_at: new Date(Date.now() - 2 * 24 * 60 * 60_000).toISOString(),
-    sender:   { id: 's8', full_name: 'Sipho Mahlangu',     employee_code: 'EMP004', position: 'Senior Concierge' },
-    receiver: { id: 'r8', full_name: 'Chanel Mostert',     employee_code: 'EMP013', position: 'Front Desk Agent' },
+    sender:   { id: 's8', full_name: 'Sipho Mahlangu',     employee_code: 'EMP004', position: 'Senior Concierge',   department: 'Concierge' },
+    receiver: { id: 'r8', full_name: 'Chanel Mostert',     employee_code: 'EMP013', position: 'Front Desk Agent',   department: 'Front Office' },
     likes_count: [{ count: 11 }], comments_count: [{ count: 4 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-9',
@@ -104,9 +115,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Customer Excellence',
     hotel: 'demo',
     created_at: new Date(Date.now() - 2.5 * 24 * 60 * 60_000).toISOString(),
-    sender:   { id: 's9', full_name: 'Johan van der Berg', employee_code: 'EMP005', position: 'F&B Supervisor' },
-    receiver: { id: 'r9', full_name: 'Precious Ndlovu',    employee_code: 'EMP014', position: 'Reservations Agent' },
+    sender:   { id: 's9', full_name: 'Johan van der Berg', employee_code: 'EMP005', position: 'F&B Supervisor',     department: 'Food & Beverage' },
+    receiver: { id: 'r9', full_name: 'Precious Ndlovu',    employee_code: 'EMP014', position: 'Reservations Agent', department: 'Reservations' },
     likes_count: [{ count: 18 }], comments_count: [{ count: 7 }],
+    recipient_response: null, recipient_responded_at: null,
   },
   {
     id: 'mock-10',
@@ -114,9 +126,10 @@ const MOCK: RecognitionFeedItem[] = [
     badge: 'Going the Extra Mile',
     hotel: 'demo',
     created_at: new Date(Date.now() - 3 * 24 * 60 * 60_000).toISOString(),
-    sender:   { id: 's10', full_name: 'Thandi Nkosi',      employee_code: 'EMP003', position: 'HR Manager' },
-    receiver: { id: 'r10', full_name: 'Dirk Visser',       employee_code: 'EMP015', position: 'Spa Therapist' },
+    sender:   { id: 's10', full_name: 'Thandi Nkosi',      employee_code: 'EMP003', position: 'HR Manager',         department: 'Human Resources' },
+    receiver: { id: 'r10', full_name: 'Dirk Visser',       employee_code: 'EMP015', position: 'Spa Therapist',      department: 'Spa & Wellness' },
     likes_count: [{ count: 14 }], comments_count: [{ count: 3 }],
+    recipient_response: null, recipient_responded_at: null,
   },
 ];
 
@@ -152,20 +165,21 @@ function getInitials(name: string): string {
 // ─── Static mock card (no DB hooks) ──────────────────────────────────────────
 
 const REACTIONS = [
-  { emoji: '❤️', label: 'Like' },
-  { emoji: '😊', label: 'Smile' },
-  { emoji: '👍', label: 'Thumbs up' },
+  { emoji: '❤️', label: 'Like',      pts: 20 },
+  { emoji: '😊', label: 'Smile',     pts: 15 },
+  { emoji: '👍', label: 'Thumbs up', pts: 10 },
 ];
 
 function MockCard({ item }: { item: RecognitionFeedItem }) {
+  const { employee } = useEmployee();
   const [reactions, setReactions] = useState<Record<string, boolean>>({});
   const [counts, setCounts] = useState<Record<string, number>>({
     '❤️': 0, '😊': 0, '👍': 0,
   });
+  const [mockResponse, setMockResponse] = useState<string | null>(null);
 
-  const badge        = getBadgeConfig(item.badge);
-  const likeCount    = item.likes_count?.[0]?.count ?? 0;
-  const commentCount = item.comments_count?.[0]?.count ?? 0;
+  const badge       = getBadgeConfig(item.badge);
+  const isRecipient = employee?.employee_id === item.receiver.id;
 
   const toggleReaction = (emoji: string) => {
     const active = reactions[emoji];
@@ -183,7 +197,12 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
         </View>
         <View style={ms.senderInfo}>
           <Text style={ms.senderName}>{item.receiver.full_name}</Text>
-          {item.receiver.position ? <Text style={ms.senderTitle}>{item.receiver.position}</Text> : null}
+          {(item.receiver.position || item.receiver.department) ? (
+            <Text style={ms.senderTitle}>
+              {item.receiver.position}
+              {item.receiver.position && item.receiver.department ? ` (${item.receiver.department})` : item.receiver.department ?? ''}
+            </Text>
+          ) : null}
         </View>
         <Text style={ms.timeAgo}>{relativeTime(item.created_at)}</Text>
       </View>
@@ -204,9 +223,16 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
       {/* Message */}
       <Text style={ms.message}>{item.message}</Text>
 
+      {/* Recipient response — always visible on mock cards for demo */}
+      <ResponsePicker
+        response={mockResponse}
+        isRecipient={true}
+        onSelect={setMockResponse}
+      />
+
       {/* Reaction pills + logo row */}
       <View style={ms.reactionRow}>
-        {REACTIONS.map(({ emoji }) => {
+        {REACTIONS.map(({ emoji, pts }) => {
           const active = reactions[emoji];
           const count  = counts[emoji] ?? 0;
           return (
@@ -216,9 +242,7 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
               style={[ms.reactionBtn, active && ms.reactionBtnActive]}
             >
               <Text style={ms.reactionEmoji}>{emoji}</Text>
-              {count > 0 && (
-                <Text style={[ms.reactionCount, active && { color: PURPLE }]}>{count}</Text>
-              )}
+              {count > 0 && <Text style={ms.reactionCount}>{count}</Text>}
             </Pressable>
           );
         })}
@@ -271,20 +295,24 @@ const ms = StyleSheet.create({
 
   message: { fontSize: 14, lineHeight: 22, color: '#334155', marginBottom: 4 },
 
-  reactionRow:       { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 2 },
-  reactionBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f1f5f9' },
+  reactionRow:       { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, marginBottom: 0 },
+  reactionBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#f1f5f9' },
   reactionBtnActive: { backgroundColor: PURPLE_SOFT, borderWidth: 1, borderColor: PURPLE + '40' },
-  reactionEmoji:     { fontSize: 14 },
-  reactionCount:     { fontSize: 12, fontWeight: '600', color: '#64748b', marginLeft: 4 },
+  reactionEmoji:     { fontSize: 12 },
+  reactionCount:     { fontSize: 11, fontWeight: '600', color: '#64748b', marginLeft: 3 },
+  reactionPts:       { fontSize: 10, color: '#94a3b8' },
 
-  dateText: { fontSize: 11, color: '#94a3b8', marginTop: 10, marginBottom: 12 },
+  dateText: { fontSize: 11, color: '#94a3b8', marginTop: 4, marginBottom: 8 },
   divider:  { height: 1, backgroundColor: '#f1f5f9', marginBottom: 4 },
 
-  cardLogo: { width: 120, height: 40 },
+  cardLogo: { width: 180, height: 60, marginRight: -32 },
 
   actionBar: { flexDirection: 'row', paddingTop: 4 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
   actionText: { marginLeft: 6, fontSize: 13, fontWeight: '500', color: '#94a3b8' },
+
+  emptySearch:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
+  emptySearchText: { fontSize: 15, color: '#94a3b8', textAlign: 'center' },
 
 });
 
@@ -292,6 +320,10 @@ const ms = StyleSheet.create({
 
 export default function FeedScreen() {
   useReactionRealtime();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const isSearching = searchTerm.trim().length > 0;
+
   const {
     data,
     isLoading,
@@ -302,10 +334,18 @@ export default function FeedScreen() {
     isRefetching,
   } = useFeed();
 
+  const {
+    data:      searchResults,
+    isLoading: searchLoading,
+  } = useFeedSearch(searchTerm);
+
   const resetNewFeedItems = useUIStore((s) => s.resetNewFeedItems);
   const liveRecognitions  = data?.pages.flatMap((page) => page) ?? [];
-  const isMock            = liveRecognitions.length === 0;
-  const feedItems         = isMock ? MOCK : liveRecognitions;
+  const isMock            = !isSearching && liveRecognitions.length === 0;
+
+  const feedItems: RecognitionFeedItem[] = isSearching
+    ? (searchResults ?? [])
+    : isMock ? MOCK : liveRecognitions;
 
   const handleRefresh = useCallback(() => {
     resetNewFeedItems();
@@ -313,15 +353,21 @@ export default function FeedScreen() {
   }, [refetch, resetNewFeedItems]);
 
   const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (!isSearching && hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const header = (
+    <FeedHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+  );
 
   if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
-        <View style={{ flex: 1, backgroundColor: '#F2F2F2', padding: 16, paddingTop: 8 }}>
-          <FeedHeader />
-          {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+        <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
+          {header}
+          <View style={{ padding: 16 }}>
+            {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -330,32 +376,44 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
       <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
-        <FeedHeader />
-        <NewItemsBanner onRefresh={handleRefresh} />
-        <FlatList
-          data={feedItems}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) =>
-            isMock
-              ? <MockCard item={item as RecognitionFeedItem} />
-              : <RecognitionCard recognition={item as any} />
-          }
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching && !isFetchingNextPage}
-              onRefresh={handleRefresh}
-              tintColor={PURPLE}
-            />
-          }
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={isFetchingNextPage ? <SkeletonCard /> : null}
-          windowSize={5}
-          maxToRenderPerBatch={10}
-          removeClippedSubviews
-          initialNumToRender={8}
-        />
+        {header}
+        {!isSearching && <NewItemsBanner onRefresh={handleRefresh} />}
+
+        {isSearching && searchLoading ? (
+          <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
+        ) : isSearching && feedItems.length === 0 ? (
+          <View style={ms.emptySearch}>
+            <Ionicons name="search-outline" size={40} color="#cbd5e1" />
+            <Text style={ms.emptySearchText}>No results for "{searchTerm}"</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={feedItems}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) =>
+              isMock
+                ? <MockCard item={item as RecognitionFeedItem} />
+                : <RecognitionCard recognition={item as any} />
+            }
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}
+            refreshControl={
+              !isSearching ? (
+                <RefreshControl
+                  refreshing={isRefetching && !isFetchingNextPage}
+                  onRefresh={handleRefresh}
+                  tintColor={PURPLE}
+                />
+              ) : undefined
+            }
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={isFetchingNextPage && !isSearching ? <SkeletonCard /> : null}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews
+            initialNumToRender={8}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

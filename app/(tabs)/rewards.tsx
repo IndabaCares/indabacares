@@ -80,7 +80,7 @@ export default function RewardsScreen() {
           {/* Points balance (right) */}
           <View style={s.balanceRow}>
             <View style={s.starBox}>
-              <Ionicons name="star" size={20} color="#fbbf24" />
+              <Ionicons name="cash-outline" size={20} color="#34d399" />
             </View>
             <Text style={[s.balanceValue, { marginLeft: 10 }]}>{MOCK_POINTS}</Text>
           </View>
@@ -90,8 +90,6 @@ export default function RewardsScreen() {
         {/* ── White sheet ───────────────────────────────────── */}
         <View style={s.sheet}>
           <View style={s.handle} />
-          <Text style={s.catalogueTitle}>Rewards Catalogue</Text>
-
           {/* ── Grid ─────────────────────────────────────── */}
           {rows.map((row, ri) => (
             <View key={ri} style={s.row}>
@@ -120,8 +118,7 @@ export default function RewardsScreen() {
 
                     {/* top-left: points */}
                     <View style={[s.pill, s.tl, canAfford ? s.pillW : s.pillP]}>
-                      <Ionicons name="star" size={10} color={canAfford ? PURPLE : '#db2777'} />
-                      <Text style={[s.pillTxt, { color: canAfford ? PURPLE : '#db2777' }]}>  {item.pts}</Text>
+                      <Text style={[s.pillTxt, { color: canAfford ? PURPLE : '#db2777' }]}>{item.pts}</Text>
                     </View>
 
                     {/* top-right: stock */}

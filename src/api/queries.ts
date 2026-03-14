@@ -17,8 +17,9 @@ import { PAGE_SIZE } from '@/lib/constants';
 
 export const RECOGNITION_SELECT = `
   id, message, badge, hotel, created_at,
-  sender:employees!sender_id   ( id, full_name, employee_code, position ),
-  receiver:employees!receiver_id ( id, full_name, employee_code, position ),
+  recipient_response, recipient_responded_at,
+  sender:employees!sender_id   ( id, full_name, employee_code, position, department ),
+  receiver:employees!receiver_id ( id, full_name, employee_code, position, department ),
   likes_count:recognition_likes ( count ),
   comments_count:recognition_comments ( count )
 ` as const;
@@ -29,8 +30,10 @@ export interface RecognitionFeedItem {
   badge: string;
   hotel: string;
   created_at: string;
-  sender:   { id: string; full_name: string; employee_code: string; position: string | null };
-  receiver: { id: string; full_name: string; employee_code: string; position: string | null };
+  recipient_response:     string | null;
+  recipient_responded_at: string | null;
+  sender:   { id: string; full_name: string; employee_code: string; position: string | null; department: string | null };
+  receiver: { id: string; full_name: string; employee_code: string; position: string | null; department: string | null };
   likes_count:    Array<{ count: number }>;
   comments_count: Array<{ count: number }>;
 }

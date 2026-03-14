@@ -23,6 +23,7 @@ export type AuthSuccess = {
   full_name:     string;
   employee_code: string;
   hotel:         string;
+  department:    string | null;
   token:         string;
 };
 
@@ -69,6 +70,7 @@ export async function firstAuthentication(
     full_name:     data.full_name,
     employee_code: employeeCode.trim().toUpperCase(),
     hotel:         data.hotel,
+    department:    data.department ?? null,
     token:         data.token,
   };
 }
@@ -104,6 +106,7 @@ export async function returningLogin(
     full_name:     data.full_name,
     employee_code: employeeCode.trim().toUpperCase(),
     hotel:         data.hotel,
+    department:    data.department ?? null,
     token:         data.token,
   };
 }

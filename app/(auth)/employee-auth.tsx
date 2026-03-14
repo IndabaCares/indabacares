@@ -31,7 +31,6 @@ const HOTELS = [
   'Chobe Safari Lodge',
   'Chobe Bush Lodge',
   'Nata Lodge',
-  'African Procurement Agencies',
 ] as const;
 
 // ─── Hotel Dropdown ───────────────────────────────────────────────────────────
@@ -61,6 +60,7 @@ function HotelDropdown({
         <Text
           style={[
             styles.inputText,
+            { flex: 1 },
             !value && { color: '#9e9e9e' },
           ]}
         >
@@ -194,7 +194,7 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
             style={[styles.toggleTab, active && styles.toggleTabActive]}
           >
             <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
-              {m === 'returning' ? 'Login' : 'First Time'}
+              {m === 'returning' ? 'Login' : 'Register'}
             </Text>
           </Pressable>
         );
@@ -302,6 +302,7 @@ export default function EmployeeAuthScreen() {
         full_name:     result.full_name,
         employee_code: result.employee_code,
         hotel:         result.hotel,
+        department:    result.department,
         session_token: result.token,
       });
     } catch {
@@ -335,6 +336,7 @@ export default function EmployeeAuthScreen() {
         full_name:     result.full_name,
         employee_code: result.employee_code,
         hotel:         result.hotel,
+        department:    result.department,
         session_token: result.token,
       });
     } catch {
