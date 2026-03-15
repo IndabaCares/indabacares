@@ -30,74 +30,76 @@ export default function RewardsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
 
-        {/* ── Purple header ─────────────────────────────────── */}
-        <View style={s.header}>
+      {/* ── Fixed purple header ────────────────────────────── */}
+      <View style={s.header}>
 
-          {/* Hamburger (left) */}
-          <View>
-            <Pressable style={s.iconBtn} onPress={() => setMenuOpen(true)} hitSlop={8}>
-              <Ionicons name="menu" size={24} color="#fff" />
-            </Pressable>
+        {/* Hamburger (left) */}
+        <View>
+          <Pressable style={s.iconBtn} onPress={() => setMenuOpen(true)} hitSlop={8}>
+            <Ionicons name="menu" size={24} color="#fff" />
+          </Pressable>
 
-            {/* Dropdown */}
-            <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
-              <TouchableWithoutFeedback onPress={() => setMenuOpen(false)}>
-                <View style={s.modalBackdrop}>
-                  <TouchableWithoutFeedback>
-                    <View style={s.dropdown}>
-                      <Pressable
-                        style={s.dropdownItem}
-                        onPress={() => { setMenuOpen(false); router.push('/(screens)/orders' as any); }}
-                      >
-                        <Ionicons name="time-outline" size={16} color={PURPLE} />
-                        <Text style={s.dropdownText}>Pending Orders</Text>
-                      </Pressable>
-                      <View style={s.dropdownDivider} />
-                      <Pressable
-                        style={s.dropdownItem}
-                        onPress={() => { setMenuOpen(false); router.push('/(screens)/redeemed' as any); }}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={16} color={PURPLE} />
-                        <Text style={s.dropdownText}>Redeem History</Text>
-                      </Pressable>
-                      <View style={s.dropdownDivider} />
-                      <Pressable
-                        style={s.dropdownItem}
-                        onPress={() => { setMenuOpen(false); }}
-                      >
-                        <Ionicons name="information-circle-outline" size={16} color={PURPLE} />
-                        <Text style={s.dropdownText}>How it Works</Text>
-                      </Pressable>
-                    </View>
-                  </TouchableWithoutFeedback>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
-          </View>
-
-          {/* Points balance (right) */}
-          <View style={s.balanceRow}>
-            <View style={s.starBox}>
-              <Ionicons name="cash-outline" size={20} color="#34d399" />
-            </View>
-            <Text style={[s.balanceValue, { marginLeft: 10 }]}>{MOCK_POINTS}</Text>
-          </View>
-
+          <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
+            <TouchableWithoutFeedback onPress={() => setMenuOpen(false)}>
+              <View style={s.modalBackdrop}>
+                <TouchableWithoutFeedback>
+                  <View style={s.dropdown}>
+                    <Pressable
+                      style={s.dropdownItem}
+                      onPress={() => { setMenuOpen(false); router.push('/(screens)/orders' as any); }}
+                    >
+                      <Ionicons name="time-outline" size={16} color={PURPLE} />
+                      <Text style={s.dropdownText}>Pending Orders</Text>
+                    </Pressable>
+                    <View style={s.dropdownDivider} />
+                    <Pressable
+                      style={s.dropdownItem}
+                      onPress={() => { setMenuOpen(false); router.push('/(screens)/redeemed' as any); }}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={16} color={PURPLE} />
+                      <Text style={s.dropdownText}>Redeem History</Text>
+                    </Pressable>
+                    <View style={s.dropdownDivider} />
+                    <Pressable
+                      style={s.dropdownItem}
+                      onPress={() => { setMenuOpen(false); }}
+                    >
+                      <Ionicons name="information-circle-outline" size={16} color={PURPLE} />
+                      <Text style={s.dropdownText}>How it Works</Text>
+                    </Pressable>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
         </View>
 
-        {/* ── White sheet ───────────────────────────────────── */}
+        {/* Points balance (right) */}
+        <View style={s.balanceRow}>
+          <View style={s.starBox}>
+            <Ionicons name="cash-outline" size={20} color="#34d399" />
+          </View>
+          <Text style={[s.balanceValue, { marginLeft: 10 }]}>{MOCK_POINTS}</Text>
+        </View>
+
+      </View>
+
+      {/* ── Scrollable rewards sheet ───────────────────────── */}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.sheet}>
           <View style={s.handle} />
-          {/* ── Grid ─────────────────────────────────────── */}
           {rows.map((row, ri) => (
             <View key={ri} style={s.row}>
               {row.map((item) => {
-                const canAfford = MOCK_POINTS >= item.pts;
+                const canAfford  = MOCK_POINTS >= item.pts;
                 const outOfStock = item.stock <= 0;
-                const lowStock = !outOfStock && item.stock <= 5;
-                const bg = CARD_COLORS[item.id % CARD_COLORS.length];
+                const lowStock   = !outOfStock && item.stock <= 5;
+                const bg         = CARD_COLORS[item.id % CARD_COLORS.length];
 
                 return (
                   <Pressable
@@ -105,23 +107,14 @@ export default function RewardsScreen() {
                     style={s.card}
                     onPress={() => router.push(`/(screens)/reward/${item.id}` as any)}
                   >
-                    {/* coloured background */}
                     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: bg }]} />
-
-                    {/* gift icon */}
                     <View style={s.iconWrap}>
                       <Ionicons name="gift-outline" size={48} color="rgba(255,255,255,0.25)" />
                     </View>
-
-                    {/* bottom scrim */}
                     <View style={s.scrim} />
-
-                    {/* top-left: points */}
                     <View style={[s.pill, s.tl, canAfford ? s.pillW : s.pillP]}>
                       <Text style={[s.pillTxt, { color: canAfford ? PURPLE : '#db2777' }]}>{item.pts}</Text>
                     </View>
-
-                    {/* top-right: stock */}
                     {outOfStock ? (
                       <View style={[s.pill, s.tr, s.pillDark]}>
                         <Text style={s.pillTxtW}>OUT OF STOCK</Text>
@@ -132,11 +125,9 @@ export default function RewardsScreen() {
                         <Text style={[s.pillTxt, { color: '#92400e' }]}>  {item.stock} left</Text>
                       </View>
                     ) : null}
-
-                    {/* bottom: title */}
                     <View style={s.cardBottom}>
                       <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-                      {!outOfStock && canAfford && <Text style={s.canAfford}>✓ Can redeem</Text>}
+                      {!outOfStock && canAfford  && <Text style={s.canAfford}>✓ Can redeem</Text>}
                       {!outOfStock && !canAfford && <Text style={s.deficit}>Need {item.pts - MOCK_POINTS} more pts</Text>}
                     </View>
                   </Pressable>
@@ -146,13 +137,14 @@ export default function RewardsScreen() {
           ))}
         </View>
       </ScrollView>
+
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: PURPLE },
-  scroll: { flex: 1, backgroundColor: '#f5f3ff' },
+  safe:    { flex: 1, backgroundColor: PURPLE },
+  scroll:  { flex: 1 },
   content: { paddingBottom: 110 },
 
   // Header

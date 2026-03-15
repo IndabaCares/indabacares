@@ -104,20 +104,18 @@ export async function validateSessionWithDB(
   session: EmployeeSession,
 ): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('id, status')
-      .eq('id', session.employee_id)
-      .single();
+    const { data, error } = await supabase.rpc('validate_session', {
+      p_session_token: session.session_token,
+    });
 
     if (error?.message?.includes('fetch') || error?.message?.includes('network')) {
-      return true;
+      return true; // fail-open when offline
     }
 
     if (error || !data) return false;
 
-    return (data as { id: string; status: string }).status === 'active';
+    return (data as { ok: boolean }).ok === true;
   } catch {
-    return true;
+    return true; // fail-open on unexpected errors
   }
 }

@@ -32,6 +32,22 @@ export function getSessionToken(): string | null {
   return _sessionHeaders['x-session-token'] ?? null;
 }
 
+// ─── Session-expiry callback ──────────────────────────────────────────────────
+//
+// Registered by EmployeeContext on mount. Called by edge-function invoke()
+// when a 401 is returned so the app can auto-logout without needing React hooks
+// inside the API layer.
+
+let _onSessionExpired: (() => void) | null = null;
+
+export function registerSessionExpiredHandler(fn: () => void): void {
+  _onSessionExpired = fn;
+}
+
+export function notifySessionExpired(): void {
+  _onSessionExpired?.();
+}
+
 // ─── Custom fetch adapter ─────────────────────────────────────────────────────
 //
 // Injects the x-session-token header into every HTTP request.

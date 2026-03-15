@@ -10,7 +10,7 @@
  * validates x-session-token against employee_active_sessions.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, notifySessionExpired } from '@/lib/supabase';
 import type {
   SendRecognitionRequest,
   SendRecognitionResponse,
@@ -56,6 +56,7 @@ async function invoke<T>(
       } catch {}
     }
 
+    if (status === 401) notifySessionExpired();
     throw new EdgeFunctionCallError(message, status);
   }
 

@@ -1,11 +1,11 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
 import { useFeedSearch } from '@/hooks/use-feed-search';
 import { RecognitionCard } from '@/components/feed/RecognitionCard';
-import { FeedHeader } from '@/components/feed/FeedHeader';
+import { FeedHeader, type FeedFilter } from '@/components/feed/FeedHeader';
 import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useUIStore } from '@/stores/ui-store';
@@ -316,12 +316,332 @@ const ms = StyleSheet.create({
 
 });
 
+// ─── Birthday Card ────────────────────────────────────────────────────────────
+
+function MockBirthdayCard() {
+  const bounce  = useRef(new Animated.Value(0)).current;
+  const rotate  = useRef(new Animated.Value(0)).current;
+  const sparkle = useRef(new Animated.Value(1)).current;
+
+  const [smiles,  setSmiles]  = useState(24);
+  const [mySmile, setMySmile] = useState(false);
+
+  useEffect(() => {
+    // Bounce loop for 🎉
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: -10, duration: 350, useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0,   duration: 350, useNativeDriver: true }),
+      ])
+    ).start();
+
+    // Wiggle rotation loop
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(rotate, { toValue: 1,  duration: 300, useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: -1, duration: 300, useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: 0,  duration: 300, useNativeDriver: true }),
+      ])
+    ).start();
+
+    // Sparkle pulse loop for ⭐
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(sparkle, { toValue: 1.4, duration: 600, useNativeDriver: true }),
+        Animated.timing(sparkle, { toValue: 1.0, duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const rotateDeg = rotate.interpolate({ inputRange: [-1, 1], outputRange: ['-18deg', '18deg'] });
+
+  const handleSmile = () => {
+    setSmiles((n) => mySmile ? n - 1 : n + 1);
+    setMySmile((v) => !v);
+  };
+
+  return (
+    <View style={bs.card}>
+      {/* ── Confetti dots ─────────────────────────────────── */}
+      <View style={bs.confettiRow} pointerEvents="none">
+        {['#F59E0B','#7B1FA2','#10B981','#EF4444','#3B82F6','#F59E0B','#7B1FA2','#10B981'].map((c, i) => (
+          <View key={i} style={[bs.dot, { backgroundColor: c, top: (i % 2 === 0 ? 8 : 18), left: `${i * 13}%` as any }]} />
+        ))}
+      </View>
+
+      {/* ── Header row ────────────────────────────────────── */}
+      <View style={bs.headerRow}>
+        <Animated.Text style={[bs.partyIcon, { transform: [{ translateY: bounce }, { rotate: rotateDeg }] }]}>
+          🎉
+        </Animated.Text>
+        <Text style={bs.birthdayLabel}>Happy Birthday!</Text>
+        <Animated.Text style={[bs.partyIcon, { transform: [{ translateY: bounce }, { rotate: rotateDeg }] }]}>
+          🎉
+        </Animated.Text>
+      </View>
+
+      {/* ── Person info ───────────────────────────────────── */}
+      <View style={bs.personRow}>
+        <View style={bs.avatar}>
+          <Text style={bs.avatarText}>LD</Text>
+        </View>
+        <View style={{ marginLeft: 12, flex: 1 }}>
+          <Text style={bs.personName}>Lerato Dlamini</Text>
+          <Text style={bs.personRole}>Guest Relations · Front Office</Text>
+        </View>
+        <View style={bs.pointsChip}>
+          <Animated.Text style={{ fontSize: 14, transform: [{ scale: sparkle }] }}>⭐</Animated.Text>
+          <Text style={bs.pointsChipText}>20</Text>
+        </View>
+      </View>
+
+      {/* ── Divider ───────────────────────────────────────── */}
+      <View style={bs.divider} />
+
+      {/* ── Smiley + Awesome day row ──────────────────────── */}
+      <View style={bs.smileRow}>
+        <Pressable
+          onPress={handleSmile}
+          style={({ pressed }) => [bs.smileBtn, mySmile && bs.smileBtnActive, pressed && { opacity: 0.75 }]}
+        >
+          <Text style={bs.smileEmoji}>😊</Text>
+          {smiles > 0 && <Text style={[bs.smileCount, mySmile && bs.smileCountActive]}>{smiles}</Text>}
+        </Pressable>
+        <Text style={bs.awesomeText}>🎂  Have an Awesome day!</Text>
+      </View>
+    </View>
+  );
+}
+
+const bs = StyleSheet.create({
+  card: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FCD34D',
+    marginBottom: 14,
+    padding: 14,
+    overflow: 'hidden',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
+    position: 'relative',
+  },
+
+  // Confetti
+  confettiRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 30, flexDirection: 'row' },
+  dot: { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+
+  // Header
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 10, gap: 10 },
+  partyIcon: { fontSize: 30 },
+  birthdayLabel: { fontSize: 22, fontWeight: '900', color: '#92400E', letterSpacing: 0.5 },
+
+  // Person
+  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 14, padding: 10, marginBottom: 10 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FCD34D' },
+  avatarText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  personName: { fontSize: 17, fontWeight: '800', color: '#1e1b4b' },
+  personRole: { fontSize: 12, color: '#78716C', marginTop: 2 },
+  pointsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: '#FCD34D',
+    gap: 4,
+    marginLeft: 8,
+  },
+  pointsChipText: { fontSize: 13, fontWeight: '800', color: '#92400E' },
+
+  // Awesome day
+  awesomeText: { fontSize: 14, fontWeight: '700', color: '#92400E', flex: 1, textAlign: 'right' },
+
+  // Divider
+  divider: { height: 1, backgroundColor: '#FCD34D', marginBottom: 12, opacity: 0.5 },
+
+  // Smiley
+  smileRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  smileHint: { fontSize: 12, color: '#92400E', opacity: 0.7, flex: 1 },
+  smileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: '#FCD34D',
+    gap: 4,
+  },
+  smileBtnActive: { backgroundColor: '#FDE68A', borderColor: '#F59E0B' },
+  smileEmoji: { fontSize: 18 },
+  smileCount: { fontSize: 13, fontWeight: '700', color: '#78716C' },
+  smileCountActive: { color: '#92400E' },
+});
+
+// ─── Service Milestone Card ───────────────────────────────────────────────────
+
+const MILESTONE_CONFIG: Record<number, { pts: number; icon: string; label: string }> = {
+  1:  { pts: 20,   icon: '🌱', label: '1 Year Anniversary'  },
+  3:  { pts: 50,   icon: '🌿', label: '3 Year Anniversary'  },
+  5:  { pts: 100,  icon: '⭐', label: '5 Year Anniversary'  },
+  10: { pts: 500,  icon: '🏆', label: '10 Year Anniversary' },
+  15: { pts: 750,  icon: '💎', label: '15 Year Anniversary' },
+  20: { pts: 1000, icon: '👑', label: '20 Year Anniversary' },
+};
+
+const MOCK_MILESTONES = [
+  { initials: 'AM', name: 'Ayanda Khumalo',     role: 'Breakfast Attendant', dept: 'Food & Beverage',  years: 1  },
+  { initials: 'SM', name: 'Sipho Mahlangu',     role: 'Senior Concierge',   dept: 'Concierge',        years: 3  },
+  { initials: 'NP', name: 'Precious Ndlovu',    role: 'Reservations Agent', dept: 'Reservations',     years: 5  },
+  { initials: 'TN', name: 'Thandi Nkosi',       role: 'HR Manager',         dept: 'Human Resources',  years: 10 },
+  { initials: 'JV', name: 'Johan van der Berg', role: 'F&B Supervisor',     dept: 'Food & Beverage',  years: 15 },
+  { initials: 'MB', name: 'Marius Bonthuys',    role: 'Front Office Mgr',   dept: 'Front Office',     years: 20 },
+];
+
+function MockMilestoneCard({ emp }: { emp: typeof MOCK_MILESTONES[0] }) {
+  const cfg     = MILESTONE_CONFIG[emp.years]!;
+  const glow    = useRef(new Animated.Value(1)).current;
+  const shimmer = useRef(new Animated.Value(1)).current;
+
+  const [smiles,  setSmiles]  = useState(Math.floor(Math.random() * 30) + 5);
+  const [mySmile, setMySmile] = useState(false);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow,    { toValue: 1.35, duration: 550, useNativeDriver: true }),
+        Animated.timing(glow,    { toValue: 1.0,  duration: 550, useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1.25, duration: 700, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 1.0,  duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const handleSmile = () => {
+    setSmiles((n) => mySmile ? n - 1 : n + 1);
+    setMySmile((v) => !v);
+  };
+
+  return (
+    <View style={ms2.card}>
+      {/* ── Dot strip ─────────────────────────────────────── */}
+      <View style={ms2.dotRow} pointerEvents="none">
+        {['#2DD4BF','#0891B2','#6366F1','#2DD4BF','#0891B2','#6366F1','#2DD4BF','#0891B2'].map((c, i) => (
+          <View key={i} style={[ms2.dot, { backgroundColor: c, top: i % 2 === 0 ? 6 : 16, left: `${i * 13}%` as any }]} />
+        ))}
+      </View>
+
+      {/* ── Header ────────────────────────────────────────── */}
+      <View style={ms2.headerRow}>
+        <Animated.Text style={[ms2.milestoneIcon, { transform: [{ scale: glow }] }]}>
+          {cfg.icon}
+        </Animated.Text>
+        <View style={ms2.headerText}>
+          <Text style={ms2.milestoneTitle}>Service Milestone</Text>
+          <Text style={ms2.milestoneLabel}>{cfg.label}</Text>
+        </View>
+        <View style={ms2.yearBadge}>
+          <Text style={ms2.yearBadgeText}>{emp.years} {emp.years === 1 ? 'yr' : 'yrs'}</Text>
+        </View>
+      </View>
+
+      {/* ── Person row ────────────────────────────────────── */}
+      <View style={ms2.personRow}>
+        <View style={ms2.avatar}>
+          <Text style={ms2.avatarText}>{emp.initials}</Text>
+        </View>
+        <View style={{ marginLeft: 10, flex: 1 }}>
+          <Text style={ms2.personName}>{emp.name}</Text>
+          <Text style={ms2.personRole}>{emp.role} · {emp.dept}</Text>
+        </View>
+        <View style={ms2.ptsChip}>
+          <Animated.Text style={{ fontSize: 13, transform: [{ scale: shimmer }] }}>⭐</Animated.Text>
+          <Text style={ms2.ptsChipText}>{cfg.pts}</Text>
+        </View>
+      </View>
+
+      {/* ── Divider ───────────────────────────────────────── */}
+      <View style={ms2.divider} />
+
+      {/* ── Smiley + congrats row ─────────────────────────── */}
+      <View style={ms2.smileRow}>
+        <Pressable
+          onPress={handleSmile}
+          style={({ pressed }) => [ms2.smileBtn, mySmile && ms2.smileBtnActive, pressed && { opacity: 0.75 }]}
+        >
+          <Text style={ms2.smileEmoji}>😊</Text>
+          {smiles > 0 && <Text style={[ms2.smileCount, mySmile && ms2.smileCountActive]}>{smiles}</Text>}
+        </Pressable>
+        <Text style={ms2.congratsText}>🎖️  Congratulations on {emp.years} {emp.years === 1 ? 'year' : 'years'}!</Text>
+      </View>
+    </View>
+  );
+}
+
+const ms2 = StyleSheet.create({
+  card: {
+    backgroundColor: '#f0fdfa',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#5EEAD4',
+    marginBottom: 14,
+    padding: 14,
+    overflow: 'hidden',
+    shadowColor: '#14B8A6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
+    position: 'relative',
+  },
+  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 28, flexDirection: 'row' },
+  dot:    { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+
+  headerRow:      { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 10, gap: 10 },
+  milestoneIcon:  { fontSize: 32 },
+  headerText:     { flex: 1 },
+  milestoneTitle: { fontSize: 11, fontWeight: '700', color: '#0F766E', letterSpacing: 0.6, textTransform: 'uppercase' },
+  milestoneLabel: { fontSize: 16, fontWeight: '900', color: '#134E4A', marginTop: 1 },
+  yearBadge:      { backgroundColor: '#CCFBF1', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1.5, borderColor: '#5EEAD4' },
+  yearBadgeText:  { fontSize: 12, fontWeight: '800', color: '#0F766E' },
+
+  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#CCFBF1', borderRadius: 14, padding: 10, marginBottom: 10 },
+  avatar:    { width: 42, height: 42, borderRadius: 21, backgroundColor: '#0F766E', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#5EEAD4' },
+  avatarText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  personName: { fontSize: 15, fontWeight: '800', color: '#134E4A' },
+  personRole: { fontSize: 12, color: '#0F766E', marginTop: 2 },
+  ptsChip:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDFA', borderRadius: 12, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1.5, borderColor: '#5EEAD4', gap: 3, marginLeft: 8 },
+  ptsChipText: { fontSize: 13, fontWeight: '800', color: '#0F766E' },
+
+  divider: { height: 1, backgroundColor: '#5EEAD4', marginBottom: 10, opacity: 0.4 },
+
+  smileRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  smileBtn:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#CCFBF1', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1.5, borderColor: '#5EEAD4', gap: 4 },
+  smileBtnActive: { backgroundColor: '#99F6E4', borderColor: '#14B8A6' },
+  smileEmoji:     { fontSize: 16 },
+  smileCount:     { fontSize: 13, fontWeight: '700', color: '#0F766E' },
+  smileCountActive: { color: '#134E4A' },
+  congratsText:   { fontSize: 13, fontWeight: '700', color: '#0F766E', flex: 1, textAlign: 'right' },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
   useReactionRealtime();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm,    setSearchTerm]    = useState('');
+  const [activeFilter,  setActiveFilter]  = useState<FeedFilter | null>(null);
   const isSearching = searchTerm.trim().length > 0;
 
   const {
@@ -343,9 +663,26 @@ export default function FeedScreen() {
   const liveRecognitions  = data?.pages.flatMap((page) => page) ?? [];
   const isMock            = !isSearching && liveRecognitions.length === 0;
 
-  const feedItems: RecognitionFeedItem[] = isSearching
+  const baseItems: RecognitionFeedItem[] = isSearching
     ? (searchResults ?? [])
     : isMock ? MOCK : liveRecognitions;
+
+  const feedItems: RecognitionFeedItem[] = (() => {
+    if (!activeFilter) return baseItems;
+    const { category, value } = activeFilter;
+    if (category === 'latest') {
+      return [...baseItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    if (category === 'badge') {
+      return baseItems.filter((item) => item.badge === value);
+    }
+    if (category === 'department') {
+      return baseItems.filter((item) =>
+        item.receiver.department === value || item.sender.department === value
+      );
+    }
+    return baseItems;
+  })();
 
   const handleRefresh = useCallback(() => {
     resetNewFeedItems();
@@ -357,7 +694,12 @@ export default function FeedScreen() {
   }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const header = (
-    <FeedHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+    <FeedHeader
+      searchTerm={searchTerm}
+      onSearchChange={setSearchTerm}
+      activeFilter={activeFilter}
+      onFilterChange={setActiveFilter}
+    />
   );
 
   if (isLoading) {
@@ -395,6 +737,14 @@ export default function FeedScreen() {
                 ? <MockCard item={item as RecognitionFeedItem} />
                 : <RecognitionCard recognition={item as any} />
             }
+            ListHeaderComponent={isMock ? (
+              <>
+                <MockBirthdayCard />
+                {MOCK_MILESTONES.map((emp) => (
+                  <MockMilestoneCard key={emp.years} emp={emp} />
+                ))}
+              </>
+            ) : null}
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}
             refreshControl={
               !isSearching ? (

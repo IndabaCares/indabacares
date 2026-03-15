@@ -29,6 +29,7 @@ import {
   validateSessionWithDB,
   type EmployeeSession,
 } from '@/lib/EmployeeSessionManager';
+import { registerSessionExpiredHandler } from '@/lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,14 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     setEmployeeState(null);
     await clearSession(token);
   }, [employee]);
+
+  // ── Register auto-logout on session expiry ────────────────────────────────
+
+  useEffect(() => {
+    registerSessionExpiredHandler(() => {
+      clearEmployee();
+    });
+  }, [clearEmployee]);
 
   return (
     <EmployeeContext.Provider value={{ employee, isLoaded, setEmployee, clearEmployee }}>

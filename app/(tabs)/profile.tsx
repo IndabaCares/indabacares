@@ -18,7 +18,6 @@ import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/utils/image';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
-import { MoodPromptCard } from '@/components/mood/MoodPromptCard';
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
@@ -314,11 +313,6 @@ export default function ProfileScreen() {
 
         </View>
 
-        {/* ── Mood prompt ─────────────────────────────────────────────────── */}
-        <View style={styles.moodContainer}>
-          <MoodPromptCard />
-        </View>
-
         {/* ── Pill tab selector ───────────────────────────────────────────── */}
         <View style={styles.tabContainer}>
           <View style={styles.tabPill}>
@@ -340,7 +334,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Content area ────────────────────────────────────────────────── */}
-        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <View style={[styles.content, { paddingBottom: 100 }]}>
 
           {activeTab === 'gamification' && (
             <View style={styles.achieveCard}>
@@ -428,7 +422,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-        </ScrollView>
+        </View>
 
       </View>
 
@@ -758,7 +752,7 @@ const styles = StyleSheet.create({
   // ── Content area ─────────────────────────────────────────────────────────────
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 0,
   },
 
   // Skills card
@@ -794,7 +788,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    alignSelf: 'stretch',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
