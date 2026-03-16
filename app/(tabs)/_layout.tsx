@@ -41,6 +41,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="profile"
       screenOptions={{
         tabBarActiveTintColor: NAV_ACT,
         tabBarInactiveTintColor: NAV_INACT,

@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Authenticated — send into the main app
-    if (inAuthGroup) router.replace('/(tabs)');
+    if (inAuthGroup) router.replace('/(tabs)/profile');
   }, [employee, isLoaded, segments]);
 
   return <>{children}</>;

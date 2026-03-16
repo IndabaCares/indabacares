@@ -44,6 +44,7 @@ function getStatus(weeklyRecognitions: number) {
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
+  { label: 'Initiatives', icon: 'ribbon-outline' as const, route: '/(screens)/initiatives' },
   { label: "FAQ's", icon: 'help-circle-outline' as const, route: '/(screens)/faq' },
 ];
 

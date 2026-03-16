@@ -635,6 +635,152 @@ const ms2 = StyleSheet.create({
   congratsText:   { fontSize: 13, fontWeight: '700', color: '#0F766E', flex: 1, textAlign: 'right' },
 });
 
+// ─── Legend of the Month Card ─────────────────────────────────────────────────
+
+const LEGEND = {
+  initials: 'KT',
+  name: 'Keamogetswe Tau',
+  role: 'Night Shift Supervisor',
+  dept: 'Operations',
+  month: 'March 2026',
+  reward: 500,
+  quote: '"Your dedication, passion, and warm hospitality inspire us daily. Thank you for creating unforgettable Guest experiences and setting the Indaba Standards. Well Done."',
+};
+
+function MockLegendCard() {
+  const crown  = useRef(new Animated.Value(1)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+  const [smiles,  setSmiles]  = useState(47);
+  const [mySmile, setMySmile] = useState(false);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(crown,   { toValue: 1.2,  duration: 600, useNativeDriver: true }),
+        Animated.timing(crown,   { toValue: 1.0,  duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.0, 0.18] });
+
+  return (
+    <View style={lg.card}>
+      {/* Shimmer overlay */}
+      <Animated.View style={[StyleSheet.absoluteFillObject, lg.shimmer, { opacity: shimmerOpacity }]} pointerEvents="none" />
+
+      {/* Dot strip */}
+      <View style={lg.dotRow} pointerEvents="none">
+        {['#DC2626','#991B1B','#EF4444','#DC2626','#991B1B','#EF4444','#DC2626','#991B1B'].map((c, i) => (
+          <View key={i} style={[lg.dot, { backgroundColor: c, top: i % 2 === 0 ? 6 : 16, left: `${i * 13}%` as any }]} />
+        ))}
+      </View>
+
+      {/* Header */}
+      <View style={lg.titleRow}>
+        <Animated.Text style={[lg.crownIcon, { transform: [{ scale: crown }] }]}>👑</Animated.Text>
+        <Text style={lg.legendLabel}>LEGEND OF THE MONTH</Text>
+        <Animated.Text style={[lg.crownIcon, { transform: [{ scale: crown }] }]}>👑</Animated.Text>
+      </View>
+      <Text style={lg.monthLabel}>{LEGEND.month}</Text>
+
+
+      {/* Person row */}
+      <View style={lg.personRow}>
+        <View style={lg.avatar}>
+          <Text style={lg.avatarText}>{LEGEND.initials}</Text>
+        </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={lg.personName}>{LEGEND.name}</Text>
+          <Text style={lg.personRole}>{LEGEND.role} · {LEGEND.dept}</Text>
+        </View>
+      </View>
+
+      {/* Quote */}
+      <Text style={lg.quote}>{LEGEND.quote}</Text>
+
+      {/* Divider */}
+      <View style={lg.divider} />
+
+      {/* Bottom row */}
+      <View style={lg.smileRow}>
+        <Pressable
+          onPress={() => { setSmiles((n) => mySmile ? n - 1 : n + 1); setMySmile((v) => !v); }}
+          style={[lg.smileBtn, mySmile && lg.smileBtnActive]}
+        >
+          <Text style={lg.smileEmoji}>❤️</Text>
+          <Text style={[lg.smileCount, mySmile && lg.smileCountActive]}>{smiles}</Text>
+        </Pressable>
+        <Text style={lg.congratsText}>🏆  You're a Legend!</Text>
+        <View style={lg.ptsBadge}>
+          <Ionicons name="cash-outline" size={15} color="#16a34a" />
+          <Text style={lg.ptsText}>{LEGEND.reward}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const RED      = '#DC2626';
+const RED_SOFT = '#FEE2E2';
+const RED_MID  = '#FECACA';
+
+const lg = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: RED_MID,
+    marginBottom: 14,
+    padding: 14,
+    overflow: 'hidden',
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+    position: 'relative',
+  },
+  shimmer: {
+    borderRadius: 20,
+    backgroundColor: '#fff',
+  },
+
+  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 28, flexDirection: 'row' },
+  dot:    { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+
+  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 6, gap: 10 },
+  crownIcon:   { fontSize: 30 },
+  legendLabel: { fontSize: 16, fontWeight: '900', color: '#991B1B', letterSpacing: 1.2, textTransform: 'uppercase', textAlign: 'center' },
+  monthLabel:  { fontSize: 13, fontWeight: '700', color: '#7F1D1D', textAlign: 'center', opacity: 0.75, marginBottom: 10 },
+  ptsBadge:    { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1.5, borderColor: RED_MID, gap: 4 },
+  ptsText:     { fontSize: 13, fontWeight: '800', color: '#991B1B' },
+
+  personRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 14, padding: 10, marginBottom: 8 },
+  avatar:     { width: 52, height: 52, borderRadius: 26, backgroundColor: RED, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: RED_MID },
+  avatarText: { fontSize: 17, fontWeight: '900', color: '#fff' },
+  personName: { fontSize: 16, fontWeight: '800', color: '#7F1D1D' },
+  personRole: { fontSize: 12, color: '#991B1B', marginTop: 2, opacity: 0.8 },
+
+  quote: { fontSize: 13, lineHeight: 20, color: '#7F1D1D', fontStyle: 'italic', marginBottom: 8 },
+
+  divider: { height: 1, backgroundColor: RED_MID, opacity: 0.5, marginBottom: 10 },
+
+  smileRow:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  smileBtn:         { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1.5, borderColor: RED_MID, gap: 4 },
+  smileBtnActive:   { backgroundColor: RED_MID, borderColor: RED },
+  smileEmoji:       { fontSize: 16 },
+  smileCount:       { fontSize: 13, fontWeight: '700', color: '#991B1B' },
+  smileCountActive: { color: '#7F1D1D' },
+  congratsText:     { fontSize: 13, fontWeight: '700', color: '#991B1B', flex: 1, textAlign: 'center' },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
@@ -739,6 +885,7 @@ export default function FeedScreen() {
             }
             ListHeaderComponent={isMock ? (
               <>
+                <MockLegendCard />
                 <MockBirthdayCard />
                 {MOCK_MILESTONES.map((emp) => (
                   <MockMilestoneCard key={emp.years} emp={emp} />
