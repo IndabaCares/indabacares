@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +19,7 @@ import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/utils/image';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
+import { useRecognitionBalance, MONTHLY_RECOGNITION_LIMIT } from '@/hooks/use-recognition-balance';
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
@@ -60,7 +62,11 @@ export default function ProfileScreen() {
   const [activeTab,     setActiveTab]     = useState<'gamification' | 'announcements'>('gamification');
   const [menuOpen,      setMenuOpen]      = useState(false);
 
-  const { data: reactionBalance, isLoading: reactionLoading } = useReactionBalance();
+  const { data: reactionBalance,     isLoading: reactionLoading }     = useReactionBalance();
+  const { data: recognitionRemaining                               }  = useRecognitionBalance();
+
+  // Mock: number of times user has hit the 10-recognition cap across all months
+  const MOCK_BADGES_EARNED = 3;
 
   // ── Fetch employee profile data ────────────────────────────────────────────
   useEffect(() => {
@@ -92,10 +98,15 @@ export default function ProfileScreen() {
 
   // ── Stats row ──────────────────────────────────────────────────────────────
   const stats = [
-    { icon: '❤️', value: reactionBalance?.hearts_remaining ?? REACTION_TOTALS.heart,    pts: 20 },
-    { icon: '😊', value: reactionBalance?.smiles_remaining ?? REACTION_TOTALS.smile,    pts: 15 },
-    { icon: '👍', value: reactionBalance?.thumbs_remaining ?? REACTION_TOTALS.thumbs_up, pts: 10 },
+    { icon: '❤️', value: reactionBalance?.hearts_remaining ?? REACTION_TOTALS.heart    },
+    { icon: '😊', value: reactionBalance?.smiles_remaining ?? REACTION_TOTALS.smile    },
+    { icon: '👍', value: reactionBalance?.thumbs_remaining ?? REACTION_TOTALS.thumbs_up },
   ];
+
+  const remainingReactionPts =
+    (reactionBalance?.hearts_remaining  ?? REACTION_TOTALS.heart)     +
+    (reactionBalance?.smiles_remaining  ?? REACTION_TOTALS.smile)     +
+    (reactionBalance?.thumbs_remaining  ?? REACTION_TOTALS.thumbs_up);
 
   // ── Photo upload ───────────────────────────────────────────────────────────
 
@@ -181,8 +192,14 @@ export default function ProfileScreen() {
 
       <View style={styles.screen}>
 
-        {/* ── Purple header card ──────────────────────────────────────────── */}
-        <View style={styles.header}>
+        {/* ── Image header card ───────────────────────────────────────────── */}
+        <ImageBackground
+          source={require('../../assets/Indaba-long.jpg')}
+          style={styles.header}
+          resizeMode="cover"
+        >
+          {/* Dark overlay — full height of ImageBackground */}
+          <View style={styles.headerOverlay}>
 
           {/* Top navigation */}
           <View style={styles.topNav}>
@@ -206,54 +223,60 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Avatar — tappable */}
-          <Pressable onPress={handleAvatarPress} style={styles.avatarWrapper}>
-            {photoUrl ? (
-              <Image
-                source={{ uri: photoUrl }}
-                style={styles.avatarImage}
-                contentFit="cover"
-                onError={() => setPhotoUrl(null)}
-              />
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitials}>{initials}</Text>
+          {/* Profile row: avatar left, text right */}
+          <View style={styles.profileRow}>
+
+            {/* Avatar — tappable */}
+            <Pressable onPress={handleAvatarPress} style={styles.avatarWrapper}>
+              {photoUrl ? (
+                <Image
+                  source={{ uri: photoUrl }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                  onError={() => setPhotoUrl(null)}
+                />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarInitials}>{initials}</Text>
+                </View>
+              )}
+              {uploading && (
+                <View style={styles.avatarSpinner}>
+                  <ActivityIndicator color="#ffffff" size="small" />
+                </View>
+              )}
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={12} color="#ffffff" />
               </View>
-            )}
-            {/* Spinner overlaid on top — never hides the photo */}
-            {uploading && (
-              <View style={styles.avatarSpinner}>
-                <ActivityIndicator color="#ffffff" size="small" />
+              {MOCK_BADGES_EARNED > 0 && (
+                <View style={styles.earnedBadge}>
+                  <Ionicons name="ribbon" size={26} color="#d97706" />
+                </View>
+              )}
+            </Pressable>
+
+            {/* Name / title / meta */}
+            <View style={styles.profileInfo}>
+              <Text style={styles.name}>{employee.full_name}</Text>
+              {jobTitle ? <Text style={styles.subtitle}>{jobTitle}</Text> : null}
+              <View style={styles.metaRow}>
+                <Text style={styles.metaText}>{employee.hotel}</Text>
+                <View style={styles.metaDivider} />
+                <Text style={styles.metaText}>{employee.department ?? '—'}</Text>
               </View>
-            )}
-            <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={12} color="#ffffff" />
             </View>
-          </Pressable>
 
-          {/* Name */}
-          <Text style={styles.name}>{employee.full_name}</Text>
-
-          {/* Job title */}
-          {jobTitle ? (
-            <Text style={styles.subtitle}>{jobTitle}</Text>
-          ) : null}
-
-          {/* Hotel & Department */}
-          <View style={styles.metaRow}>
-            <Text style={styles.metaText}>{employee.hotel}</Text>
-            <View style={styles.metaDivider} />
-            <Text style={styles.metaText}>{employee.department ?? '—'}</Text>
           </View>
+
+          {/* ── Stats / pills card ────────────────────────────────────────── */}
+          <View style={styles.statsCard}>
 
           {/* Points + Status pills */}
           {(() => {
-            const MOCK_WEEKLY = 7; // mock: 7 recognitions this week → Bronze
+            const MOCK_WEEKLY = 7;
             const status = getStatus(MOCK_WEEKLY);
             return (
               <View style={styles.pillsRow}>
-
-                {/* Points pill */}
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
                   <Text style={styles.pillHeader}>Recognition Points</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -261,12 +284,10 @@ export default function ProfileScreen() {
                     {pointsBalance === null ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillText}>{pointsBalance} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance} pts</Text>
                     )}
                   </View>
                 </View>
-
-                {/* Streak pill */}
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
                   <Text style={styles.pillHeader}>Reward Wallet</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -274,45 +295,44 @@ export default function ProfileScreen() {
                     {pointsBalance === null ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillText}>{pointsBalance} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance} pts</Text>
                     )}
                   </View>
                 </View>
-
-                {/* Status pill */}
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
                   <Text style={styles.pillHeader}>Status</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name={status.icon} size={16} color={status.color} />
-                    <Text style={[styles.pillText, { color: status.color }]}>
-                      {status.label}
-                    </Text>
+                    <Text style={[styles.pillTextDark, { color: status.color }]}>{status.label}</Text>
                   </View>
                 </View>
-
               </View>
             );
           })()}
 
-          {/* Stats row */}
+          {/* Reaction + Recognition stats */}
           <View style={styles.statsRow}>
-            {reactionLoading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              stats.map((stat, i) => (
-                <View key={i} style={styles.statCol}>
-                  {i > 0 && <View style={styles.statDivider} />}
-                  <View style={styles.statInner}>
-                    <Text style={styles.statIcon}>{stat.icon}</Text>
-                    <Text style={styles.statValue}>{stat.value}</Text>
-                  </View>
-                  <Text style={styles.statPts}>({stat.pts} pts each)</Text>
-                </View>
-              ))
-            )}
+            <View style={styles.statsPill}>
+              <View style={styles.reactionMerged}>
+                {stats.map((stat, i) => (
+                  <Text key={i} style={styles.statIcon}>{stat.icon}</Text>
+                ))}
+                <Text style={styles.reactionPtsDark}>= {remainingReactionPts} pts</Text>
+              </View>
+            </View>
+            <View style={styles.statsPill}>
+              <View style={styles.reactionMerged}>
+                <Text style={styles.statIcon}>⭐</Text>
+                <Text style={styles.reactionPtsDark}>Recognition Badges = {recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
+              </View>
+            </View>
           </View>
 
-        </View>
+          </View>
+
+          </View>{/* end headerOverlay */}
+
+        </ImageBackground>
 
         {/* ── Pill tab selector ───────────────────────────────────────────── */}
         <View style={styles.tabContainer}>
@@ -326,7 +346,7 @@ export default function ProfileScreen() {
                   style={[styles.tabButton, active && styles.tabButtonActive]}
                 >
                   <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab === 'gamification' ? 'Achievements' : 'Announcements'}
+                    {tab === 'gamification' ? 'Achievements' : 'Milestones'}
                   </Text>
                 </Pressable>
               );
@@ -383,43 +403,28 @@ export default function ProfileScreen() {
                         <Ionicons name={status.icon} size={20} color={status.color} />
                       </View>
                       <View style={styles.achieveInfo}>
-                        <Text style={styles.achieveLabel}>Status — {status.label}</Text>
+                        <Text style={styles.achieveLabel}>Status</Text>
                         <Text style={styles.achieveSub}>
                           {nextTier
                             ? `${MOCK_WEEKLY}/${nextTier.min} recognitions to ${nextTier.label}`
                             : 'You have reached the top tier!'}
                         </Text>
                       </View>
-                    </View>
-                    <View style={styles.progressBg}>
-                      <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: status.color }]} />
+                      <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
                     </View>
                   </View>
                 );
               })()}
 
-              <View style={styles.achieveDivider} />
-
-              {/* ── Milestones ──────────────────────────────────────────── */}
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#dcfce7' }]}>
-                  <Ionicons name="flag-outline" size={20} color="#16a34a" />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Milestones</Text>
-                  <Text style={styles.achieveSub}>Next: 10 recognitions sent</Text>
-                </View>
-                <Text style={styles.achieveValue}>2 / 5</Text>
-              </View>
 
             </View>
           )}
 
           {activeTab === 'announcements' && (
             <View style={styles.skillsCard}>
-              <Ionicons name="megaphone-outline" size={32} color={PURPLE_MID} />
-              <Text style={styles.skillsCardTitle}>Announcements</Text>
-              <Text style={styles.skillsCardSub}>Company announcements will appear here</Text>
+              <Ionicons name="flag-outline" size={32} color={PURPLE_MID} />
+              <Text style={styles.skillsCardTitle}>Milestones</Text>
+              <Text style={styles.skillsCardSub}>Your milestones will appear here</Text>
             </View>
           )}
 
@@ -483,7 +488,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: PURPLE,
+    backgroundColor: '#1a0a2e',
   },
 
   screen: {
@@ -493,17 +498,21 @@ const styles = StyleSheet.create({
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: PURPLE,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 12 : 8,
-    paddingBottom: 20,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 12,
+  },
+
+  headerOverlay: {
+    backgroundColor: 'rgba(20,0,40,0.45)',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 12 : 8,
+    paddingBottom: 16,
   },
 
   topNav: {
@@ -517,17 +526,29 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
+  // ── Profile row ─────────────────────────────────────────────────────────────
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+
   // ── Avatar ──────────────────────────────────────────────────────────────────
   avatarWrapper: {
-    alignSelf: 'center',
-    marginBottom: 8,
     position: 'relative',
   },
 
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: ACCENT,
     borderWidth: 4,
     borderColor: '#ffffff',
@@ -541,15 +562,15 @@ const styles = StyleSheet.create({
   },
 
   avatarImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 4,
     borderColor: '#ffffff',
   },
 
   avatarInitials: {
-    fontSize: 30,
+    fontSize: 40,
     fontWeight: 'bold',
     color: '#ffffff',
   },
@@ -557,7 +578,7 @@ const styles = StyleSheet.create({
   avatarSpinner: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 45,
+    borderRadius: 60,
     backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -565,11 +586,11 @@ const styles = StyleSheet.create({
 
   cameraBadge: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: 6,
+    right: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: ACCENT,
     borderWidth: 2,
     borderColor: '#ffffff',
@@ -577,28 +598,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  earnedBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+  },
+
   // ── Name & subtitle ──────────────────────────────────────────────────────────
   name: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 1,
+    marginBottom: 2,
   },
 
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: LIGHT_TEXT,
-    textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
 
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    marginBottom: 6,
   },
 
   metaChip: {
@@ -619,21 +642,37 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
 
+  // ── Stats card (white) ───────────────────────────────────────────────────────
+  statsCard: {
+    marginHorizontal: 0,
+    marginTop: 10,
+    marginBottom: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    gap: 10,
+  },
+
   // ── Pills row ─────────────────────────────────────────────────────────────────
   pillsRow: {
     flexDirection: 'row',
-    gap: 10,
-    alignSelf: 'center',
-    marginBottom: 10,
-    marginTop: 4,
+    gap: 8,
+    alignSelf: 'stretch',
   },
 
   pill: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#f5f3ff',
     borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 7,
   },
@@ -644,10 +683,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  pillTextDark: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e1b4b',
+  },
+
   pillHeader: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.55)',
+    color: '#94a3b8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -657,12 +702,40 @@ const styles = StyleSheet.create({
   // ── Stats row ────────────────────────────────────────────────────────────────
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
-    marginTop: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+
+  statsPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#f5f3ff',
+    borderRadius: 20,
+  },
+
+  reactionMerged: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  reactionPts: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    flexShrink: 1,
+  },
+
+  reactionPtsDark: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1e1b4b',
+    flexShrink: 1,
   },
 
   statCol: {
@@ -695,7 +768,7 @@ const styles = StyleSheet.create({
   },
 
   statIcon: {
-    fontSize: 23,
+    fontSize: 18,
   },
 
   statPts: {
@@ -753,7 +826,7 @@ const styles = StyleSheet.create({
   // ── Content area ─────────────────────────────────────────────────────────────
   content: {
     paddingHorizontal: 16,
-    paddingTop: 0,
+    paddingTop: 8,
   },
 
   // Skills card
