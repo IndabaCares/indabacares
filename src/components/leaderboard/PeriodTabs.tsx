@@ -38,8 +38,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
     marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 8,
   },
   tab: {
     flex: 1,

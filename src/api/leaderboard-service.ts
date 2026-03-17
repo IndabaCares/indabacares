@@ -24,6 +24,7 @@ export interface LeaderboardEntry {
   job_title?:      string;
   avatar_url?:     string | null;
   movement_delta?: number;  // positive = moved up, negative = moved down
+  is_manager?:     boolean;
 }
 
 export interface BadgeLevel {
@@ -55,12 +56,12 @@ export function getBadgeLevel(points: number): BadgeLevel {
 
 export const PERIOD_LABELS: Record<PeriodType, string> = {
   all_time:  'All Time',
-  monthly:   'Month',
+  monthly:   'Employees',
   quarterly: 'Trimester',
-  annual:    'Year',
+  annual:    'Management',
 };
 
-// Tabs shown in the UI — Month and Year only
+// Tabs shown in the UI — Month and Management only
 export const PERIOD_TABS: PeriodType[] = ['monthly', 'annual'];
 
 function getPeriodRange(period: PeriodType): { start: string | null; end: string | null } {

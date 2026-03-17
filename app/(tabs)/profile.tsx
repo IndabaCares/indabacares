@@ -278,7 +278,7 @@ export default function ProfileScreen() {
             return (
               <View style={styles.pillsRow}>
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>Recognition Points</Text>
+                  <Text style={styles.pillHeader}>Recognition</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="star" size={16} color="#fbbf24" />
                     {pointsBalance === null ? (
@@ -676,6 +676,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
 
   pillText: {
@@ -717,6 +719,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#f5f3ff',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
 
   reactionMerged: {

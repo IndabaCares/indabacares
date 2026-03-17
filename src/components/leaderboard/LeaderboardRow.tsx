@@ -8,9 +8,11 @@ const PURPLE = '#7B1FA2';
 
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-export const LeaderboardRow = memo(function LeaderboardRow({ entry }: LeaderboardRowProps) {
+export const LeaderboardRow = memo(function LeaderboardRow({ entry, isFirst, isLast }: LeaderboardRowProps) {
   const { employee } = useEmployee();
   const isMe   = entry.employee_id === employee?.employee_id;
   const delta  = entry.movement_delta ?? 0;
@@ -18,8 +20,15 @@ export const LeaderboardRow = memo(function LeaderboardRow({ entry }: Leaderboar
   const isDown = delta < 0;
   const moveColor = isUp ? '#22C55E' : isDown ? '#EF4444' : '#9CA3AF';
 
+  const radiusStyle = {
+    borderTopLeftRadius:     isFirst ? 16 : 0,
+    borderTopRightRadius:    isFirst ? 16 : 0,
+    borderBottomLeftRadius:  isLast  ? 16 : 0,
+    borderBottomRightRadius: isLast  ? 16 : 0,
+  };
+
   return (
-    <View style={[styles.card, isMe && styles.cardHighlight]}>
+    <View style={[styles.card, radiusStyle, isMe && styles.cardHighlight]}>
 
       {/* Movement indicator */}
       <View style={styles.movement}>
@@ -44,6 +53,12 @@ export const LeaderboardRow = memo(function LeaderboardRow({ entry }: Leaderboar
         ) : null}
       </View>
 
+      {/* Points */}
+      <View style={styles.points}>
+        <Text style={styles.pointsStar}>⭐</Text>
+        <Text style={styles.pointsValue}>{entry.total_points}</Text>
+      </View>
+
     </View>
   );
 });
@@ -54,20 +69,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 14,
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 3,
-    gap: 12,
   },
   cardHighlight: {
-    borderWidth: 1.5,
-    borderColor: '#DDD6FE',
     backgroundColor: '#F5F3FF',
   },
   movement: {
@@ -98,5 +109,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginTop: 1,
+  },
+  points: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pointsStar: {
+    fontSize: 14,
+  },
+  pointsValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
   },
 });

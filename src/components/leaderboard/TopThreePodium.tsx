@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 import type { LeaderboardEntry } from '@/api/leaderboard-service';
 
-const ACCENT       = '#CE21FB';
+const PURPLE      = '#7B1FA2';
+const PURPLE_MID  = '#9C27B0';
+const ACCENT      = '#CE21FB';
 const BADGE_GOLD   = '#F5C518';
 const BADGE_SILVER = '#A8A9AD';
 const BADGE_BRONZE = '#CD7F32';
@@ -13,90 +15,100 @@ interface TopThreePodiumProps {
   entries: LeaderboardEntry[];
 }
 
-// ─── Single card ─────────────────────────────────────────────────────────────
-
 interface CardProps {
   entry?: LeaderboardEntry;
   rank: 1 | 2 | 3;
   isMe?: boolean;
 }
 
+// ─── Single card ──────────────────────────────────────────────────────────────
+
 function PodiumCard({ entry, rank, isMe }: CardProps) {
-  const isCenter   = rank === 1;
-  const avatarSize = isCenter ? 80 : 70;
-  const ringSize   = avatarSize + 8;
-  const badgeSize  = isCenter ? 24 : 20;
-  const badgeColor = rank === 1 ? BADGE_GOLD : rank === 2 ? BADGE_SILVER : BADGE_BRONZE;
-  const ringColor  = isMe ? ACCENT : 'rgba(255,255,255,0.55)';
+  const isCenter        = rank === 1;
+  const splashW         = isCenter ? 150 : 124;
+  const splashH         = isCenter ? 168 : 140;
+  const imgSize         = isCenter ? 100 : 82;
+  const badgeColor      = rank === 1 ? BADGE_GOLD : rank === 2 ? BADGE_SILVER : BADGE_BRONZE;
+  const containerH      = splashH + 16;
+  const photoBottomTop  = containerH / 2 + imgSize / 2 + 4; // px from container top
+
+  // Each rank gets a slightly different splash rotation for variety
+  const rotations: Record<1 | 2 | 3, [number, number]> = {
+    1: [22, -14],
+    2: [18, -20],
+    3: [28, -10],
+  };
+  const [r1, r2] = rotations[rank];
 
   return (
     <View style={[styles.card, isCenter && styles.cardCenter]}>
 
-      {/* Avatar + overlays */}
-      <View style={{ position: 'relative', alignSelf: 'center', width: ringSize, height: ringSize }}>
+      {/* ── Image + splash area ─────────────────────────────────────────── */}
+      <View style={{ width: splashW + 16, height: splashH + 16, alignItems: 'center', justifyContent: 'center' }}>
 
-        {/* Ring */}
+        {/* Splash layer 1 — deep purple base blob */}
         <View
           style={[
-            styles.avatarRing,
+            styles.splashBase,
             {
-              width: ringSize,
-              height: ringSize,
-              borderRadius: ringSize / 2,
-              borderColor: ringColor,
-              borderWidth: isMe ? 3 : 2,
+              width: splashW,
+              height: splashH,
+              transform: [{ rotate: `${r1}deg` }],
             },
           ]}
-        >
-          {entry?.avatar_url ? (
-            <Image
-              source={{ uri: entry.avatar_url }}
-              style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={[
-                styles.placeholder,
-                { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
-              ]}
-            >
-              <Ionicons name="person" size={avatarSize * 0.48} color="rgba(255,255,255,0.5)" />
-            </View>
-          )}
-        </View>
+        />
 
-        {/* Rank badge — top-right edge */}
+        {/* Splash layer 2 — accent blob offset */}
         <View
           style={[
-            styles.rankBadge,
-            { width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2, backgroundColor: badgeColor },
+            styles.splashAccent,
+            {
+              width: splashW * 0.88,
+              height: splashH * 0.88,
+              top: 0,
+              right: 2,
+              transform: [{ rotate: `${r2}deg` }],
+            },
           ]}
-        >
-          <Text style={[styles.rankText, { fontSize: isCenter ? 11 : 9 }]}>{rank}</Text>
+        />
+
+        {/* Photo — raw, no border, sits directly on splash */}
+        {entry?.avatar_url ? (
+          <Image
+            source={{ uri: entry.avatar_url }}
+            style={[styles.photo, { width: imgSize, height: imgSize }]}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.photoPlaceholder, { width: imgSize, height: imgSize }]}>
+            <Ionicons name="person" size={imgSize * 0.45} color="rgba(255,255,255,0.6)" />
+          </View>
+        )}
+
+        {/* Rank number — touches left edge of splash */}
+        <View style={styles.rankBadge}>
+          <Text style={[styles.rankText, { fontSize: isCenter ? 22 : 18, color: badgeColor }]}>{rank}</Text>
         </View>
 
-        {/* Points pill — bottom-right edge */}
+        {/* Points — top-right, nudged inward */}
         {entry && (
           <View style={styles.pointsPill}>
             <Text style={styles.pointsStar}>⭐</Text>
-            <Text style={styles.pointsNum}>{entry.total_points >= 1000
-              ? `${(entry.total_points / 1000).toFixed(1)}k`
-              : entry.total_points}
-            </Text>
+            <Text style={styles.pointsNum}>{entry.total_points}</Text>
           </View>
         )}
+
+        {/* Name — directly under photo, inside container */}
+        <Text
+          style={[styles.nameOverlay, { fontSize: 14, width: splashW - 8, top: photoBottomTop }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {entry?.full_name ?? '—'}
+        </Text>
+
       </View>
-
-      {/* Name */}
-      <Text style={[styles.name, isCenter && styles.nameLarge]} numberOfLines={2}>
-        {entry?.full_name ?? '—'}
-      </Text>
-
-      {/* Job title */}
-      <Text style={[styles.jobTitle, isCenter && styles.jobTitleLarge]} numberOfLines={1}>
-        {entry?.job_title ?? (entry ? '' : 'No ranking yet')}
-      </Text>
 
     </View>
   );
@@ -111,12 +123,12 @@ export function TopThreePodium({ entries }: TopThreePodiumProps) {
   return (
     <View style={styles.container}>
 
-      {/* Row 1 — #1 centred and largest */}
+      {/* Rank 1 — centred and largest */}
       <View style={styles.topRow}>
         <PodiumCard entry={entries[0]} rank={1} isMe={isMe(entries[0])} />
       </View>
 
-      {/* Row 2 — #2 left, #3 right */}
+      {/* Ranks 2 & 3 */}
       <View style={styles.bottomRow}>
         <PodiumCard entry={entries[1]} rank={2} isMe={isMe(entries[1])} />
         <PodiumCard entry={entries[2]} rank={3} isMe={isMe(entries[2])} />
@@ -132,95 +144,132 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 6,
-    paddingBottom: 2,
+    paddingBottom: 0,
   },
 
   topRow: {
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 0,
   },
 
   bottomRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
 
   card: {
     alignItems: 'center',
-    width: 120,
-  },
+    width: 140,  },
 
   cardCenter: {
-    width: 130,
+    width: 160,
   },
 
-  avatarRing: {
+  // ── Splash layers ────────────────────────────────────────────────────────────
+
+  splashBase: {
+    position: 'absolute',
+    backgroundColor: PURPLE,
+    borderTopLeftRadius: 72,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 72,
+    borderBottomLeftRadius: 20,
+    opacity: 0.95,
+  },
+
+  splashAccent: {
+    position: 'absolute',
+    backgroundColor: ACCENT,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 60,
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 60,
+    opacity: 0.65,
+  },
+
+  // ── Photo ────────────────────────────────────────────────────────────────────
+
+  photo: {
+    borderRadius: 12,
+    zIndex: 3,
+  },
+
+  photoPlaceholder: {
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    zIndex: 3,
   },
 
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+  // ── Name overlay ─────────────────────────────────────────────────────────────
+
+  nameOverlay: {
+    position: 'absolute',
+    textAlign: 'center',
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 0.2,
+    zIndex: 4,
   },
 
-  // Rank number — top-right edge of avatar ring
+  // ── Rank badge ───────────────────────────────────────────────────────────────
+
   rankBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 6,
+    left: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-    zIndex: 2,
-  },
-  rankText: {
-    color: '#ffffff',
-    fontWeight: '800',
+    zIndex: 5,
   },
 
-  // Points pill — bottom-right edge of avatar ring
+  rankText: {
+    fontWeight: '900',
+    lineHeight: 24,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  // ── Points pill ──────────────────────────────────────────────────────────────
+
   pointsPill: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
+    top: 6,
+    right: 2,         // nudged to right edge
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 10,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderWidth: 1.5,
-    borderColor: '#ffffff',
-    zIndex: 2,
+    zIndex: 5,
+    gap: 3,
   },
-  pointsStar: { fontSize: 9 },
-  pointsNum:  { fontSize: 9, fontWeight: '800', color: '#fff', marginLeft: 2 },
+  pointsStar: { fontSize: 18 },
+  pointsNum:  { fontSize: 13, fontWeight: '800', color: '#000000' },
+
+  // ── Text ─────────────────────────────────────────────────────────────────────
 
   name: {
-    color: '#ffffff',
+    color: '#1e293b',
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 16,
+    marginTop: 10,
+    lineHeight: 17,
   },
+
   nameLarge: {
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 21,
   },
 
   jobTitle: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  jobTitleLarge: {
+    color: '#94a3b8',
     fontSize: 11,
+    textAlign: 'center',
+    marginTop: 3,
+  },
+
+  jobTitleLarge: {
+    fontSize: 12,
   },
 });
