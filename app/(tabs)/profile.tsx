@@ -606,16 +606,17 @@ const styles = StyleSheet.create({
 
   // ── Name & subtitle ──────────────────────────────────────────────────────────
   name: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 2,
+    marginBottom: 1,
   },
 
   subtitle: {
-    fontSize: 13,
-    color: LIGHT_TEXT,
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
+    marginBottom: 2,
   },
 
   metaRow: {
@@ -631,9 +632,9 @@ const styles = StyleSheet.create({
   },
 
   metaText: {
-    fontSize: 12,
-    color: LIGHT_TEXT,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#ffffff',
+    fontWeight: '400',
   },
 
   metaDivider: {
