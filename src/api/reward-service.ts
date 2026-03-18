@@ -36,6 +36,8 @@ export interface Reward {
   image_url: string | null;
   hotel: string;
   stock: number;
+  category: 'retail' | 'hotel';
+  terms: string | null;
   created_at: string;
 }
 
@@ -87,7 +89,7 @@ export interface AdminActionResult {
 export async function getRewards(hotel: string): Promise<Reward[]> {
   const { data, error } = await supabase
     .from('rewards')
-    .select('id, title, description, points_required, image_url, hotel, stock, created_at')
+    .select('id, title, description, points_required, image_url, hotel, stock, category, terms, created_at')
     .eq('hotel', hotel)
     .order('created_at', { ascending: false });
 
@@ -99,7 +101,7 @@ export async function getRewards(hotel: string): Promise<Reward[]> {
 export async function getRewardDetail(id: string): Promise<Reward> {
   const { data, error } = await supabase
     .from('rewards')
-    .select('id, title, description, points_required, image_url, hotel, stock, created_at')
+    .select('id, title, description, points_required, image_url, hotel, stock, category, terms, created_at')
     .eq('id', id)
     .single();
 
