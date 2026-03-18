@@ -226,33 +226,41 @@ export default function ProfileScreen() {
           {/* Profile row: avatar left, text right */}
           <View style={styles.profileRow}>
 
-            {/* Avatar — tappable */}
+            {/* Avatar — tappable, splash style matching leaderboard podium */}
             <Pressable onPress={handleAvatarPress} style={styles.avatarWrapper}>
-              {photoUrl ? (
-                <Image
-                  source={{ uri: photoUrl }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                  onError={() => setPhotoUrl(null)}
-                />
-              ) : (
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarInitials}>{initials}</Text>
+              {/* Splash layer 1 — accent blob (behind) */}
+              <View style={styles.splashAccent} />
+              {/* Splash layer 2 — deep purple base blob (on top) */}
+              <View style={styles.splashBase} />
+
+              {/* Photo + badges in a relative sub-container */}
+              <View style={styles.photoContainer}>
+                {photoUrl ? (
+                  <Image
+                    source={{ uri: photoUrl }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                    onError={() => setPhotoUrl(null)}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitials}>{initials}</Text>
+                  </View>
+                )}
+                {uploading && (
+                  <View style={styles.avatarSpinner}>
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  </View>
+                )}
+                <View style={styles.cameraBadge}>
+                  <Ionicons name="camera" size={12} color="#ffffff" />
                 </View>
-              )}
-              {uploading && (
-                <View style={styles.avatarSpinner}>
-                  <ActivityIndicator color="#ffffff" size="small" />
-                </View>
-              )}
-              <View style={styles.cameraBadge}>
-                <Ionicons name="camera" size={12} color="#ffffff" />
+                {MOCK_BADGES_EARNED > 0 && (
+                  <View style={styles.earnedBadge}>
+                    <Ionicons name="ribbon" size={26} color="#d97706" />
+                  </View>
+                )}
               </View>
-              {MOCK_BADGES_EARNED > 0 && (
-                <View style={styles.earnedBadge}>
-                  <Ionicons name="ribbon" size={26} color="#d97706" />
-                </View>
-              )}
             </Pressable>
 
             {/* Name / title / meta */}
@@ -268,8 +276,12 @@ export default function ProfileScreen() {
 
           </View>
 
-          {/* ── Stats / pills card ────────────────────────────────────────── */}
-          <View style={styles.statsCard}>
+          </View>{/* end headerOverlay */}
+
+        </ImageBackground>
+
+        {/* ── Stats / pills card — 50% overhanging the image border radius ── */}
+        <View style={styles.statsCard}>
 
           {/* Points + Status pills */}
           {(() => {
@@ -328,11 +340,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          </View>
-
-          </View>{/* end headerOverlay */}
-
-        </ImageBackground>
+        </View>
 
         {/* ── Pill tab selector ───────────────────────────────────────────── */}
         <View style={styles.tabContainer}>
@@ -392,7 +400,7 @@ export default function ProfileScreen() {
               {(() => {
                 const MOCK_WEEKLY = 7;
                 const status = getStatus(MOCK_WEEKLY);
-                const nextTier = STATUS_TIERS.find((t) => t.min > MOCK_WEEKLY);
+                const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > MOCK_WEEKLY);
                 const progress = nextTier
                   ? Math.min(MOCK_WEEKLY / nextTier.min, 1)
                   : 1;
@@ -406,7 +414,7 @@ export default function ProfileScreen() {
                         <Text style={styles.achieveLabel}>Status</Text>
                         <Text style={styles.achieveSub}>
                           {nextTier
-                            ? `${MOCK_WEEKLY}/${nextTier.min} recognitions to ${nextTier.label}`
+                            ? `You require ${nextTier.min - MOCK_WEEKLY} more recognitions to ${nextTier.label}`
                             : 'You have reached the top tier!'}
                         </Text>
                       </View>
@@ -512,7 +520,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(20,0,40,0.45)',
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 12 : 8,
-    paddingBottom: 16,
+    paddingBottom: 72,
   },
 
   topNav: {
@@ -540,37 +548,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Avatar ──────────────────────────────────────────────────────────────────
+  // ── Avatar — splash style (matches leaderboard podium) ─────────────────────
   avatarWrapper: {
-    position: 'relative',
-  },
-
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: ACCENT,
-    borderWidth: 4,
-    borderColor: '#ffffff',
+    width: 146,
+    height: 164,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+  },
+
+  splashBase: {
+    position: 'absolute',
+    width: 130,
+    height: 148,
+    backgroundColor: PURPLE,
+    borderTopLeftRadius: 72,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 72,
+    borderBottomLeftRadius: 20,
+    opacity: 0.95,
+    transform: [{ rotate: '22deg' }],
+  },
+
+  splashAccent: {
+    position: 'absolute',
+    width: 114,
+    height: 130,
+    top: 0,
+    right: 2,
+    backgroundColor: ACCENT,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 60,
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 60,
+    opacity: 0.65,
+    transform: [{ rotate: '-14deg' }],
+  },
+
+  photoContainer: {
+    position: 'relative',
+    width: 90,
+    height: 90,
+    zIndex: 3,
   },
 
   avatarImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: '#ffffff',
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+  },
+
+  avatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   avatarInitials: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#ffffff',
   },
@@ -578,7 +615,7 @@ const styles = StyleSheet.create({
   avatarSpinner: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 60,
+    borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -586,8 +623,8 @@ const styles = StyleSheet.create({
 
   cameraBadge: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: -4,
+    right: -4,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -596,12 +633,14 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
 
   earnedBadge: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
+    bottom: -4,
+    left: -4,
+    zIndex: 1,
   },
 
   // ── Name & subtitle ──────────────────────────────────────────────────────────
@@ -643,20 +682,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
 
-  // ── Stats card (white) ───────────────────────────────────────────────────────
+  // ── Stats card (white) — sits 50% below image border radius ─────────────────
   statsCard: {
-    marginHorizontal: 0,
-    marginTop: 10,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginTop: -56,
     backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#D1C4E9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
+    zIndex: 10,
     gap: 10,
   },
 

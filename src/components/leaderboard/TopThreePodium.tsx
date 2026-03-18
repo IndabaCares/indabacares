@@ -46,19 +46,7 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
       {/* ── Image + splash area ─────────────────────────────────────────── */}
       <View style={{ width: splashW + 16, height: splashH + 16, alignItems: 'center', justifyContent: 'center' }}>
 
-        {/* Splash layer 1 — deep purple base blob */}
-        <View
-          style={[
-            styles.splashBase,
-            {
-              width: splashW,
-              height: splashH,
-              transform: [{ rotate: `${r1}deg` }],
-            },
-          ]}
-        />
-
-        {/* Splash layer 2 — accent blob offset */}
+        {/* Splash layer 1 — accent blob (behind) */}
         <View
           style={[
             styles.splashAccent,
@@ -68,6 +56,18 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
               top: 0,
               right: 2,
               transform: [{ rotate: `${r2}deg` }],
+            },
+          ]}
+        />
+
+        {/* Splash layer 2 — deep purple base blob (on top) */}
+        <View
+          style={[
+            styles.splashBase,
+            {
+              width: splashW,
+              height: splashH,
+              transform: [{ rotate: `${r1}deg` }],
             },
           ]}
         />
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   rankBadge: {
     position: 'absolute',
     top: 6,
-    left: 20,
+    left: -4,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
@@ -227,9 +227,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontWeight: '900',
     lineHeight: 24,
-    textShadowColor: 'rgba(0,0,0,0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1e1b4b',
   },
 
   // ── Points pill ──────────────────────────────────────────────────────────────

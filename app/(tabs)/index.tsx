@@ -192,9 +192,10 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
 
       {/* Receiver row (person being recognised) */}
       <View style={ms.senderRow}>
-        <View style={ms.avatar}>
-          <Text style={ms.avatarText}>{getInitials(item.receiver.full_name)}</Text>
-        </View>
+        <Image
+          source={{ uri: `https://i.pravatar.cc/100?u=${item.receiver.full_name}` }}
+          style={ms.avatar}
+        />
         <View style={ms.senderInfo}>
           <Text style={ms.senderName}>{item.receiver.full_name}</Text>
           {(item.receiver.position || item.receiver.department) ? (
@@ -208,7 +209,7 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
       </View>
 
       {/* Badge */}
-      <View style={[ms.badgePill, { backgroundColor: badge.color + '18' }]}>
+      <View style={ms.badgePill}>
         <Text style={ms.badgeEmoji}>{badge.emoji}</Text>
         <Text style={[ms.badgeText, { color: badge.color }]}>{item.badge}</Text>
       </View>
@@ -263,53 +264,52 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
 const ms = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: PURPLE_SOFT,
-    marginBottom: 14,
-    padding: 16,
+    marginBottom: 10,
+    padding: 12,
     shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 3,
   },
-  senderRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatar:      { width: 42, height: 42, borderRadius: 21, backgroundColor: PURPLE_SOFT, alignItems: 'center', justifyContent: 'center' },
-  avatarText:  { fontSize: 14, fontWeight: '700', color: PURPLE },
-  senderInfo:  { flex: 1, marginLeft: 10 },
-  senderName:  { fontSize: 15, fontWeight: '700', color: '#1e1b4b' },
-  senderTitle: { fontSize: 12, color: '#94a3b8', marginTop: 1 },
-  timeAgo:     { fontSize: 11, color: '#94a3b8' },
+  senderRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  avatar:      { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' },
+  senderInfo:  { flex: 1, marginLeft: 8 },
+  senderName:  { fontSize: 13, fontWeight: '700', color: '#1e1b4b' },
+  senderTitle: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  timeAgo:     { fontSize: 10, color: '#94a3b8' },
 
-  badgePill:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
-  badgeEmoji:  { fontSize: 14 },
-  badgeText:   { fontSize: 12, fontWeight: '700', marginLeft: 5 },
+  badgePill:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, marginBottom: 7 },
+  badgeEmoji:  { fontSize: 12 },
+  badgeText:   { fontSize: 11, fontWeight: '700', marginLeft: 4 },
 
-  recipientCard:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f7ff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 12 },
-  recognisingLabel: { fontSize: 13, color: '#64748b' },
-  avatarXs:         { width: 22, height: 22, borderRadius: 11, backgroundColor: PURPLE_SOFT, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
-  avatarXsText:     { fontSize: 9, fontWeight: '700', color: PURPLE },
-  recipientName:    { fontSize: 13, fontWeight: '700', color: '#1e1b4b' },
-  recipientTitle:   { fontSize: 12, color: '#94a3b8', flex: 1 },
+  recipientCard:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f7ff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 8 },
+  recognisingLabel: { fontSize: 12, color: '#64748b' },
+  avatarXs:         { width: 20, height: 20, borderRadius: 10, backgroundColor: PURPLE_SOFT, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  avatarXsText:     { fontSize: 8, fontWeight: '700', color: PURPLE },
+  recipientName:    { fontSize: 12, fontWeight: '700', color: '#1e1b4b' },
+  recipientTitle:   { fontSize: 11, color: '#94a3b8', flex: 1 },
 
-  message: { fontSize: 14, lineHeight: 22, color: '#334155', marginBottom: 4 },
+  message: { fontSize: 13, lineHeight: 19, color: '#334155', marginBottom: 3 },
 
-  reactionRow:       { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, marginBottom: 0 },
-  reactionBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#f1f5f9' },
-  reactionBtnActive: { backgroundColor: PURPLE_SOFT, borderWidth: 1, borderColor: PURPLE + '40' },
-  reactionEmoji:     { fontSize: 12 },
-  reactionCount:     { fontSize: 11, fontWeight: '600', color: '#64748b', marginLeft: 3 },
-  reactionPts:       { fontSize: 10, color: '#94a3b8' },
+  reactionRow:       { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 0 },
+  reactionBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 6, paddingVertical: 3 },
+  reactionBtnActive: {},
+  reactionEmoji:     { fontSize: 22 },
+  reactionCount:     { fontSize: 10, fontWeight: '600', color: '#64748b', marginLeft: 2 },
+  reactionPts:       { fontSize: 9, color: '#94a3b8' },
 
-  dateText: { fontSize: 11, color: '#94a3b8', marginTop: 4, marginBottom: 8 },
-  divider:  { height: 1, backgroundColor: '#f1f5f9', marginBottom: 4 },
+  dateText: { fontSize: 10, color: '#94a3b8', marginTop: 3, marginBottom: 6 },
+  divider:  { height: 1, backgroundColor: '#f1f5f9', marginBottom: 3 },
 
-  cardLogo: { width: 180, height: 60, marginRight: -32 },
+  cardLogo: { width: 140, height: 46, marginRight: -24 },
 
-  actionBar: { flexDirection: 'row', paddingTop: 4 },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
-  actionText: { marginLeft: 6, fontSize: 13, fontWeight: '500', color: '#94a3b8' },
+  actionBar: { flexDirection: 'row', paddingTop: 2 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  actionText: { marginLeft: 5, fontSize: 12, fontWeight: '500', color: '#94a3b8' },
 
   emptySearch:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
   emptySearchText: { fontSize: 15, color: '#94a3b8', textAlign: 'center' },
@@ -362,13 +362,6 @@ function MockBirthdayCard() {
 
   return (
     <View style={bs.card}>
-      {/* ── Confetti dots ─────────────────────────────────── */}
-      <View style={bs.confettiRow} pointerEvents="none">
-        {['#F59E0B','#7B1FA2','#10B981','#EF4444','#3B82F6','#F59E0B','#7B1FA2','#10B981'].map((c, i) => (
-          <View key={i} style={[bs.dot, { backgroundColor: c, top: (i % 2 === 0 ? 8 : 18), left: `${i * 13}%` as any }]} />
-        ))}
-      </View>
-
       {/* ── Header row ────────────────────────────────────── */}
       <View style={bs.headerRow}>
         <Animated.Text style={[bs.partyIcon, { transform: [{ translateY: bounce }, { rotate: rotateDeg }] }]}>
@@ -382,9 +375,10 @@ function MockBirthdayCard() {
 
       {/* ── Person info ───────────────────────────────────── */}
       <View style={bs.personRow}>
-        <View style={bs.avatar}>
-          <Text style={bs.avatarText}>LD</Text>
-        </View>
+        <Image
+          source={{ uri: 'https://i.pravatar.cc/100?u=Lerato+Dlamini' }}
+          style={bs.avatar}
+        />
         <View style={{ marginLeft: 12, flex: 1 }}>
           <Text style={bs.personName}>Lerato Dlamini</Text>
           <Text style={bs.personRole}>Guest Relations · Front Office</Text>
@@ -416,72 +410,65 @@ function MockBirthdayCard() {
 const bs = StyleSheet.create({
   card: {
     backgroundColor: '#fffbeb',
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: '#FCD34D',
-    marginBottom: 14,
-    padding: 14,
+    marginBottom: 10,
+    padding: 11,
     overflow: 'hidden',
     shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 7,
+    elevation: 4,
     position: 'relative',
   },
 
   // Confetti
-  confettiRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 30, flexDirection: 'row' },
-  dot: { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+  confettiRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 24, flexDirection: 'row' },
+  dot: { position: 'absolute', width: 6, height: 6, borderRadius: 3 },
 
   // Header
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 10, gap: 10 },
-  partyIcon: { fontSize: 30 },
-  birthdayLabel: { fontSize: 22, fontWeight: '900', color: '#92400E', letterSpacing: 0.5 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 8, gap: 8 },
+  partyIcon: { fontSize: 22 },
+  birthdayLabel: { fontSize: 18, fontWeight: '900', color: '#92400E', letterSpacing: 0.5 },
 
   // Person
-  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 14, padding: 10, marginBottom: 10 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FCD34D' },
-  avatarText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  personName: { fontSize: 17, fontWeight: '800', color: '#1e1b4b' },
-  personRole: { fontSize: 12, color: '#78716C', marginTop: 2 },
+  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 10, padding: 8, marginBottom: 8 },
+  avatar: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', borderWidth: 2, borderColor: '#FCD34D' },
+  personName: { fontSize: 14, fontWeight: '800', color: '#1e1b4b' },
+  personRole: { fontSize: 11, color: '#78716C', marginTop: 1 },
   pointsChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1.5,
-    borderColor: '#FCD34D',
-    gap: 4,
-    marginLeft: 8,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    gap: 3,
+    marginLeft: 6,
   },
-  pointsChipText: { fontSize: 13, fontWeight: '800', color: '#92400E' },
+  pointsChipText: { fontSize: 12, fontWeight: '800', color: '#92400E' },
 
   // Awesome day
-  awesomeText: { fontSize: 14, fontWeight: '700', color: '#92400E', flex: 1, textAlign: 'right' },
+  awesomeText: { fontSize: 12, fontWeight: '700', color: '#92400E', flex: 1, textAlign: 'right' },
 
   // Divider
-  divider: { height: 1, backgroundColor: '#FCD34D', marginBottom: 12, opacity: 0.5 },
+  divider: { height: 1, backgroundColor: '#FCD34D', marginBottom: 8, opacity: 0.5 },
 
   // Smiley
-  smileRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  smileHint: { fontSize: 12, color: '#92400E', opacity: 0.7, flex: 1 },
+  smileRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  smileHint: { fontSize: 11, color: '#92400E', opacity: 0.7, flex: 1 },
   smileBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1.5,
-    borderColor: '#FCD34D',
-    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    gap: 3,
   },
-  smileBtnActive: { backgroundColor: '#FDE68A', borderColor: '#F59E0B' },
-  smileEmoji: { fontSize: 18 },
-  smileCount: { fontSize: 13, fontWeight: '700', color: '#78716C' },
+  smileBtnActive: {},
+  smileEmoji: { fontSize: 22 },
+  smileCount: { fontSize: 12, fontWeight: '700', color: '#78716C' },
   smileCountActive: { color: '#92400E' },
 });
 
@@ -535,13 +522,6 @@ function MockMilestoneCard({ emp }: { emp: typeof MOCK_MILESTONES[0] }) {
 
   return (
     <View style={ms2.card}>
-      {/* ── Dot strip ─────────────────────────────────────── */}
-      <View style={ms2.dotRow} pointerEvents="none">
-        {['#2DD4BF','#0891B2','#6366F1','#2DD4BF','#0891B2','#6366F1','#2DD4BF','#0891B2'].map((c, i) => (
-          <View key={i} style={[ms2.dot, { backgroundColor: c, top: i % 2 === 0 ? 6 : 16, left: `${i * 13}%` as any }]} />
-        ))}
-      </View>
-
       {/* ── Header ────────────────────────────────────────── */}
       <View style={ms2.headerRow}>
         <Animated.Text style={[ms2.milestoneIcon, { transform: [{ scale: glow }] }]}>
@@ -558,9 +538,10 @@ function MockMilestoneCard({ emp }: { emp: typeof MOCK_MILESTONES[0] }) {
 
       {/* ── Person row ────────────────────────────────────── */}
       <View style={ms2.personRow}>
-        <View style={ms2.avatar}>
-          <Text style={ms2.avatarText}>{emp.initials}</Text>
-        </View>
+        <Image
+          source={{ uri: `https://i.pravatar.cc/100?u=${emp.name}` }}
+          style={ms2.avatar}
+        />
         <View style={{ marginLeft: 10, flex: 1 }}>
           <Text style={ms2.personName}>{emp.name}</Text>
           <Text style={ms2.personRole}>{emp.role} · {emp.dept}</Text>
@@ -592,47 +573,46 @@ function MockMilestoneCard({ emp }: { emp: typeof MOCK_MILESTONES[0] }) {
 const ms2 = StyleSheet.create({
   card: {
     backgroundColor: '#f0fdfa',
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: '#5EEAD4',
-    marginBottom: 14,
-    padding: 14,
+    marginBottom: 10,
+    padding: 11,
     overflow: 'hidden',
     shadowColor: '#14B8A6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 7,
+    elevation: 4,
     position: 'relative',
   },
-  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 28, flexDirection: 'row' },
-  dot:    { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 22, flexDirection: 'row' },
+  dot:    { position: 'absolute', width: 6, height: 6, borderRadius: 3 },
 
-  headerRow:      { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 10, gap: 10 },
-  milestoneIcon:  { fontSize: 32 },
+  headerRow:      { flexDirection: 'row', alignItems: 'center', marginTop: 6, marginBottom: 8, gap: 8 },
+  milestoneIcon:  { fontSize: 26 },
   headerText:     { flex: 1 },
-  milestoneTitle: { fontSize: 11, fontWeight: '700', color: '#0F766E', letterSpacing: 0.6, textTransform: 'uppercase' },
-  milestoneLabel: { fontSize: 16, fontWeight: '900', color: '#134E4A', marginTop: 1 },
-  yearBadge:      { backgroundColor: '#CCFBF1', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1.5, borderColor: '#5EEAD4' },
-  yearBadgeText:  { fontSize: 12, fontWeight: '800', color: '#0F766E' },
+  milestoneTitle: { fontSize: 10, fontWeight: '700', color: '#0F766E', letterSpacing: 0.6, textTransform: 'uppercase' },
+  milestoneLabel: { fontSize: 14, fontWeight: '900', color: '#134E4A', marginTop: 1 },
+  yearBadge:      { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  yearBadgeText:  { fontSize: 11, fontWeight: '800', color: '#0F766E' },
 
-  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#CCFBF1', borderRadius: 14, padding: 10, marginBottom: 10 },
-  avatar:    { width: 42, height: 42, borderRadius: 21, backgroundColor: '#0F766E', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#5EEAD4' },
-  avatarText: { fontSize: 14, fontWeight: '800', color: '#fff' },
-  personName: { fontSize: 15, fontWeight: '800', color: '#134E4A' },
-  personRole: { fontSize: 12, color: '#0F766E', marginTop: 2 },
-  ptsChip:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDFA', borderRadius: 12, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1.5, borderColor: '#5EEAD4', gap: 3, marginLeft: 8 },
-  ptsChipText: { fontSize: 13, fontWeight: '800', color: '#0F766E' },
+  personRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#CCFBF1', borderRadius: 10, padding: 8, marginBottom: 8 },
+  avatar:    { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: '#5EEAD4' },
+  personName: { fontSize: 13, fontWeight: '800', color: '#134E4A' },
+  personRole: { fontSize: 11, color: '#0F766E', marginTop: 1 },
+  ptsChip:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3, gap: 3, marginLeft: 6 },
+  ptsChipText: { fontSize: 12, fontWeight: '800', color: '#0F766E' },
 
-  divider: { height: 1, backgroundColor: '#5EEAD4', marginBottom: 10, opacity: 0.4 },
+  divider: { height: 1, backgroundColor: '#5EEAD4', marginBottom: 8, opacity: 0.4 },
 
-  smileRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  smileBtn:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#CCFBF1', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1.5, borderColor: '#5EEAD4', gap: 4 },
-  smileBtnActive: { backgroundColor: '#99F6E4', borderColor: '#14B8A6' },
-  smileEmoji:     { fontSize: 16 },
-  smileCount:     { fontSize: 13, fontWeight: '700', color: '#0F766E' },
+  smileRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  smileBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, gap: 3 },
+  smileBtnActive: {},
+  smileEmoji:     { fontSize: 22 },
+  smileCount:     { fontSize: 12, fontWeight: '700', color: '#0F766E' },
   smileCountActive: { color: '#134E4A' },
-  congratsText:   { fontSize: 13, fontWeight: '700', color: '#0F766E', flex: 1, textAlign: 'right' },
+  congratsText:   { fontSize: 12, fontWeight: '700', color: '#0F766E', flex: 1, textAlign: 'right' },
 });
 
 // ─── Legend of the Month Card ─────────────────────────────────────────────────
@@ -675,13 +655,6 @@ function MockLegendCard() {
       {/* Shimmer overlay */}
       <Animated.View style={[StyleSheet.absoluteFillObject, lg.shimmer, { opacity: shimmerOpacity }]} pointerEvents="none" />
 
-      {/* Dot strip */}
-      <View style={lg.dotRow} pointerEvents="none">
-        {['#DC2626','#991B1B','#EF4444','#DC2626','#991B1B','#EF4444','#DC2626','#991B1B'].map((c, i) => (
-          <View key={i} style={[lg.dot, { backgroundColor: c, top: i % 2 === 0 ? 6 : 16, left: `${i * 13}%` as any }]} />
-        ))}
-      </View>
-
       {/* Header */}
       <View style={lg.titleRow}>
         <Animated.Text style={[lg.crownIcon, { transform: [{ scale: crown }] }]}>👑</Animated.Text>
@@ -693,9 +666,10 @@ function MockLegendCard() {
 
       {/* Person row */}
       <View style={lg.personRow}>
-        <View style={lg.avatar}>
-          <Text style={lg.avatarText}>{LEGEND.initials}</Text>
-        </View>
+        <Image
+          source={{ uri: `https://i.pravatar.cc/100?u=${LEGEND.name}` }}
+          style={lg.avatar}
+        />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={lg.personName}>{LEGEND.name}</Text>
           <Text style={lg.personRole}>{LEGEND.role} · {LEGEND.dept}</Text>
@@ -734,51 +708,50 @@ const RED_MID  = '#FECACA';
 const lg = StyleSheet.create({
   card: {
     backgroundColor: '#FFF5F5',
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: RED_MID,
-    marginBottom: 14,
-    padding: 14,
+    marginBottom: 10,
+    padding: 11,
     overflow: 'hidden',
     shadowColor: RED,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
     position: 'relative',
   },
   shimmer: {
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#fff',
   },
 
-  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 28, flexDirection: 'row' },
-  dot:    { position: 'absolute', width: 7, height: 7, borderRadius: 4 },
+  dotRow: { position: 'absolute', top: 0, left: 0, right: 0, height: 22, flexDirection: 'row' },
+  dot:    { position: 'absolute', width: 6, height: 6, borderRadius: 3 },
 
-  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 6, gap: 10 },
-  crownIcon:   { fontSize: 30 },
-  legendLabel: { fontSize: 16, fontWeight: '900', color: '#991B1B', letterSpacing: 1.2, textTransform: 'uppercase', textAlign: 'center' },
-  monthLabel:  { fontSize: 13, fontWeight: '700', color: '#7F1D1D', textAlign: 'center', opacity: 0.75, marginBottom: 10 },
-  ptsBadge:    { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1.5, borderColor: RED_MID, gap: 4 },
-  ptsText:     { fontSize: 13, fontWeight: '800', color: '#991B1B' },
+  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 4, gap: 8 },
+  crownIcon:   { fontSize: 22 },
+  legendLabel: { fontSize: 13, fontWeight: '900', color: '#991B1B', letterSpacing: 1.2, textTransform: 'uppercase', textAlign: 'center' },
+  monthLabel:  { fontSize: 11, fontWeight: '700', color: '#7F1D1D', textAlign: 'center', opacity: 0.75, marginBottom: 8 },
+  ptsBadge:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3, gap: 3 },
+  ptsText:     { fontSize: 12, fontWeight: '800', color: '#991B1B' },
 
-  personRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 14, padding: 10, marginBottom: 8 },
-  avatar:     { width: 52, height: 52, borderRadius: 26, backgroundColor: RED, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: RED_MID },
-  avatarText: { fontSize: 17, fontWeight: '900', color: '#fff' },
-  personName: { fontSize: 16, fontWeight: '800', color: '#7F1D1D' },
-  personRole: { fontSize: 12, color: '#991B1B', marginTop: 2, opacity: 0.8 },
+  personRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 10, padding: 8, marginBottom: 6 },
+  avatar:     { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', borderWidth: 2, borderColor: RED_MID },
+  personName: { fontSize: 13, fontWeight: '800', color: '#7F1D1D' },
+  personRole: { fontSize: 11, color: '#991B1B', marginTop: 1, opacity: 0.8 },
 
-  quote: { fontSize: 13, lineHeight: 20, color: '#7F1D1D', fontStyle: 'italic', marginBottom: 8 },
+  quote: { fontSize: 12, lineHeight: 18, color: '#7F1D1D', fontStyle: 'italic', marginBottom: 6 },
 
-  divider: { height: 1, backgroundColor: RED_MID, opacity: 0.5, marginBottom: 10 },
+  divider: { height: 1, backgroundColor: RED_MID, opacity: 0.5, marginBottom: 8 },
 
-  smileRow:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  smileBtn:         { flexDirection: 'row', alignItems: 'center', backgroundColor: RED_SOFT, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1.5, borderColor: RED_MID, gap: 4 },
-  smileBtnActive:   { backgroundColor: RED_MID, borderColor: RED },
-  smileEmoji:       { fontSize: 16 },
-  smileCount:       { fontSize: 13, fontWeight: '700', color: '#991B1B' },
+  smileRow:         { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  smileBtn:         { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, gap: 3 },
+  smileBtnActive:   {},
+  smileEmoji:       { fontSize: 22 },
+  smileCount:       { fontSize: 12, fontWeight: '700', color: '#991B1B' },
   smileCountActive: { color: '#7F1D1D' },
-  congratsText:     { fontSize: 13, fontWeight: '700', color: '#991B1B', flex: 1, textAlign: 'center' },
+  congratsText:     { fontSize: 12, fontWeight: '700', color: '#991B1B', flex: 1, textAlign: 'center' },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -892,7 +865,7 @@ export default function FeedScreen() {
                 ))}
               </>
             ) : null}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 100, paddingTop: 6 }}
             refreshControl={
               !isSearching ? (
                 <RefreshControl

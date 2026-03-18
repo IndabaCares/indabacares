@@ -248,32 +248,35 @@ export default function RewardsScreen() {
             </Modal>
           </View>
 
-          <View style={s.balanceRow}>
-            <View style={s.starBox}>
-              <Ionicons name="cash-outline" size={20} color="#34d399" />
+          <View style={s.balanceCol}>
+            <Text style={s.balanceLabel}>Reward Wallet Balance</Text>
+            <View style={s.balanceRow}>
+              <View style={s.starBox}>
+                <Ionicons name="cash-outline" size={20} color="#34d399" />
+              </View>
+              <Text style={[s.balanceValue, { marginLeft: 10 }]}>{MOCK_POINTS}</Text>
             </View>
-            <Text style={[s.balanceValue, { marginLeft: 10 }]}>{MOCK_POINTS}</Text>
           </View>
         </View>
 
-        {/* ── Pill tab selector ── */}
-        <View style={s.tabPill}>
-          <TouchableOpacity
-            style={[s.tabBtn, activeTab === 'retail' && s.tabBtnActive]}
-            onPress={() => setActiveTab('retail')}
-            activeOpacity={0.8}
-          >
-            <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>RETAIL AWARDS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.tabBtn, activeTab === 'hotel' && s.tabBtnActive]}
-            onPress={() => setActiveTab('hotel')}
-            activeOpacity={0.8}
-          >
-            <Text style={[s.tabTxt, activeTab === 'hotel' && s.tabTxtActive]}>HOTEL REWARDS</Text>
-          </TouchableOpacity>
-        </View>
+      </View>
 
+      {/* ── Pill tab selector — 50% overhanging the header border ── */}
+      <View style={s.tabPill}>
+        <TouchableOpacity
+          style={[s.tabBtn, activeTab === 'retail' && s.tabBtnActive]}
+          onPress={() => setActiveTab('retail')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>Retail Awards</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.tabBtn, activeTab === 'hotel' && s.tabBtnActive]}
+          onPress={() => setActiveTab('hotel')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'hotel' && s.tabTxtActive]}>Hotel Rewards</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Grid ── */}
@@ -304,7 +307,7 @@ const s = StyleSheet.create({
     borderBottomRightRadius: 30,
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 20,
+    paddingBottom: 30,
     flexDirection: 'column',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -312,17 +315,32 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  headerTopRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  headerTopRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   iconBtn:       { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  balanceCol: {
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  balanceLabel:  { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.65)', letterSpacing: 0.5, marginBottom: 4, textTransform: 'uppercase' },
   balanceRow:    { flexDirection: 'row', alignItems: 'center' },
-  starBox:       { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  starBox:       { alignItems: 'center', justifyContent: 'center' },
   balanceValue:  { fontSize: 26, fontWeight: 'bold', color: '#fff' },
 
   // Pill tabs
-  tabPill:       { flexDirection: 'row', backgroundColor: '#8E24AA', borderRadius: 20, padding: 4 },
+  tabPill:       { flexDirection: 'row', backgroundColor: '#8E24AA', borderRadius: 20, padding: 4, marginHorizontal: 20, marginTop: -22, zIndex: 10, elevation: 4 },
   tabBtn:        { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 16 },
   tabBtnActive:  { backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3 },
-  tabTxt:        { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 },
+  tabTxt:        { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.75)' },
   tabTxtActive:  { color: PURPLE },
 
   // Dropdown
