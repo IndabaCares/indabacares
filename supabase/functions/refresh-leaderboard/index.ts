@@ -1,19 +1,22 @@
 /**
  * Edge Function: refresh-leaderboard
  *
- * Cron job that recalculates leaderboard rankings for all active companies.
- * Scheduled to run daily via Supabase cron (pg_cron) or external scheduler.
+ * Refreshes supporting data for the leaderboard:
+ *   1. Refreshes the happiness_scores materialized view.
+ *   2. Cleans up stale rate-limit rows.
+ *   3. For each active hotel, fetches the current top-3 employees and triggers
+ *      background removal on their profile photos so the podium renders with
+ *      transparent-background PNGs (written to employees.podium_photo_url).
  *
- * Also refreshes the happiness_scores materialized view.
+ * The leaderboard itself is fully live (no cache table since migration 033), so
+ * there is no per-hotel leaderboard table to refresh.
  *
  * Invocation:
- *   - Cron: POST /functions/v1/refresh-leaderboard
- *     with Authorization: Bearer <service_role_key>
- *   - Manual: Admin can trigger via Backoffice
+ *   POST /functions/v1/refresh-leaderboard
+ *   Authorization: Bearer <service_role_key>
  *
- * Security:
- *   - Service role or admin required
- *   - Idempotent — safe to run multiple times
+ * Optional body:
+ *   { hotel: string }  — process a single hotel instead of all
  */
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
@@ -34,7 +37,6 @@ Deno.serve(async (req: Request) => {
     return errorResponse("Method not allowed", 405);
   }
 
-  // ── Auth: service_role key or admin JWT ─────────────────────────
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return errorResponse("Missing Authorization header", 401);
@@ -42,89 +44,110 @@ Deno.serve(async (req: Request) => {
 
   const adminClient = createAdminClient();
 
-  // Optionally accept a specific company_id; otherwise process all
-  let targetCompanyId: string | null = null;
+  // Optional: target a single hotel
+  let targetHotel: string | null = null;
   try {
     const body = await req.json();
-    targetCompanyId = body.companyId || null;
+    targetHotel = body.hotel ?? null;
   } catch {
-    // No body is fine — process all companies
+    // No body — process all hotels
   }
 
   try {
-    // ── 1. Get active companies ────────────────────────────────────
-    let query = adminClient
-      .from("companies")
-      .select("id, name")
-      .eq("is_active", true);
+    // ── 1. Get distinct active hotels ──────────────────────────────────────
+    let hotelsQuery = adminClient
+      .from("employees")
+      .select("hotel")
+      .eq("status", "active");
 
-    if (targetCompanyId) {
-      query = query.eq("id", targetCompanyId);
+    if (targetHotel) {
+      hotelsQuery = hotelsQuery.eq("hotel", targetHotel);
     }
 
-    const { data: companies, error: companyError } = await query;
+    const { data: hotelRows, error: hotelError } = await hotelsQuery;
 
-    if (companyError || !companies) {
-      return errorResponse("Failed to fetch companies: " + companyError?.message, 500);
+    if (hotelError || !hotelRows) {
+      return errorResponse("Failed to fetch hotels: " + hotelError?.message, 500);
     }
 
-    const results: Array<{ companyId: string; companyName: string; status: string }> = [];
+    const hotels = [...new Set(hotelRows.map((r: { hotel: string }) => r.hotel))];
 
-    // ── 2. Refresh leaderboard for each company ────────────────────
-    for (const company of companies) {
+    // ── 2. Process top-3 podium photos per hotel ──────────────────────────
+    const podiumResults: Array<{ hotel: string; status: string }> = [];
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    for (const hotel of hotels) {
       try {
-        const { error } = await adminClient.rpc("refresh_leaderboard", {
-          p_company_id: company.id,
+        // Fetch current monthly top-3
+        const { data: top3, error: lbError } = await adminClient.rpc("get_leaderboard", {
+          p_hotel: hotel,
+          p_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+          p_end:   null,
+          p_limit: 3,
         });
 
-        if (error) {
-          results.push({
-            companyId: company.id,
-            companyName: company.name,
-            status: `error: ${error.message}`,
-          });
-        } else {
-          results.push({
-            companyId: company.id,
-            companyName: company.name,
-            status: "ok",
-          });
+        if (lbError) {
+          podiumResults.push({ hotel, status: `leaderboard error: ${lbError.message}` });
+          continue;
         }
+
+        const entries = (top3 ?? []) as Array<{
+          employee_id: string;
+          avatar_url:  string | null;
+        }>;
+
+        // Fire background removal for each entry that has a photo
+        const removals = await Promise.allSettled(
+          entries
+            .filter((e) => !!e.avatar_url)
+            .map((e) =>
+              fetch(`${supabaseUrl}/functions/v1/remove-background`, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${serviceKey}`,
+                  "Content-Type":  "application/json",
+                },
+                body: JSON.stringify({
+                  employee_id: e.employee_id,
+                  photo_url:   e.avatar_url,
+                }),
+              }).then((r) => r.json())
+            )
+        );
+
+        const failed = removals.filter((r) => r.status === "rejected").length;
+        podiumResults.push({
+          hotel,
+          status: failed === 0
+            ? `ok (${entries.length} processed)`
+            : `partial (${failed} failed)`,
+        });
       } catch (e) {
-        results.push({
-          companyId: company.id,
-          companyName: company.name,
+        podiumResults.push({
+          hotel,
           status: `exception: ${e instanceof Error ? e.message : String(e)}`,
         });
       }
     }
 
-    // ── 3. Refresh happiness scores materialized view ──────────────
+    // ── 3. Refresh happiness scores materialized view ─────────────────────
     let happinessRefresh = "ok";
     try {
       await adminClient.rpc("refresh_materialized_view_concurrently", {
         view_name: "happiness_scores",
-      }).catch(async () => {
-        // Fallback: direct SQL if the helper RPC doesn't exist
-        const { error } = await adminClient.from("happiness_scores").select("company_id").limit(0);
-        if (error) {
-          // The materialized view exists but we can't refresh via PostgREST.
-          // In production, use pg_cron:
-          //   SELECT cron.schedule('refresh-happiness', '0 */4 * * *',
-          //     $$REFRESH MATERIALIZED VIEW CONCURRENTLY public.happiness_scores$$);
-          happinessRefresh = "skipped (use pg_cron for materialized view refresh)";
-        }
       });
     } catch {
       happinessRefresh = "skipped";
     }
 
-    // ── 4. Cleanup old rate limits ─────────────────────────────────
-    await adminClient.rpc("cleanup_rate_limits").catch(() => {});
+    // ── 4. Cleanup old rate limits ────────────────────────────────────────
+    try { await adminClient.rpc("cleanup_rate_limits"); } catch { /* non-critical */ }
 
     return jsonResponse({
-      companiesProcessed: results.length,
-      results,
+      hotelsProcessed: hotels.length,
+      podiumResults,
       happinessScoreRefresh: happinessRefresh,
       timestamp: new Date().toISOString(),
     });

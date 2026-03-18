@@ -142,31 +142,24 @@ export default function ProfileScreen() {
 
     if (result.canceled || !result.assets[0]) return;
 
-    const uri  = result.assets[0].uri;
-    const path = `${employee.employee_id}/avatar`;
+    const uri = result.assets[0].uri;
 
-    // Show local image immediately
+    // Show local preview immediately
     setPhotoUrl(uri);
     setUploading(true);
 
     try {
-      const { publicUrl } = await uploadImage(uri, 'avatars', path);
-
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        'update_employee_avatar' as any,
-        { p_photo_url: publicUrl },
+      const { publicUrl } = await uploadImage(
+        uri,
+        'avatars',
+        `${employee.employee_id}/avatar`,
       );
-      if (rpcError) throw new Error(rpcError.message);
 
-      const rpcResult = rpcData as { ok: boolean; error?: string } | null;
-      if (rpcResult?.ok === false) {
-        throw new Error(rpcResult?.error ?? 'Could not save photo.');
-      }
-
-      // Swap to the persisted remote URL
-      setPhotoUrl(`${publicUrl}?t=${Date.now()}`);
+      await supabase.rpc('update_employee_avatar', { p_photo_url: publicUrl });
+      setPhotoUrl(publicUrl);
     } catch (err: any) {
       Alert.alert('Upload Failed', err.message ?? 'Something went wrong.');
+      setPhotoUrl(null);
     } finally {
       setUploading(false);
     }

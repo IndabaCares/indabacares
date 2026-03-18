@@ -72,10 +72,10 @@ function PodiumCard({ entry, rank, isMe }: CardProps) {
           ]}
         />
 
-        {/* Photo — raw, no border, sits directly on splash */}
-        {entry?.avatar_url ? (
+        {/* Photo — background-removed PNG preferred, raw avatar fallback */}
+        {(entry?.podium_photo_url ?? entry?.avatar_url) ? (
           <Image
-            source={{ uri: entry.avatar_url }}
+            source={{ uri: (entry.podium_photo_url ?? entry.avatar_url)! }}
             style={[styles.photo, { width: imgSize, height: imgSize }]}
             resizeMode="cover"
           />

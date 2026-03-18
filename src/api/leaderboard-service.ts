@@ -21,10 +21,11 @@ export interface LeaderboardEntry {
   employee_code:   string;
   total_points:    number;
   points_balance:  number;  // all-time, used for badge level
-  job_title?:      string;
-  avatar_url?:     string | null;
-  movement_delta?: number;  // positive = moved up, negative = moved down
-  is_manager?:     boolean;
+  job_title?:         string;
+  avatar_url?:        string | null;
+  podium_photo_url?:  string | null;
+  movement_delta?:    number;  // positive = moved up, negative = moved down
+  is_manager?:        boolean;
 }
 
 export interface BadgeLevel {
