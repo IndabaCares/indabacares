@@ -58,12 +58,12 @@ export function getBadgeLevel(points: number): BadgeLevel {
 export const PERIOD_LABELS: Record<PeriodType, string> = {
   all_time:  'All Time',
   monthly:   'Employees',
-  quarterly: 'Trimester',
+  quarterly: 'Legends',
   annual:    'Management',
 };
 
-// Tabs shown in the UI — Month and Management only
-export const PERIOD_TABS: PeriodType[] = ['monthly', 'annual'];
+// Tabs shown in the UI — Employees, Management, Legends
+export const PERIOD_TABS: PeriodType[] = ['monthly', 'annual', 'quarterly'];
 
 function getPeriodRange(period: PeriodType): { start: string | null; end: string | null } {
   if (period === 'all_time') return { start: null, end: null };

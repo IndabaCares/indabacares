@@ -3,12 +3,16 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   RefreshControl,
   ActivityIndicator,
   StyleSheet,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { type PeriodType } from '@/api/leaderboard-service';
@@ -17,8 +21,114 @@ import { TopThreePodium } from '@/components/leaderboard/TopThreePodium';
 import { PeriodTabs } from '@/components/leaderboard/PeriodTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { LeaderboardEntry } from '@/api/leaderboard-service';
+import { useMonthlyLegends } from '@/hooks/use-legends';
+import type { MonthlyLegend } from '@/api/legends-service';
 
 const PURPLE = '#7B1FA2';
+
+const MONTH_NAMES = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+
+// ─── Legends tab ──────────────────────────────────────────────────────────────
+
+function LegendsTab() {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1; // 1-based
+  const [year, setYear] = useState(currentYear);
+  const { data: legends = [], isLoading } = useMonthlyLegends(year);
+
+  // Build a month→legend lookup
+  const legendMap = Object.fromEntries(legends.map((l) => [l.month, l]));
+
+  return (
+    <ScrollView contentContainerStyle={legendStyles.body} showsVerticalScrollIndicator={false}>
+
+      {/* Year selector */}
+      <View style={legendStyles.yearRow}>
+        <TouchableOpacity onPress={() => setYear((y) => y - 1)} hitSlop={12}>
+          <Ionicons name="chevron-back" size={20} color={PURPLE} />
+        </TouchableOpacity>
+        <Text style={legendStyles.yearText}>{year}</Text>
+        <TouchableOpacity
+          onPress={() => setYear((y) => y + 1)}
+          disabled={year >= currentYear}
+          hitSlop={12}
+        >
+          <Ionicons name="chevron-forward" size={20} color={year >= currentYear ? '#cbd5e1' : PURPLE} />
+        </TouchableOpacity>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
+      ) : (
+        MONTH_NAMES.map((name, idx) => {
+          const month = idx + 1;
+          const legend: MonthlyLegend | undefined = legendMap[month];
+          const isFuture  = year === currentYear && month > currentMonth;
+          const isCurrent = year === currentYear && month === currentMonth;
+
+          return (
+            <View key={month} style={legendStyles.card}>
+              {/* Month label */}
+              <View style={legendStyles.monthBadge}>
+                <Text style={legendStyles.monthText}>{name}</Text>
+                {isCurrent && <View style={legendStyles.activeDot} />}
+              </View>
+
+              {legend ? (
+                /* Winner row */
+                <View style={legendStyles.winnerRow}>
+                  <View style={legendStyles.avatarWrap}>
+                    {legend.avatar_url ? (
+                      <Image
+                        source={{ uri: legend.avatar_url }}
+                        style={legendStyles.avatar}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={legendStyles.avatarPlaceholder}>
+                        <Text style={legendStyles.avatarInitial}>
+                          {legend.full_name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={legendStyles.crownBadge}>
+                      <Text style={{ fontSize: 10 }}>👑</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={legendStyles.winnerName}>{legend.full_name}</Text>
+                    {legend.job_title ? (
+                      <Text style={legendStyles.winnerTitle}>{legend.job_title}</Text>
+                    ) : null}
+                    <View style={legendStyles.ptsBadge}>
+                      <Ionicons name="star" size={11} color="#fbbf24" />
+                      <Text style={legendStyles.ptsText}>{legend.total_points.toLocaleString()} pts</Text>
+                    </View>
+                  </View>
+
+                  <View style={legendStyles.bonusBadge}>
+                    <Text style={legendStyles.bonusText}>+{legend.points_awarded}</Text>
+                    <Text style={legendStyles.bonusLabel}>bonus</Text>
+                  </View>
+                </View>
+              ) : isFuture ? (
+                <Text style={legendStyles.placeholderText}>Not yet</Text>
+              ) : isCurrent ? (
+                <Text style={legendStyles.inProgressText}>In progress…</Text>
+              ) : (
+                <Text style={legendStyles.placeholderText}>No data</Text>
+              )}
+            </View>
+          );
+        })
+      )}
+    </ScrollView>
+  );
+}
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -77,7 +187,8 @@ export default function LeaderboardScreen() {
 
   // List shows the active tab (employees skip top 3 since they're in podium)
   const isManagement = period === 'annual';
-  const listEntries  = isManagement ? management : employees.slice(3);
+  const isLegends    = period === 'quarterly';
+  const listEntries  = isManagement ? management : isLegends ? allEntries : employees.slice(3);
   const rest         = listEntries as LeaderboardEntry[];
 
   return (
@@ -98,39 +209,44 @@ export default function LeaderboardScreen() {
       {/* ── Period pill tabs (below header) ──────────────────── */}
       <PeriodTabs value={period} onChange={setPeriod} />
 
-      {/* ── Scrollable cards list ────────────────────────────── */}
-      <FlatList
-        style={styles.list}
-        data={isLoading ? [] : rest}
-        keyExtractor={(item) => item.employee_id}
-        renderItem={({ item, index }) => (
-          <LeaderboardRow
-            entry={item}
-            isFirst={index === 0}
-            isLast={index === rest.length - 1}
-          />
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={PURPLE} />
-        }
-        ListHeaderComponent={
-          <>
-            {!isLoading && !isManagement && employees.length > 0 && <MyRankStrip entries={employees} />}
-          </>
-        }
-        ListEmptyComponent={
-          !isLoading && !isMock ? (
-            <EmptyState
-              icon="🏆"
-              title="No rankings yet"
-              description="Start recognizing colleagues to earn points and appear here!"
+      {/* ── Legends tab — monthly winners grid ───────────────── */}
+      {isLegends ? (
+        <LegendsTab />
+      ) : (
+        /* ── Employees / Management ranked list ──────────────── */
+        <FlatList
+          style={styles.list}
+          data={isLoading ? [] : rest}
+          keyExtractor={(item) => item.employee_id}
+          renderItem={({ item, index }) => (
+            <LeaderboardRow
+              entry={item}
+              isFirst={index === 0}
+              isLast={index === rest.length - 1}
             />
-          ) : null
-        }
-      />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={PURPLE} />
+          }
+          ListHeaderComponent={
+            <>
+              {!isLoading && !isManagement && employees.length > 0 && <MyRankStrip entries={employees} />}
+            </>
+          }
+          ListEmptyComponent={
+            !isLoading && !isMock ? (
+              <EmptyState
+                icon="🏆"
+                title="No rankings yet"
+                description="Start recognizing colleagues to earn points and appear here!"
+              />
+            ) : null
+          }
+        />
+      )}
       </View>
     </SafeAreaView>
   );
@@ -236,5 +352,159 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#9CA3AF',
+  },
+});
+
+// ─── Legends styles ───────────────────────────────────────────────────────────
+
+const legendStyles = StyleSheet.create({
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 100,
+    gap: 10,
+  },
+
+  yearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    paddingVertical: 6,
+  },
+  yearText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+    minWidth: 50,
+    textAlign: 'center',
+  },
+
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  monthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  monthText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22c55e',
+  },
+
+  winnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  avatarWrap: {
+    width: 48,
+    height: 48,
+    position: 'relative',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ede9fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: PURPLE,
+  },
+  crownBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+
+  winnerName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  winnerTitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  ptsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  ptsText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+
+  bonusBadge: {
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  bonusText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#16a34a',
+  },
+  bonusLabel: {
+    fontSize: 10,
+    color: '#16a34a',
+    fontWeight: '600',
+  },
+
+  placeholderText: {
+    fontSize: 13,
+    color: '#cbd5e1',
+    fontStyle: 'italic',
+  },
+  inProgressText: {
+    fontSize: 13,
+    color: '#f59e0b',
+    fontWeight: '600',
   },
 });

@@ -46,8 +46,9 @@ function getStatus(weeklyRecognitions: number) {
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Initiatives', icon: 'ribbon-outline' as const, route: '/(screens)/initiatives' },
-  { label: "FAQ's", icon: 'help-circle-outline' as const, route: '/(screens)/faq' },
+  { label: 'Indaba Cares',    icon: 'ribbon-outline'  as const, route: '/(screens)/initiatives' },
+  { label: 'Know your team',  icon: 'people-outline'  as const, route: '/(screens)/team'        },
+  { label: "FAQ's",           icon: 'help-circle-outline' as const, route: '/(screens)/faq'     },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -283,7 +284,7 @@ export default function ProfileScreen() {
             return (
               <View style={styles.pillsRow}>
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>Recognition</Text>
+                  <Text style={styles.pillHeader}>Recognition Rewards</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="star" size={16} color="#fbbf24" />
                     {pointsBalance === null ? (
@@ -305,7 +306,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>Status</Text>
+                  <Text style={styles.pillHeader}>{'Status\nLevel'}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name={status.icon} size={16} color={status.color} />
                     <Text style={[styles.pillTextDark, { color: status.color }]}>{status.label}</Text>
@@ -732,6 +733,9 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textAlign: 'center',
+    minHeight: 24,
+    lineHeight: 12,
   },
 
 
