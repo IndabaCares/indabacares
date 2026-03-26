@@ -255,7 +255,7 @@ export function AnalyticsClient({
                     tick={{ fontSize: 10 }}
                     tickFormatter={(v: string) => v.length > 16 ? v.slice(0, 15) + '…' : v}
                   />
-                  <Tooltip formatter={(v: number) => [v, 'Recognitions sent']} />
+                  <Tooltip formatter={(v) => [v, 'Recognitions sent']} />
                   <Bar dataKey="count" radius={[0, 3, 3, 0]}>
                     {departmentParticipation.map((_, i) => (
                       <Cell key={i} fill={DEPT_PALETTE[i % DEPT_PALETTE.length]} />
