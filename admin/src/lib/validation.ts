@@ -10,8 +10,8 @@ import { HOTELS } from '@/lib/hotels';
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
-const hotel = z.enum(HOTELS as [string, ...string[]], {
-  errorMap: () => ({ message: 'Invalid hotel name.' }),
+const hotel = z.enum(HOTELS as unknown as [string, ...string[]], {
+  error: () => ({ message: 'Invalid hotel name.' }),
 });
 
 const uuid = z.string().uuid('Invalid ID format.');
@@ -96,5 +96,5 @@ export const csvImportQuerySchema = z.object({
 // ── Helper: format ZodError for user display ──────────────────────────────────
 
 export function formatValidationError(error: z.ZodError): string {
-  return error.errors.map((e) => e.message).join(' · ');
+  return error.issues.map((e) => e.message).join(' · ');
 }

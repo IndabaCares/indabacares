@@ -22,7 +22,7 @@ async function getRedemptions(hotel?: string, status?: string) {
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as any[];
 }
 
 export default async function RedemptionsPage({

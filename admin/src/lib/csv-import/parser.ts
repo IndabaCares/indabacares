@@ -45,13 +45,13 @@ export function parseCsv(text: string): { headers: string[]; rows: RawRow[] } {
 
 // ─── Tokeniser ────────────────────────────────────────────────────────────────
 
-interface Record {
+interface CsvRecord {
   lineNumber: number;
   values:     string[];
 }
 
-function tokenise(text: string): Record[] {
-  const records: Record[] = [];
+function tokenise(text: string): CsvRecord[] {
+  const records: CsvRecord[] = [];
   let pos        = 0;
   let lineNumber = 1;
   let recStart   = true;

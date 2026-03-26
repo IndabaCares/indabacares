@@ -288,8 +288,8 @@ export function AnalyticsClient({
                 />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip
-                  labelFormatter={formatDay}
-                  formatter={(v: number) => [v, 'Recognitions']}
+                  labelFormatter={(label) => formatDay(String(label))}
+                  formatter={(v) => [v, 'Recognitions']}
                 />
                 <Line
                   type="monotone"
@@ -321,8 +321,8 @@ export function AnalyticsClient({
                 />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip
-                  labelFormatter={formatDay}
-                  formatter={(v: number) => [v, 'Points']}
+                  labelFormatter={(label) => formatDay(String(label))}
+                  formatter={(v) => [v, 'Points']}
                 />
                 <Bar dataKey="points" fill="#7c3aed" radius={[3, 3, 0, 0]} />
               </BarChart>
@@ -354,7 +354,7 @@ export function AnalyticsClient({
                     tick={{ fontSize: 10 }}
                     tickFormatter={(v: string) => v.replace(/_/g, ' ')}
                   />
-                  <Tooltip formatter={(v: number) => [v, 'Count']} />
+                  <Tooltip formatter={(v) => [v, 'Count']} />
                   <Bar dataKey="count" radius={[0, 3, 3, 0]}>
                     {badgeBreakdown.map((entry) => (
                       <Cell
