@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, Pressable, Modal,
+  View, Text, Pressable,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,15 +8,12 @@ import { RESPONSE_OPTIONS } from '@/hooks/use-recognition-response';
 
 const PURPLE      = '#7B1FA2';
 const PURPLE_SOFT = '#ede9fe';
+const PURPLE_TINT = '#ddd6fe';
 
 interface ResponsePickerProps {
-  /** Existing response text — if set, shows the response instead of the button. */
   response:    string | null;
-  /** Whether the current user is the recipient. */
   isRecipient: boolean;
-  /** Called with the chosen response string. */
   onSelect:    (response: string) => void;
-  /** True while the mutation is in-flight. */
   loading?:    boolean;
 }
 
@@ -41,68 +38,59 @@ export function ResponsePicker({
   // Not the recipient — nothing to show
   if (!isRecipient) return null;
 
+  // Options expanded inline
+  if (open) {
+    return (
+      <View style={s.inlineSheet}>
+        <View style={s.inlineHeader}>
+          <Text style={s.inlineTitle}>Choose a response</Text>
+          <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+            <Ionicons name="close" size={18} color="#94a3b8" />
+          </Pressable>
+        </View>
+        <Text style={s.inlineSub}>+5 pts awarded for responding</Text>
+
+        {RESPONSE_OPTIONS.map((opt, i) => (
+          <Pressable
+            key={opt}
+            style={[s.option, i === RESPONSE_OPTIONS.length - 1 && s.optionLast]}
+            onPress={() => { setOpen(false); onSelect(opt); }}
+          >
+            <Ionicons name="chatbubble-outline" size={14} color={PURPLE} />
+            <Text style={s.optionText}>{opt}</Text>
+          </Pressable>
+        ))}
+      </View>
+    );
+  }
+
+  // Trigger button
   return (
-    <>
-      {/* Trigger button */}
-      <Pressable
-        onPress={() => setOpen(true)}
-        style={s.triggerBtn}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color={PURPLE} />
-        ) : (
-          <>
-            <Ionicons name="chatbubble-ellipses-outline" size={16} color={PURPLE} />
-            <Text style={s.triggerText}>Respond</Text>
-          </>
-        )}
-      </Pressable>
-
-      {/* Options modal */}
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <Pressable style={s.overlay} onPress={() => setOpen(false)}>
-          <View style={s.sheet}>
-            <Text style={s.sheetTitle}>Choose a response</Text>
-            <Text style={s.sheetSub}>+5 pts awarded for responding</Text>
-
-            {RESPONSE_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt}
-                style={s.option}
-                onPress={() => {
-                  setOpen(false);
-                  onSelect(opt);
-                }}
-              >
-                <Ionicons name="chatbubble-outline" size={16} color={PURPLE} />
-                <Text style={s.optionText}>{opt}</Text>
-              </Pressable>
-            ))}
-
-            <Pressable style={s.cancelBtn} onPress={() => setOpen(false)}>
-              <Text style={s.cancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
-    </>
+    <Pressable
+      onPress={() => setOpen(true)}
+      style={s.triggerBtn}
+      disabled={loading}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={PURPLE} />
+      ) : (
+        <>
+          <Ionicons name="chatbubble-ellipses-outline" size={16} color={PURPLE} />
+          <Text style={s.triggerText}>Respond</Text>
+        </>
+      )}
+    </Pressable>
   );
 }
 
 const s = StyleSheet.create({
   // Existing response
   responseRow: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    gap:            6,
-    marginTop:      8,
-    alignSelf:      'flex-end',
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           6,
+    marginTop:     8,
+    alignSelf:     'flex-end',
   },
   responseText: {
     fontSize:   13,
@@ -113,15 +101,15 @@ const s = StyleSheet.create({
 
   // Trigger
   triggerBtn: {
-    flexDirection:    'row',
-    alignItems:       'center',
-    gap:              5,
-    alignSelf:        'flex-end',
-    marginTop:        8,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               5,
+    alignSelf:         'flex-end',
+    marginTop:         8,
     paddingHorizontal: 10,
     paddingVertical:   5,
-    borderRadius:     20,
-    backgroundColor:  PURPLE_SOFT,
+    borderRadius:      20,
+    backgroundColor:   PURPLE_SOFT,
   },
   triggerText: {
     fontSize:   12,
@@ -129,52 +117,48 @@ const s = StyleSheet.create({
     color:      PURPLE,
   },
 
-  // Modal
-  overlay: {
-    flex:            1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent:  'flex-end',
+  // Inline expanded panel
+  inlineSheet: {
+    marginTop:        10,
+    borderRadius:     14,
+    borderWidth:      1.5,
+    borderColor:      PURPLE_TINT,
+    backgroundColor:  '#faf8ff',
+    paddingHorizontal: 14,
+    paddingTop:       12,
+    paddingBottom:    6,
   },
-  sheet: {
-    backgroundColor:      '#fff',
-    borderTopLeftRadius:  24,
-    borderTopRightRadius: 24,
-    paddingHorizontal:    20,
-    paddingTop:           20,
-    paddingBottom:        36,
-  },
-  sheetTitle: {
-    fontSize:     17,
-    fontWeight:   '700',
-    color:        '#1e1b4b',
-    marginBottom:  4,
-  },
-  sheetSub: {
-    fontSize:     12,
-    color:        '#94a3b8',
-    marginBottom: 18,
-  },
-  option: {
+  inlineHeader: {
     flexDirection:  'row',
     alignItems:     'center',
-    gap:            12,
-    paddingVertical: 14,
+    justifyContent: 'space-between',
+    marginBottom:   2,
+  },
+  inlineTitle: {
+    fontSize:   13,
+    fontWeight: '700',
+    color:      '#1e1b4b',
+  },
+  inlineSub: {
+    fontSize:     11,
+    color:        '#94a3b8',
+    marginBottom: 10,
+  },
+  option: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               10,
+    paddingVertical:   11,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#ede9fe',
+  },
+  optionLast: {
+    borderBottomWidth: 0,
+    paddingBottom:     6,
   },
   optionText: {
-    fontSize:   15,
+    fontSize:   13,
     color:      '#1e1b4b',
     fontWeight: '500',
-  },
-  cancelBtn: {
-    marginTop:      16,
-    alignItems:     'center',
-    paddingVertical: 12,
-  },
-  cancelText: {
-    fontSize:   14,
-    color:      '#94a3b8',
-    fontWeight: '600',
   },
 });

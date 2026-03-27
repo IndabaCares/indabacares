@@ -27,6 +27,19 @@ const PURPLE_MID  = '#9C27B0';
 const PURPLE_SOFT = '#ede9fe';
 const PURPLE_TINT = '#ddd6fe';
 
+const SKILL_BADGES = [
+  { value: 'Leadership',       emoji: '👑', color: '#F59E0B' },
+  { value: 'Teamwork',         emoji: '🤝', color: '#3B82F6' },
+  { value: 'Communication',    emoji: '💬', color: '#10B981' },
+  { value: 'Problem Solving',  emoji: '🧩', color: '#8B5CF6' },
+  { value: 'Customer Service', emoji: '🌟', color: '#EC4899' },
+  { value: 'Creativity',       emoji: '💡', color: '#F97316' },
+  { value: 'Reliability',      emoji: '⏰', color: '#06B6D4' },
+  { value: 'Positivity',       emoji: '😊', color: '#84CC16' },
+] as const;
+
+type SkillBadge = typeof SKILL_BADGES[number]['value'];
+
 interface EmployeeResult {
   id: string;
   full_name: string;
@@ -136,28 +149,77 @@ function BadgeSelector({ selected, onSelect }: {
   );
 }
 
+function SkillBadgeSelector({ selected, onSelect }: {
+  selected: SkillBadge | null;
+  onSelect: (b: SkillBadge) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {SKILL_BADGES.map((b) => {
+        const active = selected === b.value;
+        return (
+          <Pressable
+            key={b.value}
+            onPress={() => onSelect(b.value)}
+            style={[s.badge, {
+              backgroundColor: active ? b.color : b.color + '15',
+              borderColor:     active ? b.color : b.color + '40',
+            }]}
+          >
+            <Text style={{ fontSize: 14 }}>{b.emoji}</Text>
+            <Text style={[s.badgeLabel, { color: active ? '#fff' : b.color }]}>{b.value}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function GiveScreen() {
   const { employee } = useEmployee();
   const postRecognition = usePostRecognition();
 
-  const [receiver, setReceiver] = useState<EmployeeResult | null>(null);
-  const [badge, setBadge]       = useState<RecognitionBadge | null>(null);
-  const [message, setMessage]   = useState('');
-  const [error, setError]       = useState('');
+  const [activeTab, setActiveTab] = useState<'recognition' | 'skills'>('recognition');
 
-  const handleSend = useCallback(() => {
-    setError('');
-    if (!receiver) { setError('Please select a colleague to recognize.'); return; }
-    if (!badge)    { setError('Please select a recognition badge.'); return; }
-    if (message.trim().length < 10) { setError('Message must be at least 10 characters.'); return; }
+  // Recognition form state
+  const [recReceiver, setRecReceiver] = useState<EmployeeResult | null>(null);
+  const [recBadge, setRecBadge]       = useState<RecognitionBadge | null>(null);
+  const [recMessage, setRecMessage]   = useState('');
+  const [recError, setRecError]       = useState('');
+
+  // Skills form state
+  const [sklReceiver, setSklReceiver] = useState<EmployeeResult | null>(null);
+  const [sklBadge, setSklBadge]       = useState<SkillBadge | null>(null);
+  const [sklMessage, setSklMessage]   = useState('');
+  const [sklError, setSklError]       = useState('');
+
+  const handleSendRecognition = useCallback(() => {
+    setRecError('');
+    if (!recReceiver) { setRecError('Please select a colleague to recognize.'); return; }
+    if (!recBadge)    { setRecError('Please select a recognition badge.'); return; }
+    if (recMessage.trim().length < 10) { setRecError('Message must be at least 10 characters.'); return; }
     postRecognition.mutate(
-      { receiverId: receiver.id, message: message.trim(), badge },
+      { receiverId: recReceiver.id, message: recMessage.trim(), badge: recBadge },
       {
-        onSuccess: () => { setReceiver(null); setBadge(null); setMessage(''); router.push('/(tabs)'); },
-        onError:   (err: Error) => setError(err.message),
+        onSuccess: () => { setRecReceiver(null); setRecBadge(null); setRecMessage(''); router.push('/(tabs)'); },
+        onError:   (err: Error) => setRecError(err.message),
       },
     );
-  }, [receiver, badge, message, postRecognition]);
+  }, [recReceiver, recBadge, recMessage, postRecognition]);
+
+  const handleSendSkill = useCallback(() => {
+    setSklError('');
+    if (!sklReceiver) { setSklError('Please select a colleague to recognise.'); return; }
+    if (!sklBadge)    { setSklError('Please select a skill.'); return; }
+    if (sklMessage.trim().length < 10) { setSklError('Message must be at least 10 characters.'); return; }
+    postRecognition.mutate(
+      { receiverId: sklReceiver.id, message: sklMessage.trim(), badge: sklBadge as any },
+      {
+        onSuccess: () => { setSklReceiver(null); setSklBadge(null); setSklMessage(''); router.push('/(tabs)'); },
+        onError:   (err: Error) => setSklError(err.message),
+      },
+    );
+  }, [sklReceiver, sklBadge, sklMessage, postRecognition]);
 
   if (!employee) return null;
 
@@ -166,9 +228,26 @@ export default function GiveScreen() {
 
       {/* Purple header */}
       <View style={s.header}>
-        <Ionicons name="sparkles" size={22} color="rgba(255,255,255,0.7)" style={{ marginBottom: 6 }} />
-        <Text style={s.headerTitle}>Recognize a Colleague</Text>
+        <Text style={s.headerTitle}>Appreciate your Colleague</Text>
         <Text style={s.headerSub}>Celebrate someone who made a difference today.</Text>
+      </View>
+
+      {/* Pill tab selector */}
+      <View style={s.tabPill}>
+        <TouchableOpacity
+          style={[s.tabBtn, activeTab === 'recognition' && s.tabBtnActive]}
+          onPress={() => setActiveTab('recognition')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'recognition' && s.tabTxtActive]}>Recognition</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.tabBtn, activeTab === 'skills' && s.tabBtnActive]}
+          onPress={() => setActiveTab('skills')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'skills' && s.tabTxtActive]}>Skills</Text>
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
@@ -176,62 +255,117 @@ export default function GiveScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Form fields */}
-        <ScrollView
-          style={s.scroll}
-          contentContainerStyle={s.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={s.handle} />
+        {activeTab === 'recognition' ? (
+          <ScrollView
+            style={s.scroll}
+            contentContainerStyle={s.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={s.handle} />
 
-          <Text style={s.label}>Who are you Recognising?</Text>
-          <EmployeeSearch
-            hotel={employee.hotel}
-            selected={receiver}
-            onSelect={setReceiver}
-            onClear={() => setReceiver(null)}
-          />
-
-          <Text style={[s.label, { marginTop: 20 }]}>Choose a Badge</Text>
-          <BadgeSelector selected={badge} onSelect={setBadge} />
-
-          <Text style={[s.label, { marginTop: 20 }]}>Your Message</Text>
-          <View style={s.messageBox}>
-            <TextInput
-              value={message}
-              onChangeText={(v) => { setMessage(v); setError(''); }}
-              placeholder="Share what they did and why it matters…"
-              placeholderTextColor="#94a3b8"
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-              textAlignVertical="top"
-              style={s.messageInput}
+            <Text style={s.label}>Who are you Recognising?</Text>
+            <EmployeeSearch
+              hotel={employee.hotel}
+              selected={recReceiver}
+              onSelect={setRecReceiver}
+              onClear={() => setRecReceiver(null)}
             />
-          </View>
-          <Text style={s.charCount}>{message.length}/500</Text>
 
-          {!!error && (
-            <View style={s.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#ef4444" />
-              <Text style={s.errorText}>{error}</Text>
+            <Text style={[s.label, { marginTop: 20 }]}>Choose a Badge</Text>
+            <BadgeSelector selected={recBadge} onSelect={setRecBadge} />
+
+            <Text style={[s.label, { marginTop: 20 }]}>Your Message</Text>
+            <View style={s.messageBox}>
+              <TextInput
+                value={recMessage}
+                onChangeText={(v) => { setRecMessage(v); setRecError(''); }}
+                placeholder="Share what they did and why it matters…"
+                placeholderTextColor="#94a3b8"
+                multiline
+                numberOfLines={4}
+                maxLength={500}
+                textAlignVertical="top"
+                style={s.messageInput}
+              />
             </View>
-          )}
+            <Text style={s.charCount}>{recMessage.length}/500</Text>
 
-          <TouchableOpacity onPress={handleSend} disabled={postRecognition.isPending} activeOpacity={0.8} style={{ marginTop: 16 }}>
-            <View style={{ backgroundColor: '#7B1FA2', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              {postRecognition.isPending
-                ? <ActivityIndicator color="#fff" />
-                : <>
-                    <Ionicons name="sparkles" size={18} color="#fff" />
-                    <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '800', color: '#fff' }}>Send Recognition</Text>
-                  </>
-              }
+            {!!recError && (
+              <View style={s.errorBox}>
+                <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                <Text style={s.errorText}>{recError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity onPress={handleSendRecognition} disabled={postRecognition.isPending} activeOpacity={0.8} style={{ marginTop: 16 }}>
+              <View style={{ backgroundColor: '#7B1FA2', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                {postRecognition.isPending
+                  ? <ActivityIndicator color="#fff" />
+                  : <>
+                      <Ionicons name="sparkles" size={18} color="#fff" />
+                      <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '800', color: '#fff' }}>Send Recognition</Text>
+                    </>
+                }
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <ScrollView
+            style={s.scroll}
+            contentContainerStyle={s.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={s.handle} />
+
+            <Text style={s.label}>Who are you Recognising?</Text>
+            <EmployeeSearch
+              hotel={employee.hotel}
+              selected={sklReceiver}
+              onSelect={setSklReceiver}
+              onClear={() => setSklReceiver(null)}
+            />
+
+            <Text style={[s.label, { marginTop: 20 }]}>Choose a Skill</Text>
+            <SkillBadgeSelector selected={sklBadge} onSelect={setSklBadge} />
+
+            <Text style={[s.label, { marginTop: 20 }]}>Your Message</Text>
+            <View style={s.messageBox}>
+              <TextInput
+                value={sklMessage}
+                onChangeText={(v) => { setSklMessage(v); setSklError(''); }}
+                placeholder="Share what they did and why it matters…"
+                placeholderTextColor="#94a3b8"
+                multiline
+                numberOfLines={4}
+                maxLength={500}
+                textAlignVertical="top"
+                style={s.messageInput}
+              />
             </View>
-          </TouchableOpacity>
-        </ScrollView>
+            <Text style={s.charCount}>{sklMessage.length}/500</Text>
 
+            {!!sklError && (
+              <View style={s.errorBox}>
+                <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                <Text style={s.errorText}>{sklError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity onPress={handleSendSkill} disabled={postRecognition.isPending} activeOpacity={0.8} style={{ marginTop: 16 }}>
+              <View style={{ backgroundColor: '#7B1FA2', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                {postRecognition.isPending
+                  ? <ActivityIndicator color="#fff" />
+                  : <>
+                      <Ionicons name="sparkles" size={18} color="#fff" />
+                      <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '800', color: '#fff' }}>Send Skill</Text>
+                    </>
+                }
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
       </KeyboardAvoidingView>
 
     </SafeAreaView>
@@ -239,24 +373,37 @@ export default function GiveScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: PURPLE },
+  safe:   { flex: 1, backgroundColor: '#f5f3ff' },
 
   header: {
     backgroundColor: PURPLE,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 36,
-    alignItems: 'flex-start',
+    paddingBottom: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
   },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
   headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 18 },
+
+  tabPill:      { flexDirection: 'row', backgroundColor: '#8E24AA', borderRadius: 20, padding: 4, marginHorizontal: 20, marginTop: -22, zIndex: 10, elevation: 4 },
+  tabBtn:       { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 16 },
+  tabBtnActive: { backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3 },
+  tabTxt:       { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.75)' },
+  tabTxtActive: { color: PURPLE },
 
   scroll: {
     flex: 1,
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    marginTop: -20,
+    marginTop: 8,
   },
   content: {
     paddingHorizontal: 20,

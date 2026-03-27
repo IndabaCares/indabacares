@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet, ActivityIndicator, Animated, Modal, GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
@@ -177,87 +177,151 @@ function MockCard({ item }: { item: RecognitionFeedItem }) {
     '❤️': 0, '😊': 0, '👍': 0,
   });
   const [mockResponse, setMockResponse] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerY, setPickerY]       = useState(0);
+
+  const scaleAnim   = useRef(new Animated.Value(0)).current;
+  const translateY  = useRef(new Animated.Value(12)).current;
+
+  useEffect(() => {
+    if (showPicker) {
+      Animated.parallel([
+        Animated.spring(scaleAnim,  { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }),
+        Animated.spring(translateY, { toValue: 0, friction: 6, tension: 120, useNativeDriver: true }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0);
+      translateY.setValue(12);
+    }
+  }, [showPicker]);
 
   const badge       = getBadgeConfig(item.badge);
   const isRecipient = employee?.employee_id === item.receiver.id;
+
+  const handleLongPress = (e: GestureResponderEvent) => {
+    setPickerY(e.nativeEvent.pageY);
+    setShowPicker(true);
+  };
 
   const toggleReaction = (emoji: string) => {
     const active = reactions[emoji];
     setReactions((prev) => ({ ...prev, [emoji]: !active }));
     setCounts((prev) => ({ ...prev, [emoji]: (prev[emoji] ?? 0) + (active ? -1 : 1) }));
+    setShowPicker(false);
   };
 
+  const hasReactions = Object.values(counts).some((c) => c > 0);
+
   return (
-    <View style={ms.card}>
+    <>
+      <Pressable onLongPress={handleLongPress} delayLongPress={350}>
+        <View style={ms.card}>
 
-      {/* Receiver row (person being recognised) */}
-      <View style={ms.senderRow}>
-        <Image
-          source={{ uri: `https://i.pravatar.cc/100?u=${item.receiver.full_name}` }}
-          style={ms.avatar}
-        />
-        <View style={ms.senderInfo}>
-          <Text style={ms.senderName}>{item.receiver.full_name}</Text>
-          {(item.receiver.position || item.receiver.department) ? (
-            <Text style={ms.senderTitle}>
-              {item.receiver.position}
-              {item.receiver.position && item.receiver.department ? ` (${item.receiver.department})` : item.receiver.department ?? ''}
-            </Text>
-          ) : null}
+          {/* Receiver row (person being recognised) */}
+          <View style={ms.senderRow}>
+            <Image
+              source={{ uri: `https://i.pravatar.cc/100?u=${item.receiver.full_name}` }}
+              style={ms.avatar}
+            />
+            <View style={ms.senderInfo}>
+              <Text style={ms.senderName}>{item.receiver.full_name}</Text>
+              {(item.receiver.position || item.receiver.department) ? (
+                <Text style={ms.senderTitle}>
+                  {item.receiver.position}
+                  {item.receiver.position && item.receiver.department ? ` (${item.receiver.department})` : item.receiver.department ?? ''}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={ms.timeAgo}>{relativeTime(item.created_at)}</Text>
+          </View>
+
+          {/* Badge */}
+          <View style={ms.badgePill}>
+            <Text style={ms.badgeEmoji}>{badge.emoji}</Text>
+            <Text style={[ms.badgeText, { color: badge.color }]}>{item.badge}</Text>
+          </View>
+
+          {/* Given by row (sender) */}
+          <View style={ms.recipientCard}>
+            <Ionicons name="star" size={15} color={PURPLE} />
+            <Text style={ms.recognisingLabel}> Given by </Text>
+            <Text style={ms.recipientName}>{item.sender.full_name}</Text>
+          </View>
+
+          {/* Message */}
+          <Text style={ms.message}>{item.message}</Text>
+
+          {/* Recipient response */}
+          <ResponsePicker
+            response={mockResponse}
+            isRecipient={true}
+            onSelect={setMockResponse}
+          />
+
+          {/* Reaction count pills + logo */}
+          <View style={ms.reactionRow}>
+            {hasReactions && REACTIONS.map(({ emoji }) => {
+              const count  = counts[emoji] ?? 0;
+              const active = reactions[emoji];
+              if (!count) return null;
+              return (
+                <View key={emoji} style={[ms.countPill, active && ms.countPillActive]}>
+                  <Text style={ms.reactionEmoji}>{emoji}</Text>
+                  <Text style={[ms.reactionCount, active && ms.reactionCountActive]}>{count}</Text>
+                </View>
+              );
+            })}
+            <View style={{ flex: 1 }} />
+            <Image
+              source={require('../../assets/IndabaCaresLogo.png')}
+              style={ms.cardLogo}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Date */}
+          <Text style={ms.dateText}>{fullDateTime(item.created_at)}</Text>
         </View>
-        <Text style={ms.timeAgo}>{relativeTime(item.created_at)}</Text>
-      </View>
+      </Pressable>
 
-      {/* Badge */}
-      <View style={ms.badgePill}>
-        <Text style={ms.badgeEmoji}>{badge.emoji}</Text>
-        <Text style={[ms.badgeText, { color: badge.color }]}>{item.badge}</Text>
-      </View>
-
-      {/* Given by row (sender) */}
-      <View style={ms.recipientCard}>
-        <Ionicons name="star" size={15} color={PURPLE} />
-        <Text style={ms.recognisingLabel}> Given by </Text>
-        <Text style={ms.recipientName}>{item.sender.full_name}</Text>
-      </View>
-
-      {/* Message */}
-      <Text style={ms.message}>{item.message}</Text>
-
-      {/* Recipient response — always visible on mock cards for demo */}
-      <ResponsePicker
-        response={mockResponse}
-        isRecipient={true}
-        onSelect={setMockResponse}
-      />
-
-      {/* Reaction pills + logo row */}
-      <View style={ms.reactionRow}>
-        {REACTIONS.map(({ emoji, pts }) => {
-          const active = reactions[emoji];
-          const count  = counts[emoji] ?? 0;
-          return (
-            <Pressable
-              key={emoji}
-              onPress={() => toggleReaction(emoji)}
-              style={[ms.reactionBtn, active && ms.reactionBtnActive]}
-            >
-              <Text style={ms.reactionEmoji}>{emoji}</Text>
-              {count > 0 && <Text style={ms.reactionCount}>{count}</Text>}
-            </Pressable>
-          );
-        })}
-        <View style={{ flex: 1 }} />
-        <Image
-          source={require('../../assets/IndabaCaresLogo.png')}
-          style={ms.cardLogo}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Date */}
-      <Text style={ms.dateText}>{fullDateTime(item.created_at)}</Text>
-    </View>
+      {/* Floating emoji picker (WhatsApp style) */}
+      <Modal
+        visible={showPicker}
+        transparent
+        animationType="none"
+        onRequestClose={() => setShowPicker(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={ms.backdrop} onPress={() => setShowPicker(false)}>
+          <Animated.View
+            style={[
+              ms.pickerRow,
+              { top: Math.max(60, pickerY - 90), transform: [{ scale: scaleAnim }, { translateY }] },
+            ]}
+          >
+          <View style={ms.pickerPill}>
+            {REACTIONS.map(({ emoji }) => {
+              const isActive = reactions[emoji];
+              return (
+                <Pressable
+                  key={emoji}
+                  onPress={() => toggleReaction(emoji)}
+                  style={({ pressed }) => [
+                    ms.pickerBtn,
+                    isActive && ms.pickerBtnActive,
+                    pressed && ms.pickerBtnPressed,
+                  ]}
+                >
+                  <Text style={ms.pickerEmoji}>{emoji}</Text>
+                  {isActive && <View style={ms.activeDot} />}
+                </Pressable>
+              );
+            })}
+          </View>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -295,12 +359,22 @@ const ms = StyleSheet.create({
 
   message: { fontSize: 13, lineHeight: 19, color: '#334155', marginBottom: 3 },
 
-  reactionRow:       { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 0 },
-  reactionBtn:       { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 6, paddingVertical: 3 },
-  reactionBtnActive: {},
-  reactionEmoji:     { fontSize: 22 },
-  reactionCount:     { fontSize: 10, fontWeight: '600', color: '#64748b', marginLeft: 2 },
-  reactionPts:       { fontSize: 9, color: '#94a3b8' },
+  reactionRow:        { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 0 },
+  countPill:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2, paddingVertical: 2 },
+  countPillActive:    {},
+  reactionEmoji:      { fontSize: 16 },
+  reactionCount:      { fontSize: 11, fontWeight: '600', color: '#64748b', marginLeft: 2 },
+  reactionCountActive:{ color: '#ED6813' },
+
+  // Picker modal
+  backdrop:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' },
+  pickerRow:      { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  pickerPill:     { flexDirection: 'row', alignItems: 'center', gap: 0, backgroundColor: '#fff', borderRadius: 40, paddingVertical: 6, paddingHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 10 },
+  pickerBtn:      { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  pickerBtnActive:{},
+  pickerBtnPressed:{},
+  pickerEmoji:    { fontSize: 24 },
+  activeDot:      { position: 'absolute', bottom: 4, width: 5, height: 5, borderRadius: 3, backgroundColor: '#ED6813' },
 
   dateText: { fontSize: 10, color: '#94a3b8', marginTop: 3, marginBottom: 6 },
   divider:  { height: 1, backgroundColor: '#f1f5f9', marginBottom: 3 },

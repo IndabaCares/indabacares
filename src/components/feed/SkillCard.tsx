@@ -2,7 +2,6 @@ import React, { memo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, GestureResponderEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/ui/Avatar';
-import { RECOGNITION_BADGES } from '@/lib/constants';
 import { CommentSheet } from './CommentSheet';
 import { RecognitionReactionBar } from './RecognitionReactionBar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
@@ -13,11 +12,22 @@ import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
 
-function getBadgeConfig(badge: string) {
+const SKILL_BADGES = [
+  { value: 'Leadership',       emoji: '👑', color: '#F59E0B' },
+  { value: 'Teamwork',         emoji: '🤝', color: '#3B82F6' },
+  { value: 'Communication',    emoji: '💬', color: '#10B981' },
+  { value: 'Problem Solving',  emoji: '🧩', color: '#8B5CF6' },
+  { value: 'Customer Service', emoji: '🌟', color: '#EC4899' },
+  { value: 'Creativity',       emoji: '💡', color: '#F97316' },
+  { value: 'Reliability',      emoji: '⏰', color: '#06B6D4' },
+  { value: 'Positivity',       emoji: '😊', color: '#84CC16' },
+];
+
+function getSkillConfig(badge: string) {
   return (
-    RECOGNITION_BADGES.find((b) => b.value === badge) ?? {
+    SKILL_BADGES.find((b) => b.value === badge) ?? {
       value: badge,
-      emoji: '🏅',
+      emoji: '⭐',
       color: '#94a3b8',
     }
   );
@@ -44,13 +54,11 @@ function formatDateTime(iso: string): string {
   });
 }
 
-interface RecognitionCardProps {
+interface SkillCardProps {
   recognition: RecognitionFeedItem;
 }
 
-export const RecognitionCard = memo(function RecognitionCard({
-  recognition,
-}: RecognitionCardProps) {
+export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps) {
   const { employee } = useEmployee();
   const [showComments, setShowComments] = useState(false);
   const [showPicker, setShowPicker]     = useState(false);
@@ -68,7 +76,7 @@ export const RecognitionCard = memo(function RecognitionCard({
   const liked     = !!myLike;
   const likeCount = likes.length;
   const commentsCount = recognition.comments_count?.[0]?.count ?? 0;
-  const badgeConfig   = getBadgeConfig(recognition.badge);
+  const skillConfig   = getSkillConfig(recognition.badge);
   const isRecipient   = employee?.employee_id === recognition.receiver.id;
 
   const [localResponse, setLocalResponse] = useState<string | null>(recognition.recipient_response ?? null);
@@ -98,16 +106,16 @@ export const RecognitionCard = memo(function RecognitionCard({
           <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
         </View>
 
-        {/* ── Badge pill ──────────────────────────────────── */}
-        <View style={s.badgePill}>
-          <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
-          <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
+        {/* ── Skill badge pill ────────────────────────────── */}
+        <View style={[s.badgePill, { backgroundColor: skillConfig.color + '18' }]}>
+          <Text style={s.badgeEmoji}>{skillConfig.emoji}</Text>
+          <Text style={[s.badgeText, { color: skillConfig.color }]}>{recognition.badge}</Text>
         </View>
 
         {/* ── Recipient card ──────────────────────────────── */}
         <View style={s.recipientCard}>
-          <Ionicons name="arrow-forward-circle" size={17} color={PURPLE} />
-          <Text style={s.recognisingLabel}> Recognising </Text>
+          <Ionicons name="star-circle" size={17} color={PURPLE} />
+          <Text style={s.recognisingLabel}> Skill awarded to </Text>
           <Avatar name={recognition.receiver.full_name} size="xs" />
           <View style={s.recipientTextWrap}>
             <Text style={s.recipientName}>{recognition.receiver.full_name}</Text>
@@ -171,6 +179,7 @@ export const RecognitionCard = memo(function RecognitionCard({
             </Text>
           </Pressable>
         </View>
+
       </View>
       </Pressable>
 
@@ -190,10 +199,10 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#ede9fe',
+    borderColor: '#e0f2fe',
     marginBottom: 14,
     padding: 16,
-    shadowColor: '#7B1FA2',
+    shadowColor: '#0ea5e9',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 8,
@@ -246,7 +255,7 @@ const s = StyleSheet.create({
   recipientCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f7ff',
+    backgroundColor: '#f0f9ff',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 9,
