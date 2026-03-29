@@ -120,6 +120,15 @@ function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sign In
           </Button>
+
+          <div className="text-center mt-2">
+            <a
+              href="/forgot-password"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Forgot password?
+            </a>
+          </div>
         </form>
       </CardContent>
     </Card>
