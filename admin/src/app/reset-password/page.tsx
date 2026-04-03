@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 
-export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm]   = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
-  const [success, setSuccess]   = useState(false);
+function ResetPasswordForm() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const [password, setPassword]   = useState('');
+  const [confirm, setConfirm]     = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [success, setSuccess]     = useState(false);
+  const [tokenReady, setTokenReady] = useState(false);
+
+  // Exchange the one-time recovery token for a session as soon as the page loads.
+  useEffect(() => {
+    const tokenHash = searchParams.get('token_hash');
+    const type      = searchParams.get('type');
+
+    if (!tokenHash || type !== 'recovery') {
+      setError('Invalid or missing reset link. Please request a new one.');
+      return;
+    }
+
+    const supabase = createClient();
+    supabase.auth
+      .verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+      .then(({ error: verifyError }) => {
+        if (verifyError) {
+          setError('Reset link has expired or already been used. Please request a new one.');
+        } else {
+          setTokenReady(true);
+        }
+      });
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,6 +97,12 @@ export default function ResetPasswordPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+              {!error && !tokenReady && (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {tokenReady && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">New password</Label>
@@ -105,10 +135,19 @@ export default function ResetPasswordPage() {
                   Update password
                 </Button>
               </form>
+              )}
             </>
           )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
