@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isLoading, user } = useAuth();
+  const { isLoading, session } = useAuth();
 
   if (isLoading) {
     return (
@@ -14,8 +14,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
-    return null; // Middleware handles redirect
+  if (!session) {
+    return null; // Proxy handles redirect
   }
 
   return <>{children}</>;

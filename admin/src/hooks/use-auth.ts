@@ -15,7 +15,7 @@ export function useAuth() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (!session) setLoading(false);
+      setLoading(false);
     });
 
     const {
@@ -41,10 +41,10 @@ export function useAuth() {
     retry: 1,
   });
 
-  // Sign out on auth failure (deactivated account, etc.)
+  // Log auth-me failures but do not sign out — admin session is valid via Supabase Auth
   useEffect(() => {
     if (isError) {
-      supabase.auth.signOut();
+      console.error('Failed to load admin context from auth-me');
     }
   }, [isError]);
 
