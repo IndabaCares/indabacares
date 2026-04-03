@@ -25,10 +25,12 @@ export default function ForgotPasswordPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) {
-        setError('Failed to send reset email. Please try again.');
+        setError(resetError.message);
       } else {
         setSent(true);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
