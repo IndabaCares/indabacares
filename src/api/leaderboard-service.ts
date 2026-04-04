@@ -9,6 +9,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchWithGuards } from '@/lib/api-client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,13 +99,16 @@ export async function getLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const { start, end } = getPeriodRange(period);
 
-  const { data, error } = await supabase.rpc('get_leaderboard', {
-    p_hotel: hotel,
-    p_start: start,
-    p_end:   end,
-    p_limit: limit,
-  });
+  const { data, error } = await fetchWithGuards(
+    async () => supabase.rpc('get_leaderboard', {
+      p_hotel: hotel,
+      p_start: start,
+      p_end:   end,
+      p_limit: limit,
+    }),
+    { timeoutMs: 12_000 },
+  );
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as LeaderboardEntry[];
+  return ((data ?? []) as unknown[]) as LeaderboardEntry[];
 }

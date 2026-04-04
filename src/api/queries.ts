@@ -94,7 +94,7 @@ export function addLike(recognitionId: string, employeeId: string, hotel: string
 }
 
 export function removeLike(likeId: string) {
-  return supabase.from('recognition_likes').delete().eq('id', likeId);
+  return supabase.from('recognition_likes').delete().eq('id', likeId) as any;
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export function addRecognitionComment(
 }
 
 export function deleteRecognitionComment(commentId: string) {
-  return supabase.from('recognition_comments').delete().eq('id', commentId);
+  return supabase.from('recognition_comments').delete().eq('id', commentId) as any;
 }
 
 // ─── Legacy stubs (kept so old imports don't break during migration) ──────────
@@ -338,7 +338,7 @@ export function deleteReaction(reactionId: string) {
   return supabase
     .from('recognition_reactions')
     .delete()
-    .eq('id', reactionId);
+    .eq('id', reactionId) as any;
 }
 
 // ─── Thumbs Up Types ──────────────────────────────────────────────────────────

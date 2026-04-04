@@ -12,9 +12,9 @@ export interface ReactionBalance {
 }
 
 export const REACTION_TOTALS = {
-  heart:     10,
-  smile:     15,
-  thumbs_up: 20,
+  heart:     34,
+  smile:     33,
+  thumbs_up: 33,
 } as const;
 
 const DEFAULTS: ReactionBalance = {

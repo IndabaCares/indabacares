@@ -1,4 +1,5 @@
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem    from 'expo-file-system/legacy';
+import * as ImagePicker   from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 
 interface UploadResult {
@@ -29,6 +30,28 @@ function mimeFromUri(uri: string): { contentType: string; ext: string } {
   if (lower.includes('.heic') || lower.includes('.heif'))
     return { contentType: 'image/jpeg', ext: 'jpg' };
   return { contentType: 'image/jpeg', ext: 'jpg' };
+}
+
+/**
+ * Open the device image picker and return the selected image URI.
+ * Returns null if the user cancels or no image is selected.
+ */
+export async function pickImage(): Promise<string | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.8,
+  });
+  if (result.canceled) return null;
+  return result.assets[0]?.uri ?? null;
+}
+
+/**
+ * Read a local image URI as a base64 string (no data: prefix).
+ */
+export async function readAsBase64(uri: string): Promise<string> {
+  return FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
 }
 
 /**

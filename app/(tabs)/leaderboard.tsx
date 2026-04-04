@@ -20,6 +20,7 @@ import { LeaderboardRow } from '@/components/leaderboard/LeaderboardRow';
 import { TopThreePodium } from '@/components/leaderboard/TopThreePodium';
 import { PeriodTabs } from '@/components/leaderboard/PeriodTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { LeaderboardEntry } from '@/api/leaderboard-service';
 import { useMonthlyLegends } from '@/hooks/use-legends';
 import type { MonthlyLegend } from '@/api/legends-service';
@@ -30,6 +31,40 @@ const MONTH_NAMES = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December',
 ];
+
+// ─── Leaderboard skeleton (PERF-08) ──────────────────────────────────────────
+
+function LeaderboardSkeleton() {
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 2 }}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <View
+          key={i}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            gap: 12,
+            borderTopLeftRadius:     i === 0 ? 16 : 0,
+            borderTopRightRadius:    i === 0 ? 16 : 0,
+            borderBottomLeftRadius:  i === 7 ? 16 : 0,
+            borderBottomRightRadius: i === 7 ? 16 : 0,
+          }}
+        >
+          <Skeleton width={34} height={32} borderRadius={4} />
+          <Skeleton width={32} height={32} borderRadius={16} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Skeleton width="55%" height={13} />
+            <Skeleton width="35%" height={11} />
+          </View>
+          <Skeleton width={40} height={14} borderRadius={4} />
+        </View>
+      ))}
+    </View>
+  );
+}
 
 // ─── Legends tab ──────────────────────────────────────────────────────────────
 
@@ -237,7 +272,9 @@ export default function LeaderboardScreen() {
             </>
           }
           ListEmptyComponent={
-            !isLoading && !isMock ? (
+            isLoading ? (
+              <LeaderboardSkeleton />
+            ) : !isMock ? (
               <EmptyState
                 icon="🏆"
                 title="No rankings yet"
@@ -245,6 +282,11 @@ export default function LeaderboardScreen() {
               />
             ) : null
           }
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          initialNumToRender={12}
+          removeClippedSubviews
+          getItemLayout={(_, index) => ({ length: 57, offset: 57 * index, index })}
         />
       )}
       </View>

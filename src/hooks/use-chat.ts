@@ -1,13 +1,13 @@
 /**
  * useChat
  *
- * Provides message history and a send() function for the hotel chat room.
+ * Provides message history, pagination, and a send() function for hotel chat.
  *
- * - Initial history is fetched via the get_chat_messages() RPC.
+ * - Initial page fetched on mount via get_chat_messages() RPC.
+ * - loadMore() fetches the next page using the oldest visible message as cursor.
  * - New messages arrive via Supabase Realtime (postgres_changes INSERT).
  * - Sending uses an optimistic update: the message appears immediately
  *   with a temp ID, then is replaced by the server-confirmed row.
- * - The Realtime channel deduplicates against optimistic rows by id.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -16,11 +16,10 @@ import {
   getMessages,
   sendMessage,
   subscribeToMessages,
+  CHAT_PAGE_SIZE,
   type ChatMessage,
 } from '@/api/chat-service';
 import { useEmployee } from '@/providers/EmployeeContext';
-
-// ─── useChat ──────────────────────────────────────────────────────────────────
 
 export function useChat() {
   const { employee } = useEmployee();
@@ -29,6 +28,8 @@ export function useChat() {
   const [messages,   setMessages]   = useState<ChatMessage[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [isSending,  setIsSending]  = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore,    setHasMore]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -40,9 +41,13 @@ export function useChat() {
 
     setIsLoading(true);
     setError(null);
+    setHasMore(true);
 
-    getMessages(hotel)
-      .then((msgs) => setMessages(msgs))   // already newest-first from RPC
+    getMessages(hotel, CHAT_PAGE_SIZE)
+      .then((msgs) => {
+        setMessages(msgs);
+        setHasMore(msgs.length >= CHAT_PAGE_SIZE);
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setIsLoading(false));
   }, [hotel]);
@@ -54,7 +59,6 @@ export function useChat() {
 
     channelRef.current = subscribeToMessages(hotel, (newMsg) => {
       setMessages((prev) => {
-        // Deduplicate: skip if already present (optimistic or duplicate event)
         if (prev.some((m) => m.id === newMsg.id)) return prev;
         return [newMsg, ...prev];
       });
@@ -65,6 +69,39 @@ export function useChat() {
       channelRef.current = null;
     };
   }, [hotel]);
+
+  // ── loadMore — cursor-based older-message pagination ───────────────────────
+
+  const loadMore = useCallback(async () => {
+    if (!hotel || isLoadingMore || !hasMore) return;
+
+    // Oldest message currently shown is at the end of the array (newest-first list)
+    const oldest = messages[messages.length - 1];
+    if (!oldest) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      const older = await getMessages(hotel, CHAT_PAGE_SIZE, oldest.created_at);
+
+      if (older.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const deduped = older.filter((m) => !existingIds.has(m.id));
+        return [...prev, ...deduped];
+      });
+
+      setHasMore(older.length >= CHAT_PAGE_SIZE);
+    } catch {
+      // Non-fatal: user can try again
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hotel, messages, isLoadingMore, hasMore]);
 
   // ── send ────────────────────────────────────────────────────────────────────
 
@@ -86,18 +123,15 @@ export function useChat() {
         },
       };
 
-      // Show immediately
       setMessages((prev) => [optimistic, ...prev]);
       setIsSending(true);
 
       try {
         const saved = await sendMessage(employee.employee_id, hotel, body);
-        // Swap optimistic row for real row
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? saved : m)),
         );
       } catch (e: any) {
-        // Revert optimistic
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         throw e;
       } finally {
@@ -108,12 +142,14 @@ export function useChat() {
   );
 
   return {
-    /** Newest first — invert the FlatList (inverted prop) to show oldest at bottom. */
     messages,
     isLoading,
     isSending,
+    isLoadingMore,
+    hasMore,
     error,
     send,
+    loadMore,
     myId: employee?.employee_id ?? '',
   };
 }

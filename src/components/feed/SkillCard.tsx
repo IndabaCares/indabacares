@@ -114,7 +114,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
 
         {/* ── Recipient card ──────────────────────────────── */}
         <View style={s.recipientCard}>
-          <Ionicons name="star-circle" size={17} color={PURPLE} />
+          <Ionicons name="star" size={17} color={PURPLE} />
           <Text style={s.recognisingLabel}> Skill awarded to </Text>
           <Avatar name={recognition.receiver.full_name} size="xs" />
           <View style={s.recipientTextWrap}>

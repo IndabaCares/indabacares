@@ -26,7 +26,7 @@ export type NotificationType =
 
 // ─── Row types ──────────────────────────────────────────────────────────────
 
-interface CompanyRow {
+type CompanyRow = {
   id: string;
   name: string;
   slug: string;
@@ -37,14 +37,14 @@ interface CompanyRow {
   updated_at: string;
 }
 
-interface DepartmentRow {
+type DepartmentRow = {
   id: string;
   company_id: string;
   name: string;
   created_at: string;
 }
 
-interface ProfileRow {
+type ProfileRow = {
   id: string;
   company_id: string;
   email: string;
@@ -65,7 +65,7 @@ interface ProfileRow {
   updated_at: string;
 }
 
-interface CompanyValueRow {
+type CompanyValueRow = {
   id: string;
   company_id: string;
   name: string;
@@ -76,7 +76,7 @@ interface CompanyValueRow {
   created_at: string;
 }
 
-interface ThumbsUpTypeRow {
+type ThumbsUpTypeRow = {
   id: string;
   company_id: string;
   name: string;
@@ -89,7 +89,7 @@ interface ThumbsUpTypeRow {
   created_at: string;
 }
 
-interface RecognitionRow {
+type RecognitionRow = {
   id: string;
   company_id: string;
   sender_id: string;
@@ -105,13 +105,13 @@ interface RecognitionRow {
   created_at: string;
 }
 
-interface RecognitionRecipientRow {
+type RecognitionRecipientRow = {
   id: string;
   recognition_id: string;
   recipient_id: string;
 }
 
-interface ReactionRow {
+type ReactionRow = {
   id: string;
   company_id: string;
   recognition_id: string;
@@ -120,7 +120,7 @@ interface ReactionRow {
   created_at: string;
 }
 
-interface CommentRow {
+type CommentRow = {
   id: string;
   company_id: string;
   recognition_id: string;
@@ -130,35 +130,34 @@ interface CommentRow {
   updated_at: string;
 }
 
-interface NotificationRow {
+type NotificationRow = {
   id: string;
-  company_id: string;
-  user_id: string;
-  type: NotificationType;
+  employee_id: string;
+  hotel: string;
+  type: string;
   title: string;
-  body: string | null;
+  message: string | null;
+  read: boolean;
   reference_type: string | null;
   reference_id: string | null;
-  is_read: boolean;
   created_at: string;
 }
 
-interface RewardRow {
+type RewardRow = {
   id: string;
-  company_id: string;
-  category_id: string;
-  name: string;
+  hotel: string;
+  title: string;
   description: string | null;
   image_url: string | null;
-  star_cost: number;
+  points_required: number;
   stock: number | null;
-  sort_order: number;
+  category: string | null;
+  terms: string | null;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
 }
 
-interface RewardCategoryRow {
+type RewardCategoryRow = {
   id: string;
   company_id: string;
   name: string;
@@ -166,21 +165,22 @@ interface RewardCategoryRow {
   created_at: string;
 }
 
-interface RedemptionRow {
+type RedemptionRow = {
   id: string;
-  company_id: string;
-  user_id: string;
+  employee_id: string;
   reward_id: string;
-  star_cost: number;
+  hotel: string;
+  points_used: number;
   status: RedemptionStatus;
-  admin_note: string | null;
-  processed_by: string | null;
-  processed_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  fulfilled_at: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
 }
 
-interface MoodEntryRow {
+type MoodEntryRow = {
   id: string;
   company_id: string;
   user_id: string;
@@ -190,7 +190,7 @@ interface MoodEntryRow {
   created_at: string;
 }
 
-interface SkillCategoryRow {
+type SkillCategoryRow = {
   id: string;
   company_id: string;
   name: string;
@@ -198,7 +198,7 @@ interface SkillCategoryRow {
   created_at: string;
 }
 
-interface SkillIndicatorRow {
+type SkillIndicatorRow = {
   id: string;
   category_id: string;
   company_id: string;
@@ -208,7 +208,7 @@ interface SkillIndicatorRow {
   created_at: string;
 }
 
-interface SkillRatingRow {
+type SkillRatingRow = {
   id: string;
   company_id: string;
   rater_id: string;
@@ -218,9 +218,10 @@ interface SkillRatingRow {
   created_at: string;
 }
 
-interface BadgeRow {
+type BadgeRow = {
   id: string;
   company_id: string | null;
+  hotel: string | null;
   slug: string;
   name: string;
   description: string | null;
@@ -229,14 +230,40 @@ interface BadgeRow {
   created_at: string;
 }
 
-interface UserBadgeRow {
+// ─── Hotel-based schema row types ────────────────────────────────────────────
+
+type EmployeeRow = {
+  id: string;
+  employee_code: string;
+  full_name: string;
+  hotel: string;
+  department: string | null;
+  position: string | null;
+  job_title: string | null;
+  status: string;
+  photo_url: string | null;
+  avatar_url: string | null;
+  points_balance: number;
+  deleted_at: string | null;
+  created_at: string;
+}
+
+type MessageRow = {
+  id: string;
+  sender_id: string;
+  hotel: string;
+  body: string;
+  created_at: string;
+}
+
+type UserBadgeRow = {
   id: string;
   user_id: string;
   badge_id: string;
   earned_at: string;
 }
 
-interface LeaderboardCacheRow {
+type LeaderboardCacheRow = {
   id: string;
   company_id: string;
   user_id: string;
@@ -248,7 +275,7 @@ interface LeaderboardCacheRow {
   refreshed_at: string;
 }
 
-interface PointTransactionRow {
+type PointTransactionRow = {
   id: string;
   company_id: string;
   user_id: string;
@@ -262,7 +289,7 @@ interface PointTransactionRow {
   created_at: string;
 }
 
-interface StarTransactionRow {
+type StarTransactionRow = {
   id: string;
   company_id: string;
   user_id: string;
@@ -273,6 +300,81 @@ interface StarTransactionRow {
   reference_id: string | null;
   description: string | null;
   idempotency_key: string;
+  created_at: string;
+}
+
+// ─── Additional hotel-based table types ──────────────────────────────────────
+
+type ReactionAllocationRow = {
+  id: string;
+  employee_id: string;
+  hotel: string;
+  month: number;
+  year: number;
+  hearts_remaining: number;
+  smiles_remaining: number;
+  thumbs_remaining: number;
+  updated_at: string;
+}
+
+type RecognitionLikeRow = {
+  id: string;
+  recognition_id: string;
+  employee_id: string;
+  hotel: string;
+  created_at: string;
+}
+
+type RecognitionCommentRow = {
+  id: string;
+  recognition_id: string;
+  employee_id: string;
+  hotel: string;
+  body: string;
+  created_at: string;
+}
+
+type PointsLedgerRow = {
+  id: string;
+  employee_id: string;
+  hotel: string;
+  points: number;
+  source: string;
+  reference_id: string | null;
+  created_at: string;
+}
+
+type RecognitionReactionRow = {
+  id: string;
+  recognition_id: string;
+  employee_id: string;
+  hotel: string;
+  reaction_type: string;
+  created_at: string;
+}
+
+type InitiativeRow = {
+  id: string;
+  hotel: string;
+  tab: string;
+  mascot_url: string | null;
+  image_urls: string[];
+  video_url: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+type MonthlyLegendRow = {
+  id: string;
+  hotel: string;
+  employee_id: string;
+  full_name: string;
+  job_title: string | null;
+  avatar_url: string | null;
+  month: number;
+  year: number;
+  total_points: number;
+  points_awarded: number;
   created_at: string;
 }
 
@@ -413,11 +515,66 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      employees: {
+        Row: EmployeeRow;
+        Insert: Omit<EmployeeRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<EmployeeRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      messages: {
+        Row: MessageRow;
+        Insert: Omit<MessageRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<MessageRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      employee_reaction_allocations: {
+        Row: ReactionAllocationRow;
+        Insert: Omit<ReactionAllocationRow, 'id'>;
+        Update: Partial<Omit<ReactionAllocationRow, 'id'>>;
+        Relationships: [];
+      };
+      recognition_likes: {
+        Row: RecognitionLikeRow;
+        Insert: Omit<RecognitionLikeRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<RecognitionLikeRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      recognition_comments: {
+        Row: RecognitionCommentRow;
+        Insert: Omit<RecognitionCommentRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<RecognitionCommentRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      points_ledger: {
+        Row: PointsLedgerRow;
+        Insert: Omit<PointsLedgerRow, 'id' | 'created_at'>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      recognition_reactions: {
+        Row: RecognitionReactionRow;
+        Insert: Omit<RecognitionReactionRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<RecognitionReactionRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      initiatives: {
+        Row: InitiativeRow;
+        Insert: Omit<InitiativeRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<InitiativeRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      monthly_legends: {
+        Row: MonthlyLegendRow;
+        Insert: Omit<MonthlyLegendRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<MonthlyLegendRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      // ── Legacy company-based RPCs (retained for compatibility) ─────────────
       process_recognition: {
         Args: {
           p_sender_id: string;
@@ -431,21 +588,8 @@ export interface Database {
         };
         Returns: string;
       };
-      submit_mood: {
-        Args: {
-          p_user_id: string;
-          p_company_id: string;
-          p_mood: string;
-          p_note: string | null;
-        };
-        Returns: string;
-      };
       process_redemption: {
-        Args: {
-          p_user_id: string;
-          p_company_id: string;
-          p_reward_id: string;
-        };
+        Args: { p_user_id: string; p_company_id: string; p_reward_id: string };
         Returns: string;
       };
       track_login: {
@@ -455,6 +599,203 @@ export interface Database {
       resolve_budget: {
         Args: { target_user_id: string };
         Returns: unknown;
+      };
+      // ── Hotel-based auth RPCs ──────────────────────────────────────────────
+      first_time_authenticate: {
+        Args: {
+          p_employee_code: string;
+          p_hotel: string;
+          p_full_name: string;
+          p_new_password: string;
+        };
+        Returns: {
+          ok: boolean;
+          id: string;
+          full_name: string;
+          employee_code: string;
+          hotel: string;
+          department: string | null;
+          token: string;
+          error?: string;
+        };
+      };
+      authenticate_employee: {
+        Args: {
+          p_employee_code: string;
+          p_hotel: string;
+          p_password: string;
+        };
+        Returns: {
+          ok: boolean;
+          id: string;
+          full_name: string;
+          employee_code: string;
+          hotel: string;
+          department: string | null;
+          token: string;
+          error?: string;
+        };
+      };
+      validate_session: {
+        Args: { p_session_token: string };
+        Returns: { ok: boolean; error?: string };
+      };
+      revoke_employee_session: {
+        Args: { p_token: string };
+        Returns: void;
+      };
+      // ── Push notifications ─────────────────────────────────────────────────
+      upsert_push_token: {
+        Args: {
+          p_employee_id: string;
+          p_hotel: string;
+          p_token: string;
+          p_platform: string;
+        };
+        Returns: void;
+      };
+      // ── Hotel settings / feature flags ────────────────────────────────────
+      get_hotel_settings: {
+        Args: { p_hotel: string };
+        Returns: Record<string, boolean>;
+      };
+      // ── Mood ──────────────────────────────────────────────────────────────
+      submit_mood: {
+        Args: {
+          p_employee_id: string;
+          p_hotel: string;
+          p_mood: MoodValue;
+          p_note: string | null;
+        };
+        Returns: string;
+      };
+      // ── Chat ──────────────────────────────────────────────────────────────
+      get_chat_messages: {
+        Args: {
+          p_hotel: string;
+          p_limit: number;
+          p_before_timestamp: string | null;
+        };
+        Returns: {
+          id: string;
+          body: string;
+          hotel: string;
+          created_at: string;
+          sender: {
+            id: string;
+            full_name: string;
+            employee_code: string;
+            position: string | null;
+          } | null;
+        }[];
+      };
+      // ── Leaderboard ───────────────────────────────────────────────────────
+      get_leaderboard: {
+        Args: {
+          p_hotel: string;
+          p_start: string | null;
+          p_end: string | null;
+          p_limit: number;
+        };
+        Returns: unknown[];
+      };
+      // ── Notifications ─────────────────────────────────────────────────────
+      mark_notification_read: {
+        Args: { p_id: string };
+        Returns: void;
+      };
+      mark_all_notifications_read: {
+        Args: { p_employee_id: string };
+        Returns: void;
+      };
+      // ── Reactions ─────────────────────────────────────────────────────────
+      submit_recognition_reaction: {
+        Args: {
+          p_recognition_id: string;
+          p_employee_id: string;
+          p_reaction_type: string;
+        };
+        Returns: { ok: boolean; reaction_id: string; error?: string };
+      };
+      submit_recognition_response: {
+        Args: {
+          p_recognition_id: string;
+          p_employee_id: string | undefined;
+          p_response: string;
+        };
+        Returns: { ok: boolean; error?: string };
+      };
+      // ── Rewards / redemptions ─────────────────────────────────────────────
+      redeem_reward: {
+        Args: { p_employee_id: string; p_reward_id: string };
+        Returns: { ok: boolean; redemption_id?: string; error?: string };
+      };
+      approve_redemption: {
+        Args: { p_redemption_id: string };
+        Returns: { ok: boolean; error?: string };
+      };
+      reject_redemption: {
+        Args: { p_redemption_id: string; p_reason: string | null };
+        Returns: { ok: boolean; error?: string };
+      };
+      fulfill_redemption: {
+        Args: { p_redemption_id: string };
+        Returns: { ok: boolean; error?: string };
+      };
+      cancel_redemption: {
+        Args: { p_redemption_id: string };
+        Returns: { ok: boolean; error?: string };
+      };
+      // ── Search ────────────────────────────────────────────────────────────
+      search_recognitions: {
+        Args: { p_hotel: string; p_search: string; p_limit: number };
+        Returns: unknown[];
+      };
+      // ── Reaction analytics ────────────────────────────────────────────────
+      get_top_reactors: {
+        Args: {
+          p_hotel: string;
+          p_limit: number;
+          p_start?: string | null;
+          p_end?: string | null;
+        };
+        Returns: unknown[];
+      };
+      get_top_recognised_employees: {
+        Args: {
+          p_hotel: string;
+          p_limit: number;
+          p_start?: string | null;
+          p_end?: string | null;
+        };
+        Returns: unknown[];
+      };
+      get_most_reacted_recognitions: {
+        Args: {
+          p_hotel: string;
+          p_limit: number;
+          p_start?: string | null;
+          p_end?: string | null;
+        };
+        Returns: unknown[];
+      };
+      get_reaction_hotel_summary: {
+        Args: {
+          p_hotel: string;
+          p_start?: string | null;
+          p_end?: string | null;
+        };
+        Returns: unknown[];
+      };
+      // ── Account deletion ──────────────────────────────────────────────────
+      delete_employee_account: {
+        Args: { p_employee_id: string; p_hotel: string };
+        Returns: { ok: boolean; error?: string };
+      };
+      // ── Profile ───────────────────────────────────────────────────────────
+      update_employee_avatar: {
+        Args: { p_photo_url: string };
+        Returns: void;
       };
     };
     Enums: {

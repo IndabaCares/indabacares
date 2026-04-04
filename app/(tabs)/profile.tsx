@@ -145,7 +145,10 @@ export default function ProfileScreen() {
 
     const uri = result.assets[0].uri;
 
-    // Show local preview immediately
+    // Snapshot current photo so we can restore it on failure
+    const previousPhotoUrl = photoUrl;
+
+    // Optimistic preview
     setPhotoUrl(uri);
     setUploading(true);
 
@@ -159,8 +162,9 @@ export default function ProfileScreen() {
       await supabase.rpc('update_employee_avatar', { p_photo_url: publicUrl });
       setPhotoUrl(publicUrl);
     } catch (err: any) {
-      Alert.alert('Upload Failed', err.message ?? 'Something went wrong.');
-      setPhotoUrl(null);
+      // Restore the previous photo — do not leave the profile blank
+      setPhotoUrl(previousPhotoUrl);
+      Alert.alert('Upload Failed', err.message ?? 'Something went wrong. Please try again.');
     } finally {
       setUploading(false);
     }

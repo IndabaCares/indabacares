@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { moodHistoryQuery } from '@/api/queries';
-import { submitMood } from '@/api/edge-functions';
 import { QUERY_KEYS } from '@/lib/constants';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { useUIStore } from '@/stores/ui-store';
+import { supabase } from '@/lib/supabase';
 import type { SubmitMoodRequest } from '@/types/api';
 
 export function useMoodHistory() {
@@ -23,18 +23,34 @@ export function useMoodHistory() {
 }
 
 export function useSubmitMood() {
-  const queryClient = useQueryClient();
-  const showToast = useUIStore((s) => s.showToast);
+  const queryClient  = useQueryClient();
+  const showToast    = useUIStore((s) => s.showToast);
+  const { employee } = useEmployee();
 
   return useMutation({
-    mutationFn: (body: SubmitMoodRequest) => submitMood(body),
+    mutationFn: async (body: SubmitMoodRequest) => {
+      if (!employee) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase.rpc('submit_mood', {
+        p_employee_id: employee.employee_id,
+        p_hotel:       employee.hotel,
+        p_mood:        body.mood,
+        p_note:        body.note ?? null,
+      });
+
+      if (error) {
+        if (error.code === 'P3001' || error.code === '23505') {
+          throw new Error("You've already submitted your mood today");
+        }
+        throw new Error(error.message);
+      }
+
+      return { moodEntryId: data, mood: body.mood, message: 'Mood recorded!', pointsEarned: 5 };
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.moodHistory });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
-      showToast({
-        type: 'success',
-        message: `${data.message} (+${data.pointsEarned} points)`,
-      });
+      showToast({ type: 'success', message: `${data.message} (+${data.pointsEarned} pts)` });
     },
     onError: (error: Error) => {
       showToast({ type: 'error', message: error.message });

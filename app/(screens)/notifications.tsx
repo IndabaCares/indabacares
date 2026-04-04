@@ -32,7 +32,7 @@ const PREF_KEY_GAMIFICATION   = '@indabacares/notif_gamification';
 function navigateFromNotification(n: AppNotification) {
   switch (n.type) {
     case 'recognition_received':
-      router.push('/(tabs)/');
+      router.push('/');
       break;
     case 'reward_approved':
     case 'reward_rejected':
@@ -236,20 +236,6 @@ export default function NotificationsScreen() {
                       onValueChange={handleRewardsToggle}
                       trackColor={{ false: '#e2e8f0', true: PURPLE_MID }}
                       thumbColor={rewardsEnabled ? PURPLE : '#cbd5e1'}
-                      ios_backgroundColor="#e2e8f0"
-                    />
-                  </View>
-                  <View style={s.prefDivider} />
-                  <View style={s.prefRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.prefLabel}>Gamification</Text>
-                      <Text style={s.prefSub}>Receive instant notifications for gamification</Text>
-                    </View>
-                    <Switch
-                      value={gamificationEnabled}
-                      onValueChange={handleGamificationToggle}
-                      trackColor={{ false: '#e2e8f0', true: PURPLE_MID }}
-                      thumbColor={gamificationEnabled ? PURPLE : '#cbd5e1'}
                       ios_backgroundColor="#e2e8f0"
                     />
                   </View>

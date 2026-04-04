@@ -11,9 +11,12 @@ import {
   StyleSheet,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers';
+import { NOTIF_PERMISSION_KEY } from '@/providers/NotificationProvider';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,6 +26,16 @@ const PURPLE_MID  = '#8E24AA';
 const ACCENT      = '#CE21FB';
 
 const LAST_HOTEL_KEY = '@indabacares/last_hotel';
+
+// ─── App Review Demo Account ──────────────────────────────────────────────────
+// A dedicated demo employee exists in the production database.
+// These credentials allow App Store / Play Store reviewers to evaluate the app.
+// The demo account has limited recognitions and no real personal data.
+const DEMO_CREDENTIALS = {
+  employeeCode: 'DEMO01',
+  hotel:        'Indaba Hotel',
+  password:     'IndabaReview2025!',
+} as const;
 
 const HOTELS = [
   'Indaba Hotel',
@@ -280,6 +293,17 @@ export default function EmployeeAuthScreen() {
   const persistHotel = (h: string) =>
     AsyncStorage.setItem(LAST_HOTEL_KEY, h).catch(() => null);
 
+  // ── Post-login navigation ──────────────────────────────────────────────────
+  // After setting the employee session, redirect to the notification permission
+  // screen if the user has never been asked. AuthProvider will then take over.
+  const navigateAfterLogin = async () => {
+    const asked = await SecureStore.getItemAsync(NOTIF_PERMISSION_KEY).catch(() => null);
+    if (!asked) {
+      router.replace('/(screens)/notification-permission' as any);
+    }
+    // If already asked, AuthProvider handles navigation to /(tabs)/ automatically
+  };
+
   // ── First Authentication ──────────────────────────────────────────────────
   const handleFirstAuth = async () => {
     if (!validate()) return;
@@ -303,8 +327,11 @@ export default function EmployeeAuthScreen() {
         employee_code: result.employee_code,
         hotel:         result.hotel,
         department:    result.department,
+        position:      null,
         session_token: result.token,
       });
+
+      await navigateAfterLogin();
     } catch {
       setGlobalError('Something went wrong. Please try again.');
     } finally {
@@ -337,13 +364,27 @@ export default function EmployeeAuthScreen() {
         employee_code: result.employee_code,
         hotel:         result.hotel,
         department:    result.department,
+        position:      null,
         session_token: result.token,
       });
+
+      await navigateAfterLogin();
     } catch {
       setGlobalError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Demo mode (App Store / Play Store reviewer access) ────────────────────
+  const fillDemoCredentials = () => {
+    setMode('returning');
+    setEmployeeCode(DEMO_CREDENTIALS.employeeCode);
+    setPassword(DEMO_CREDENTIALS.password);
+    setSavedHotel(DEMO_CREDENTIALS.hotel);
+    setHotel(DEMO_CREDENTIALS.hotel);
+    setErrors({});
+    setGlobalError(null);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -510,6 +551,11 @@ export default function EmployeeAuthScreen() {
           </View>
 
           <Text style={styles.footerText}>INDABA HOSPITALITY GROUP</Text>
+
+          {/* Reviewer demo access — subtle, not visible to regular users */}
+          <Pressable onPress={fillDemoCredentials} hitSlop={8} style={{ marginTop: 16 }}>
+            <Text style={styles.demoText}>App Review Demo</Text>
+          </Pressable>
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -727,5 +773,13 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: '#bdbdbd',
     textAlign: 'center',
+  },
+
+  // Demo link (reviewer access)
+  demoText: {
+    fontSize: 10,
+    color: '#d4d4d4',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 });

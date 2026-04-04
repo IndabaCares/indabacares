@@ -39,7 +39,7 @@ export async function getDepartments(hotel: string): Promise<string[]> {
   if (error) throw new Error(error.message);
 
   const unique = Array.from(
-    new Set((data ?? []).map((r: { department: string }) => r.department).filter(Boolean))
+    new Set((data ?? []).map((r: { department: string | null }) => r.department).filter(Boolean))
   ).sort() as string[];
 
   return unique;

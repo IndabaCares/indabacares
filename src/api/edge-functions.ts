@@ -1,16 +1,19 @@
 /**
  * Typed wrappers for Supabase Edge Functions.
  *
- * NOTE: All Edge Functions listed here use `withAuth` middleware which validates
- * a Supabase Auth JWT. Employee auth users have no Supabase Auth session, so
- * these calls will return 401 until the Edge Functions are rewritten to accept
- * the x-session-token header instead.
+ * Auth model:
+ *   All Edge Functions use withEmployeeAuth middleware (server-side), which
+ *   validates the x-session-token header against employee_active_sessions.
  *
- * TODO: Migrate each Edge Function to a new `withEmployeeAuth` middleware that
- * validates x-session-token against employee_active_sessions.
+ *   The token is injected two ways (belt-and-suspenders):
+ *     1. The supabase client's custom fetch adapter (hotelAwareFetch) injects
+ *        x-session-token into every HTTP request automatically.
+ *     2. The invoke() wrapper below explicitly reads the token via getSessionToken()
+ *        and passes it in the headers object, ensuring it is present even if the
+ *        fetch adapter path is bypassed in future refactors.
  */
 
-import { supabase, notifySessionExpired } from '@/lib/supabase';
+import { supabase, getSessionToken, notifySessionExpired } from '@/lib/supabase';
 import type {
   SendRecognitionRequest,
   SendRecognitionResponse,
@@ -39,9 +42,17 @@ async function invoke<T>(
   body?: unknown,
   method: 'GET' | 'POST' = 'POST'
 ): Promise<T> {
+  const sessionToken = getSessionToken();
+
+  if (!sessionToken) {
+    notifySessionExpired();
+    throw new EdgeFunctionCallError('No active session', 401);
+  }
+
   const { data, error } = await supabase.functions.invoke(functionName, {
-    body: body ?? undefined,
+    body:    body ?? undefined,
     method,
+    headers: { 'x-session-token': sessionToken },
   });
 
   if (error) {
@@ -51,8 +62,8 @@ async function invoke<T>(
 
     if (context && typeof context.json === 'function') {
       try {
-        const body = await context.json();
-        if (body?.error) message = body.error;
+        const parsed = await context.json();
+        if (parsed?.error) message = parsed.error;
       } catch {}
     }
 

@@ -141,7 +141,7 @@ function MessageBubble({ msg, isMe, showName, showAvatar }: BubbleProps) {
 
 export default function ChatScreen() {
   const { employee } = useEmployee();
-  const { messages, isLoading, isSending, error, send, myId } = useChat();
+  const { messages, isLoading, isSending, isLoadingMore, hasMore, error, send, loadMore, myId } = useChat();
   const insets = useSafeAreaInsets();
   const hotelName = employee?.hotel ?? 'Hotel Chat';
 
@@ -243,6 +243,20 @@ export default function ChatScreen() {
           styles.listContent,
           { paddingBottom: 8 },
         ]}
+        onEndReached={hasMore ? loadMore : undefined}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          hasMore ? (
+            <View style={styles.loadMoreWrap}>
+              {isLoadingMore
+                ? <ActivityIndicator size="small" color="#94a3b8" />
+                : <Pressable onPress={loadMore} style={styles.loadMoreBtn}>
+                    <Text style={styles.loadMoreText}>Load earlier messages</Text>
+                  </Pressable>
+              }
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyIcon}>💬</Text>
@@ -414,4 +428,9 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: { opacity: 0.4, shadowOpacity: 0 },
   sendBtnPressed:  { opacity: 0.8 },
+
+  // ─ Load more ───────────────────────────────────────────────────────────────
+  loadMoreWrap: { alignItems: 'center', paddingVertical: 14 },
+  loadMoreBtn:  { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9' },
+  loadMoreText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
 });

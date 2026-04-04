@@ -162,7 +162,7 @@ export default function SkillsHubScreen() {
     if (!badge)    { setError('Please select a recognition badge.'); return; }
     if (message.trim().length < 10) { setError('Message must be at least 10 characters.'); return; }
     postRecognition.mutate(
-      { receiverId: receiver.id, message: message.trim(), badge },
+      { receiverId: receiver.id, message: message.trim(), badge: badge as any },
       {
         onSuccess: () => { setReceiver(null); setBadge(null); setMessage(''); router.push('/(tabs)'); },
         onError:   (err: Error) => setError(err.message),

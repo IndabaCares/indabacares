@@ -1,10 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { supabase } from '@/lib/supabase';
 import { routeFromNotification } from '@/utils/notification-router';
 import type { NotificationType } from '@/types/database';
+
+export const NOTIF_PERMISSION_KEY = 'indabacares.notif.asked';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,42 +20,63 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function registerForPushNotifications(): Promise<string | null> {
-  if (Platform.OS === 'web') return null;
+// ─── Token registration (called when permission is already granted) ──────────
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+async function registerTokenIfGranted(
+  employeeId: string,
+  hotel:      string,
+  attempt     = 1,
+): Promise<void> {
+  const MAX_RETRIES    = 3;
+  const RETRY_DELAY_MS = 2000;
 
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+  try {
+    if (Platform.OS === 'web') return;
+
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return; // Permission not yet granted — pre-permission screen will handle this
+
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) return;
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+
+    const { error } = await supabase.rpc('upsert_push_token', {
+      p_employee_id: employeeId,
+      p_hotel:       hotel,
+      p_token:       tokenData.data,
+      p_platform:    Platform.OS,
+    });
+
+    if (error) throw error;
+  } catch (err) {
+    if (attempt < MAX_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+      return registerTokenIfGranted(employeeId, hotel, attempt + 1);
+    }
+    console.warn('[Notifications] Token registration failed after retries:', err);
   }
-
-  if (finalStatus !== 'granted') return null;
-
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-  return tokenData.data;
 }
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { employee }          = useEmployee();
-  const notificationListener  = useRef<Notifications.EventSubscription>(undefined);
-  const responseListener      = useRef<Notifications.EventSubscription>(undefined);
+  const { employee }         = useEmployee();
+  const notificationListener = useRef<Notifications.EventSubscription>(undefined);
+  const responseListener     = useRef<Notifications.EventSubscription>(undefined);
 
   useEffect(() => {
     if (!employee) return;
 
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        // TODO: save token to a push_tokens table keyed by employee_id
-        console.log('Push token registered:', token);
-      }
-    });
+    // Only attempt token registration if permission is already granted.
+    // First-time permission request is handled by (screens)/notification-permission.tsx
+    // which is navigated to after first login (see employee-auth.tsx).
+    registerTokenIfGranted(employee.employee_id, employee.hotel);
 
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (_notification) => {
-        // Handled by realtime subscription in useGlobalRealtime
+        // Foreground handling managed by setNotificationHandler above.
+        // Feed / badge updates driven by realtime subscriptions.
       }
     );
 

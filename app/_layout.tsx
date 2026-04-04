@@ -9,24 +9,27 @@ import { EmployeeProvider } from '@/providers/EmployeeContext';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { RealtimeProvider } from '@/providers/RealtimeProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryProvider>
-          <EmployeeProvider>
-            <AuthProvider>
-              <RealtimeProvider>
-                <ToastProvider>
-                  <StatusBar style="dark" />
-                  <Slot />
-                </ToastProvider>
-              </RealtimeProvider>
-            </AuthProvider>
-          </EmployeeProvider>
-        </QueryProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <QueryProvider>
+            <EmployeeProvider>
+              <AuthProvider>
+                <RealtimeProvider>
+                  <ToastProvider>
+                    <StatusBar style="dark" />
+                    <Slot />
+                  </ToastProvider>
+                </RealtimeProvider>
+              </AuthProvider>
+            </EmployeeProvider>
+          </QueryProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

@@ -4,6 +4,7 @@
  * Hotel-scoped real-time messaging backed by Supabase Realtime.
  *
  * Initial history  → get_chat_messages() RPC (SECURITY DEFINER, hotel-verified)
+ * Load older       → get_chat_messages() RPC with p_before_timestamp cursor
  * Send message     → direct INSERT into messages (hotel-isolation RLS applies)
  * Live updates     → supabase.channel postgres_changes filtered by hotel
  */
@@ -19,50 +20,35 @@ export interface ChatMessage {
   hotel:      string;
   created_at: string;
   sender: {
-    id:       string;
-    full_name: string;
-    employee_code: string;
-    position: string | null;
+    id:            string;
+    full_name:      string;
+    employee_code:  string;
+    position:       string | null;
   };
 }
 
+export const CHAT_PAGE_SIZE = 40;
+
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-/** Fetch message history for a hotel, newest-first. */
+/**
+ * Fetch message history for a hotel, newest-first.
+ * Pass beforeTimestamp to fetch messages older than a given point (pagination cursor).
+ */
 export async function getMessages(
-  hotel:    string,
-  limit     = 50,
+  hotel:            string,
+  limit             = CHAT_PAGE_SIZE,
+  beforeTimestamp?: string,
 ): Promise<ChatMessage[]> {
   const { data, error } = await supabase.rpc('get_chat_messages', {
-    p_hotel: hotel,
-    p_limit: limit,
+    p_hotel:            hotel,
+    p_limit:            limit,
+    p_before_timestamp: beforeTimestamp ?? null,
   });
 
   if (error) throw new Error(error.message);
 
-  // RPC returns rows with flat sender_* columns — reshape to nested sender
   return ((data ?? []) as any[]).map(rowToMessage);
-}
-
-/** Fetch a single message by id (used after realtime INSERT event). */
-export async function getMessageById(id: string): Promise<ChatMessage | null> {
-  const { data, error } = await supabase.rpc('get_chat_messages', {
-    p_hotel: '__any__', // hotel gate handled by RLS; we override below
-    p_limit: 1,
-  });
-
-  // Fallback: direct select with join (will respect hotel RLS)
-  const { data: row, error: err2 } = await supabase
-    .from('messages')
-    .select(`
-      id, body, hotel, created_at,
-      sender:employees!sender_id ( id, full_name, employee_code, position )
-    `)
-    .eq('id', id)
-    .single();
-
-  if (err2 || !row) return null;
-  return row as unknown as ChatMessage;
 }
 
 /** Send a new message. RLS enforces hotel = current_employee_hotel(). */
@@ -86,16 +72,6 @@ export async function sendMessage(
 
 // ─── Realtime ─────────────────────────────────────────────────────────────────
 
-/**
- * Subscribe to new messages in a hotel's chat room.
- *
- * Uses Supabase Realtime postgres_changes with a hotel filter so only
- * messages for the current hotel are streamed.  On each INSERT event the
- * full row (including sender) is fetched and passed to onMessage.
- *
- * Returns the RealtimeChannel so the caller can call .unsubscribe() on
- * component unmount.
- */
 export function subscribeToMessages(
   hotel:     string,
   onMessage: (msg: ChatMessage) => void,
@@ -114,9 +90,17 @@ export function subscribeToMessages(
         const newId = payload.new?.id as string | undefined;
         if (!newId) return;
 
-        // Fetch full row with sender join
-        const msg = await getMessageById(newId);
-        if (msg) onMessage(msg);
+        // Fetch full row with sender join via direct select
+        const { data } = await supabase
+          .from('messages')
+          .select(`
+            id, body, hotel, created_at,
+            sender:employees!sender_id ( id, full_name, employee_code, position )
+          `)
+          .eq('id', newId)
+          .single();
+
+        if (data) onMessage(data as unknown as ChatMessage);
       },
     )
     .subscribe();
@@ -124,7 +108,6 @@ export function subscribeToMessages(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Map a flat RPC row to a ChatMessage with a nested sender object. */
 function rowToMessage(row: any): ChatMessage {
   return {
     id:         row.id,

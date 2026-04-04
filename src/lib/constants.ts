@@ -109,5 +109,6 @@ export const QUERY_KEYS = {
   profile: (id: string) => ['profile', id] as const,
   employees: (search: string) => ['employees', search] as const,
   recognitionReactions: (id: string) => ['recognition-reactions', id] as const,
-  reactionBalance: (employeeId: string) => ['reaction-balance', employeeId] as const,
+  reactionBalance:     (employeeId: string) => ['reaction-balance',     employeeId] as const,
+  recognitionBalance:  (employeeId: string) => ['recognition-balance',  employeeId] as const,
 } as const;

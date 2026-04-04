@@ -29,13 +29,15 @@ export function useGlobalRealtime() {
   const showToast             = useUIStore((s) => s.showToast);
   const setRealtimeStatus     = useUIStore((s) => s.setRealtimeStatus);
 
-  // Ref so the disconnect timer can be cleared correctly across re-renders
-  // and inside the status callback without stale-closure issues.
   const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // PERF-05: prevent duplicate subscriptions (React 19 StrictMode double-invoke)
+  const subscribedRef = useRef(false);
 
   useEffect(() => {
     // ── Guard ────────────────────────────────────────────────────────────
     if (!employee) return;
+    if (subscribedRef.current) return;
+    subscribedRef.current = true;
 
     const { hotel, employee_id } = employee;
 
@@ -148,6 +150,7 @@ export function useGlobalRealtime() {
       .subscribe();
 
     return () => {
+      subscribedRef.current = false;
       if (disconnectTimerRef.current) {
         clearTimeout(disconnectTimerRef.current);
         disconnectTimerRef.current = null;

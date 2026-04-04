@@ -138,7 +138,7 @@ export async function getRedemptions(employeeId: string): Promise<Redemption[]> 
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as Redemption[];
+  return (data ?? []) as unknown as Redemption[];
 }
 
 // ─── Employee RPC functions ───────────────────────────────────────────────────

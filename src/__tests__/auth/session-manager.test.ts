@@ -74,6 +74,8 @@ const SESSION: EmployeeSession = {
   full_name:     'Jane Smith',
   employee_code: 'JS001',
   hotel:         'sandton-indaba',
+  department:    null,
+  position:      null,
   session_token: 'tok-uuid-001',
 };
 

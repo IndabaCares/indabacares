@@ -97,6 +97,7 @@ additional_redirect_urls = [
   "http://localhost:8081/**",                         # Expo dev (React Native)
   "indabacares://auth/callback",                      # Mobile deep link (production)
   "exp://localhost:8081/--/auth/callback",            # Expo Go dev
+  "https://tenbucks-mobile.co.za/**",                 # Production admin web
 ]
 # The JWT carries app_metadata.company_id and app_metadata.role
 # which are used by every RLS policy.

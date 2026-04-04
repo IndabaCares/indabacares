@@ -1,25 +1,30 @@
-import React, { useState } from 'react';
+/**
+ * Initiative detail screen
+ *
+ * PERF-02: expo-av is lazy-loaded — it is NOT included in the main JS bundle.
+ *           The Video components mount only when this screen is visited AND a
+ *           video URI is actually present.
+ * PERF-04: RN <Image> replaced with OptimizedImage (expo-image, blur placeholder,
+ *           memory-disk cache, fade-in transition).
+ */
+
+import React, { useState, Suspense, lazy } from 'react';
 import {
-  View, Text, Image, ScrollView, StyleSheet,
+  View, Text, ScrollView, StyleSheet,
   TouchableOpacity, Pressable, Modal, ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Video, ResizeMode } from 'expo-av';
 import { useInitiatives } from '@/hooks/use-initiatives';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import type { Initiative } from '@/api/initiative-service';
 
 const PURPLE      = '#7B1FA2';
 const PURPLE_SOFT = '#ede9fe';
-const HALF_SCREEN = Dimensions.get('window').height * 0.45;
 
 // ─── Label map ────────────────────────────────────────────────────────────────
 
-// Maps URL slug → DB tab value (for content query) and display label.
-// Note: 'billy-says' content lives under tab='billy-says' (video+photos),
-// while the list thumbnail uses tab='Billy Says' (image). They are separate rows.
 const SLUG_MAP: Record<string, { label: string; dbTab: string }> = {
   'billy-says':    { label: 'Billy Says',    dbTab: 'billy-says'    },
   'feed-the-kids': { label: 'Feed the Kids', dbTab: 'Feed the Kids' },
@@ -27,60 +32,16 @@ const SLUG_MAP: Record<string, { label: string; dbTab: string }> = {
   'mobile-clinic': { label: 'Mobile Clinic', dbTab: 'Mobile Clinic' },
 };
 
-// ─── Video hero (half-screen preview → lightbox on tap) ──────────────────────
+// ─── Lazy video (PERF-02) ─────────────────────────────────────────────────────
+// expo-av is only bundled / loaded when a video URI is present on the screen.
 
-function VideoHero({ uri }: { uri: string }) {
-  const [open, setOpen] = useState(false);
+const LazyVideoHero = lazy(() =>
+  import('./VideoComponents').then((m) => ({ default: m.VideoHero }))
+);
 
-  return (
-    <>
-      <TouchableOpacity activeOpacity={0.9} onPress={() => setOpen(true)} style={vs.previewWrap}>
-        <Video
-          source={{ uri }}
-          style={StyleSheet.absoluteFill}
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={false}
-          isMuted
-          isLooping={false}
-          pointerEvents="none"
-        />
-        <View style={vs.previewOverlay}>
-          <View style={vs.playBtn}>
-            <Ionicons name="play" size={28} color="#fff" />
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
-        <Pressable style={vs.overlay} onPress={() => setOpen(false)}>
-          <View style={vs.videoLightbox}>
-            <Video
-              source={{ uri }}
-              style={{ flex: 1 }}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              useNativeControls
-              isLooping={false}
-              onPlaybackStatusUpdate={status => {
-                if ('didJustFinish' in status && status.didJustFinish) setOpen(false);
-              }}
-            />
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
-// ─── Secondary video block ────────────────────────────────────────────────────
-
-function VideoBlock({ uri }: { uri: string }) {
-  return (
-    <View style={vs.videoWrap}>
-      <Video source={{ uri }} style={vs.video} resizeMode={ResizeMode.COVER} useNativeControls isLooping />
-    </View>
-  );
-}
+const LazyVideoBlock = lazy(() =>
+  import('./VideoComponents').then((m) => ({ default: m.VideoBlock }))
+);
 
 function isVideoUrl(url: string) {
   return /\.(mp4|mov|m4v)(\?|$)/i.test(url);
@@ -93,33 +54,61 @@ function InitiativeBlock({ item }: { item: Initiative }) {
 
   return (
     <View style={vs.block}>
+      {/* Hero: video or image */}
       {item.mascot_url ? (
         isVideoUrl(item.mascot_url) ? (
-          <VideoHero uri={item.mascot_url} />
+          <Suspense fallback={<View style={vs.videoPlaceholder}><ActivityIndicator color={PURPLE} /></View>}>
+            <LazyVideoHero uri={item.mascot_url} />
+          </Suspense>
         ) : (
           <View style={vs.card}>
-            <Image source={{ uri: item.mascot_url }} style={vs.heroImage} resizeMode="contain" />
+            <OptimizedImage
+              uri={item.mascot_url}
+              style={vs.heroImage}
+              contentFit="contain"
+            />
           </View>
         )
       ) : null}
 
-      {item.video_url ? <VideoBlock uri={item.video_url} /> : null}
+      {/* Secondary video */}
+      {item.video_url ? (
+        <Suspense fallback={<View style={vs.videoPlaceholder}><ActivityIndicator color={PURPLE} /></View>}>
+          <LazyVideoBlock uri={item.video_url} />
+        </Suspense>
+      ) : null}
 
+      {/* Photo grid */}
       {item.image_urls.length > 0 && (
         <View style={vs.grid}>
           {item.image_urls.map((url, i) => (
-            <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setExpanded(i)} style={vs.photoWrap}>
-              <Image source={{ uri: url }} style={vs.photo} resizeMode="cover" />
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.85}
+              onPress={() => setExpanded(i)}
+              style={vs.photoWrap}
+            >
+              <OptimizedImage uri={url} style={vs.photo} contentFit="cover" />
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      <Modal visible={expanded !== null} transparent animationType="fade" onRequestClose={() => setExpanded(null)}>
+      {/* Lightbox */}
+      <Modal
+        visible={expanded !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExpanded(null)}
+      >
         <Pressable style={vs.overlay} onPress={() => setExpanded(null)}>
           <View style={vs.lightbox}>
             {expanded !== null && (
-              <Image source={{ uri: item.image_urls[expanded] }} style={vs.lightboxImage} resizeMode="cover" />
+              <OptimizedImage
+                uri={item.image_urls[expanded]}
+                style={vs.lightboxImage}
+                contentFit="cover"
+              />
             )}
           </View>
         </Pressable>
@@ -172,7 +161,7 @@ export default function InitiativeDetailScreen() {
           </View>
         )}
 
-        {data.map(item => (
+        {data.map((item) => (
           <InitiativeBlock key={item.id} item={item} />
         ))}
       </ScrollView>
@@ -186,55 +175,19 @@ const vs = StyleSheet.create({
   block: { marginBottom: 16 },
   card:  { backgroundColor: 'transparent', marginBottom: 16 },
 
-  heroImage: { width: '100%', height: undefined, aspectRatio: 1 },
+  heroImage:  { width: '100%', height: undefined, aspectRatio: 1 },
+  photo:      { width: '100%', height: '100%' },
+  lightboxImage: { width: '100%', height: '100%' },
 
-  previewWrap: {
+  videoPlaceholder: {
     width: '100%',
-    height: HALF_SCREEN,
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-    marginBottom: 16,
-  },
-  previewOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  videoLightbox: {
-    width: '92%',
-    aspectRatio: 9 / 16,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-
-  videoWrap: {
-    width: '100%',
-    aspectRatio: 16 / 9,
+    height: 200,
     borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  video: { flex: 1 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   photoWrap: {
@@ -249,7 +202,6 @@ const vs = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  photo: { width: '100%', height: '100%' },
 
   overlay: {
     flex: 1,
@@ -268,12 +220,10 @@ const vs = StyleSheet.create({
     shadowRadius: 20,
     elevation: 12,
   },
-  lightboxImage: { width: '100%', height: '100%' },
 });
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F2F2F2' },
-
   header: {
     backgroundColor: PURPLE,
     paddingHorizontal: 16,
@@ -282,13 +232,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
   backBtn: {
-    width: 38,
-    height: 38,
+    width: 38, height: 38,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
@@ -301,14 +247,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-
   body: {
     flexGrow: 1,
     paddingTop: 8,
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -316,16 +260,9 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     gap: 14,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1e1b4b',
-  },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1e1b4b' },
   emptyText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 260,
+    fontSize: 14, color: '#94a3b8',
+    textAlign: 'center', lineHeight: 22, maxWidth: 260,
   },
 });

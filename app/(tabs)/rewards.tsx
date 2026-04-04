@@ -1,20 +1,32 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, memo } from 'react';
 import {
-  Animated, View, Text, ScrollView, StyleSheet,
-  Modal, TouchableWithoutFeedback, TouchableOpacity, Image,
-  ActivityIndicator,
+  Animated, View, Text, FlatList, ScrollView, StyleSheet,
+  Modal, TouchableWithoutFeedback, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useRewards, useEmployeePoints } from '@/hooks/use-rewards';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { Reward } from '@/api/reward-service';
 
 const PURPLE = '#7B1FA2';
 
-// ── Flip card ────────────────────────────────────────────────────────────────
-function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
+// ── Rewards skeleton (PERF-08) ────────────────────────────────────────────────
+function RewardsSkeleton() {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginTop: 8 }}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} width="47%" height={160} borderRadius={16} />
+      ))}
+    </View>
+  );
+}
+
+// ── Flip card (PERF-07: memo prevents re-renders from parent state changes) ───
+const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -23,7 +35,7 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
   const canAfford  = myPoints >= item.points_required;
   const outOfStock = item.stock <= 0;
 
-  const imageSource = item.image_url ? { uri: item.image_url } : null;
+  const imageUri = item.image_url ?? null;
 
   const handleFlip = () => {
     const toValue = flipped ? 0 : 1;
@@ -46,8 +58,8 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
       >
         {isHotel ? (
           <>
-            {imageSource ? (
-              <Image source={imageSource} style={s.photoImg} resizeMode="cover" />
+            {imageUri ? (
+              <OptimizedImage uri={imageUri} style={s.photoImg} contentFit="cover" />
             ) : (
               <View style={[s.photoImg, s.imagePlaceholder]} />
             )}
@@ -65,8 +77,8 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
         ) : (
           <>
             <View style={s.logoWrap}>
-              {imageSource ? (
-                <Image source={imageSource} style={s.brandLogo} resizeMode="contain" />
+              {imageUri ? (
+                <OptimizedImage uri={imageUri} style={s.brandLogo} contentFit="contain" />
               ) : (
                 <View style={s.imagePlaceholder} />
               )}
@@ -105,11 +117,7 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
         <View style={s.backHeader}>
           <Text style={[s.backHeading, { flex: 1 }]} numberOfLines={1}>{item.title}</Text>
           {isHotel && (
-            <Image
-              source={require('../../assets/Indaba Hotel.png')}
-              style={s.hotelLogoBack}
-              resizeMode="contain"
-            />
+            <Text style={s.hotelLogoText}>INDABA</Text>
           )}
         </View>
         <View style={s.divider} />
@@ -151,11 +159,11 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
           <View style={s.confirmBox}>
             <View style={s.confirmIconRow}>
               <View style={[s.confirmIconWrap, isHotel && s.confirmIconWrapPhoto]}>
-                {imageSource ? (
-                  <Image
-                    source={imageSource}
+                {imageUri ? (
+                  <OptimizedImage
+                    uri={imageUri}
                     style={s.confirmLogo}
-                    resizeMode={isHotel ? 'cover' : 'contain'}
+                    contentFit={isHotel ? 'cover' : 'contain'}
                   />
                 ) : (
                   <View style={[s.confirmLogo, s.imagePlaceholder]} />
@@ -193,7 +201,7 @@ function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
 
     </View>
   );
-}
+});
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function RewardsScreen() {
@@ -204,6 +212,7 @@ export default function RewardsScreen() {
   const { data: myPoints = 0 }              = useEmployeePoints();
 
   const currentRewards = allRewards.filter(r => r.category === activeTab);
+  // Pair rewards into rows of 2 for the grid layout
   const rows: Reward[][] = [];
   for (let i = 0; i < currentRewards.length; i += 2) {
     rows.push(currentRewards.slice(i, i + 2));
@@ -279,31 +288,35 @@ export default function RewardsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Grid ── */}
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <View style={s.sheet}>
-          <View style={s.handle} />
-
-          {isLoading ? (
-            <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
-          ) : currentRewards.length === 0 ? (
-            <View style={s.empty}>
-              <Ionicons name="gift-outline" size={48} color="#ddd6fe" />
-              <Text style={s.emptyText}>No rewards available yet.</Text>
-            </View>
-          ) : (
-            rows.map((row, ri) => (
-              <View key={ri} style={s.row}>
-                {row.map((item) => (
-                  <RewardCard key={item.id} item={item} myPoints={myPoints} />
-                ))}
-                {/* Fill empty slot if odd number of rewards */}
-                {row.length === 1 && <View style={s.cardContainer} />}
-              </View>
-            ))
-          )}
+      {/* ── Grid — FlatList for virtualization (PERF-07) ── */}
+      {isLoading ? (
+        <RewardsSkeleton />
+      ) : currentRewards.length === 0 ? (
+        <View style={s.empty}>
+          <Ionicons name="gift-outline" size={48} color="#ddd6fe" />
+          <Text style={s.emptyText}>No rewards available yet.</Text>
         </View>
-      </ScrollView>
+      ) : (
+        <FlatList
+          data={rows}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={({ item: row }) => (
+            <View style={s.row}>
+              {row.map((item) => (
+                <RewardCard key={item.id} item={item} myPoints={myPoints} />
+              ))}
+              {row.length === 1 && <View style={s.cardContainer} />}
+            </View>
+          )}
+          ListHeaderComponent={<View style={s.handle} />}
+          contentContainerStyle={s.content}
+          showsVerticalScrollIndicator={false}
+          windowSize={5}
+          maxToRenderPerBatch={4}
+          initialNumToRender={4}
+          removeClippedSubviews={false}
+        />
+      )}
 
     </SafeAreaView>
   );
@@ -311,8 +324,7 @@ export default function RewardsScreen() {
 
 const s = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: '#f5f3ff' },
-  scroll:  { flex: 1, backgroundColor: '#f5f3ff' },
-  content: { paddingBottom: 110, flexGrow: 1 },
+  content: { paddingHorizontal: 16, paddingBottom: 110, flexGrow: 1 },
 
   // Header
   header: {
@@ -364,9 +376,7 @@ const s = StyleSheet.create({
   dropdownText:    { marginLeft: 10, fontSize: 14, fontWeight: '600', color: '#1e1b4b' },
   dropdownDivider: { height: 1, backgroundColor: '#f1f5f9', marginHorizontal: 12 },
 
-  // Sheet
-  sheet:  { backgroundColor: '#f5f3ff', paddingTop: 14, paddingHorizontal: 16 },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#ddd6fe', alignSelf: 'center', marginBottom: 14 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#ddd6fe', alignSelf: 'center', marginVertical: 14 },
 
   // Empty state
   empty:     { alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
@@ -402,7 +412,7 @@ const s = StyleSheet.create({
   brandLogo:     { width: '100%', height: '100%' },
   photoImg:      { flex: 1, width: '100%' },
   imagePlaceholder: { backgroundColor: '#e5e7eb', flex: 1 },
-  hotelLogoBack: { width: 52, height: 22, marginRight: 4 },
+  hotelLogoText: { fontSize: 9, fontWeight: '800', color: '#7B1FA2', letterSpacing: 1, marginRight: 4 },
   divider:       { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 8 },
   cardBottom:    { paddingLeft: 8, paddingRight: 38, paddingTop: 4, paddingBottom: 8 },
   cardTitleRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 3 },
