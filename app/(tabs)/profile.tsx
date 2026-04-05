@@ -57,10 +57,11 @@ const MENU_ITEMS = [
 export default function ProfileScreen() {
   const { employee, clearEmployee } = useEmployee();
 
-  const [pointsBalance, setPointsBalance] = useState<number | null>(null);
-  const [jobTitle,      setJobTitle]      = useState<string | null>(null);
-  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
-  const [uploading,     setUploading]     = useState(false);
+  const [pointsBalance,  setPointsBalance]  = useState<number | null>(null);
+  const [pointsLoading,  setPointsLoading]  = useState(true);
+  const [jobTitle,       setJobTitle]       = useState<string | null>(null);
+  const [photoUrl,       setPhotoUrl]       = useState<string | null>(null);
+  const [uploading,      setUploading]      = useState(false);
   const [activeTab,     setActiveTab]     = useState<'gamification' | 'announcements'>('gamification');
   const [menuOpen,      setMenuOpen]      = useState(false);
 
@@ -89,6 +90,7 @@ export default function ProfileScreen() {
           setJobTitle(row.job_title ?? null);
           setPhotoUrl(row.photo_url ?? null);
         }
+        setPointsLoading(false);
       });
   }, [employee?.employee_id]);
 
@@ -290,10 +292,10 @@ export default function ProfileScreen() {
                   <Text style={styles.pillHeader}>Recognition Rewards</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="star" size={16} color="#fbbf24" />
-                    {pointsBalance === null ? (
+                    {pointsLoading ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0} pts</Text>
                     )}
                   </View>
                 </View>
@@ -301,10 +303,10 @@ export default function ProfileScreen() {
                   <Text style={styles.pillHeader}>Reward Wallet</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="cash-outline" size={16} color="#34d399" />
-                    {pointsBalance === null ? (
+                    {pointsLoading ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0} pts</Text>
                     )}
                   </View>
                 </View>
