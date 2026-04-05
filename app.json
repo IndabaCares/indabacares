@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "indabacares",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -22,7 +22,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow IndabaCares to access your camera to take profile photos.",
-        "NSPhotoLibraryAddUsageDescription": "Allow IndabaCares to save edited photos to your library."
+        "NSPhotoLibraryUsageDescription": "Allow IndabaCares to access your photos to upload your profile photo."
       }
     },
     "android": {

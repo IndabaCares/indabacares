@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers';
-import { NOTIF_PERMISSION_KEY } from '@/providers/NotificationProvider';
+import { NOTIF_PERMISSION_KEY } from '@/lib/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -27,14 +27,16 @@ const ACCENT      = '#CE21FB';
 
 const LAST_HOTEL_KEY = '@indabacares/last_hotel';
 
-// ─── App Review Demo Account ──────────────────────────────────────────────────
-// A dedicated demo employee exists in the production database.
-// These credentials allow App Store / Play Store reviewers to evaluate the app.
-// The demo account has limited recognitions and no real personal data.
+// ─── App Review / Store Reviewer Access ──────────────────────────────────────
+// Set EXPO_PUBLIC_REVIEW_MODE=true in EAS Secrets for review builds only.
+// The demo account (DEMO01) is a real, limited employee in production with no
+// personal data. Credentials are injected at build time — never stored in the
+// binary for standard production builds.
+const IS_REVIEW_BUILD  = process.env.EXPO_PUBLIC_REVIEW_MODE === 'true';
 const DEMO_CREDENTIALS = {
-  employeeCode: 'DEMO01',
-  hotel:        'Indaba Hotel',
-  password:     'IndabaReview2025!',
+  employeeCode: process.env.EXPO_PUBLIC_DEMO_CODE     ?? 'DEMO01',
+  hotel:        process.env.EXPO_PUBLIC_DEMO_HOTEL    ?? 'Indaba Hotel',
+  password:     process.env.EXPO_PUBLIC_DEMO_PASSWORD ?? '',
 } as const;
 
 const HOTELS = [
@@ -376,8 +378,9 @@ export default function EmployeeAuthScreen() {
     }
   };
 
-  // ── Demo mode (App Store / Play Store reviewer access) ────────────────────
+  // ── App Review Demo (reviewer build only) ────────────────────────────────
   const fillDemoCredentials = () => {
+    if (!IS_REVIEW_BUILD || !DEMO_CREDENTIALS.password) return;
     setMode('returning');
     setEmployeeCode(DEMO_CREDENTIALS.employeeCode);
     setPassword(DEMO_CREDENTIALS.password);
@@ -552,10 +555,12 @@ export default function EmployeeAuthScreen() {
 
           <Text style={styles.footerText}>INDABA HOSPITALITY GROUP</Text>
 
-          {/* Reviewer demo access — subtle, not visible to regular users */}
-          <Pressable onPress={fillDemoCredentials} hitSlop={8} style={{ marginTop: 16 }}>
-            <Text style={styles.demoText}>App Review Demo</Text>
-          </Pressable>
+          {/* Reviewer demo access — only rendered when IS_REVIEW_BUILD=true */}
+          {IS_REVIEW_BUILD && DEMO_CREDENTIALS.password ? (
+            <Pressable onPress={fillDemoCredentials} hitSlop={8} style={{ marginTop: 16 }}>
+              <Text style={styles.demoText}>App Review Demo</Text>
+            </Pressable>
+          ) : null}
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -775,7 +780,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Demo link (reviewer access)
+  // Reviewer demo access (only shown when IS_REVIEW_BUILD=true)
   demoText: {
     fontSize: 10,
     color: '#d4d4d4',

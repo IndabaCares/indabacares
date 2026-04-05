@@ -1,3 +1,7 @@
+// ─── Secure Store Keys ───────────────────────────────────────────────────────
+// Single source of truth — import from here, never re-declare elsewhere.
+export const NOTIF_PERMISSION_KEY = 'indabacares.notif.asked';
+
 // ─── Colors ─────────────────────────────────────────────────────────────────
 export const COLORS = {
   primary: '#7C3AED',

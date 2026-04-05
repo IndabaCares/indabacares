@@ -1,14 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
 import { routeFromNotification } from '@/utils/notification-router';
 import type { NotificationType } from '@/types/database';
-
-export const NOTIF_PERMISSION_KEY = 'indabacares.notif.asked';
+// NOTIF_PERMISSION_KEY lives in constants — import from there; do not re-declare here.
+export { NOTIF_PERMISSION_KEY } from '@/lib/constants';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

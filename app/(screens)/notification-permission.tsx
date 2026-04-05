@@ -23,9 +23,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
+import { NOTIF_PERMISSION_KEY } from '@/lib/constants';
+
+export { NOTIF_PERMISSION_KEY };
 
 const PURPLE = '#7C3AED';
-export const NOTIF_PERMISSION_KEY = 'indabacares.notif.asked';
 
 const BENEFITS = [
   { icon: 'star',           color: '#f59e0b', text: 'Get notified when a colleague recognises you' },

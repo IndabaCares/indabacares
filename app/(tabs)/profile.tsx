@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/utils/image';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
 import { useRecognitionBalance, MONTHLY_RECOGNITION_LIMIT } from '@/hooks/use-recognition-balance';
+import { useUserBadges } from '@/hooks/use-user-badges';
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
@@ -63,11 +64,15 @@ export default function ProfileScreen() {
   const [activeTab,     setActiveTab]     = useState<'gamification' | 'announcements'>('gamification');
   const [menuOpen,      setMenuOpen]      = useState(false);
 
-  const { data: reactionBalance,     isLoading: reactionLoading }     = useReactionBalance();
-  const { data: recognitionRemaining                               }  = useRecognitionBalance();
+  const { data: reactionBalance,     isLoading: reactionLoading }       = useReactionBalance();
+  const { data: recognitionRemaining, isLoading: recognitionLoading }   = useRecognitionBalance();
+  const { data: badgeCount,           isLoading: badgesLoading }        = useUserBadges();
 
-  // Mock: number of times user has hit the 10-recognition cap across all months
-  const MOCK_BADGES_EARNED = 3;
+  // Number of recognitions given this month (used for status tier calculation).
+  // Only computed once recognitionRemaining has resolved to avoid "Unranked" flash.
+  const recognitionsGiven = recognitionLoading
+    ? null
+    : MONTHLY_RECOGNITION_LIMIT - (recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT);
 
   // ── Fetch employee profile data ────────────────────────────────────────────
   useEffect(() => {
@@ -253,11 +258,6 @@ export default function ProfileScreen() {
                 <View style={styles.cameraBadge}>
                   <Ionicons name="camera" size={12} color="#ffffff" />
                 </View>
-                {MOCK_BADGES_EARNED > 0 && (
-                  <View style={styles.earnedBadge}>
-                    <Ionicons name="ribbon" size={26} color="#d97706" />
-                  </View>
-                )}
               </View>
             </Pressable>
 
@@ -283,8 +283,7 @@ export default function ProfileScreen() {
 
           {/* Points + Status pills */}
           {(() => {
-            const MOCK_WEEKLY = 7;
-            const status = getStatus(MOCK_WEEKLY);
+            const status = recognitionsGiven !== null ? getStatus(recognitionsGiven) : null;
             return (
               <View style={styles.pillsRow}>
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
@@ -312,8 +311,14 @@ export default function ProfileScreen() {
                 <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
                   <Text style={styles.pillHeader}>{'Status\nLevel'}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name={status.icon} size={16} color={status.color} />
-                    <Text style={[styles.pillTextDark, { color: status.color }]}>{status.label}</Text>
+                    {status === null ? (
+                      <ActivityIndicator size="small" color={ACCENT} />
+                    ) : (
+                      <>
+                        <Ionicons name={status.icon} size={16} color={status.color} />
+                        <Text style={[styles.pillTextDark, { color: status.color }]}>{status.label}</Text>
+                      </>
+                    )}
                   </View>
                 </View>
               </View>
@@ -375,7 +380,11 @@ export default function ProfileScreen() {
                   <Text style={styles.achieveLabel}>Badges Earned</Text>
                   <Text style={styles.achieveSub}>Keep recognising to unlock more</Text>
                 </View>
-                <Text style={styles.achieveValue}>3</Text>
+                {badgesLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
+                )}
               </View>
 
               <View style={styles.achieveDivider} />
@@ -395,29 +404,27 @@ export default function ProfileScreen() {
               <View style={styles.achieveDivider} />
 
               {/* ── Status & Progress ───────────────────────────────────── */}
-              {(() => {
-                const MOCK_WEEKLY = 7;
-                const status = getStatus(MOCK_WEEKLY);
-                const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > MOCK_WEEKLY);
-                const progress = nextTier
-                  ? Math.min(MOCK_WEEKLY / nextTier.min, 1)
-                  : 1;
+              {recognitionsGiven === null ? (
+                <View style={[styles.achieveRow, { justifyContent: 'center' }]}>
+                  <ActivityIndicator size="small" color={PURPLE} />
+                </View>
+              ) : (() => {
+                const status   = getStatus(recognitionsGiven);
+                const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > recognitionsGiven);
                 return (
-                  <View>
-                    <View style={styles.achieveRow}>
-                      <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
-                        <Ionicons name={status.icon} size={20} color={status.color} />
-                      </View>
-                      <View style={styles.achieveInfo}>
-                        <Text style={styles.achieveLabel}>Status</Text>
-                        <Text style={styles.achieveSub}>
-                          {nextTier
-                            ? `You require ${nextTier.min - MOCK_WEEKLY} more recognitions to ${nextTier.label}`
-                            : 'You have reached the top tier!'}
-                        </Text>
-                      </View>
-                      <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
+                  <View style={styles.achieveRow}>
+                    <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
+                      <Ionicons name={status.icon} size={20} color={status.color} />
                     </View>
+                    <View style={styles.achieveInfo}>
+                      <Text style={styles.achieveLabel}>Status</Text>
+                      <Text style={styles.achieveSub}>
+                        {nextTier
+                          ? `${nextTier.min - recognitionsGiven} more recognitions to reach ${nextTier.label}`
+                          : 'You have reached the top tier!'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
                   </View>
                 );
               })()}
@@ -631,13 +638,6 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
-  },
-
-  earnedBadge: {
-    position: 'absolute',
-    bottom: -4,
-    left: -4,
     zIndex: 1,
   },
 
