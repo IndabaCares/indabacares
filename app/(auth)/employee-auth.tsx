@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   Pressable,
+  TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { firstAuthentication, returningLogin } from '@/lib/employee-auth-helpers';
 import { NOTIF_PERMISSION_KEY } from '@/lib/constants';
+import { DEMO_EMPLOYEE_CODE, DEMO_HOTEL, DEMO_PASSWORD } from '@/lib/demoCredentials';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -26,18 +28,6 @@ const PURPLE_MID  = '#8E24AA';
 const ACCENT      = '#CE21FB';
 
 const LAST_HOTEL_KEY = '@indabacares/last_hotel';
-
-// ─── App Review / Store Reviewer Access ──────────────────────────────────────
-// Set EXPO_PUBLIC_REVIEW_MODE=true in EAS Secrets for review builds only.
-// The demo account (DEMO01) is a real, limited employee in production with no
-// personal data. Credentials are injected at build time — never stored in the
-// binary for standard production builds.
-const IS_REVIEW_BUILD  = process.env.EXPO_PUBLIC_REVIEW_MODE === 'true';
-const DEMO_CREDENTIALS = {
-  employeeCode: process.env.EXPO_PUBLIC_DEMO_CODE     ?? 'DEMO01',
-  hotel:        process.env.EXPO_PUBLIC_DEMO_HOTEL    ?? 'Indaba Hotel',
-  password:     process.env.EXPO_PUBLIC_DEMO_PASSWORD ?? '',
-} as const;
 
 const HOTELS = [
   'Indaba Hotel',
@@ -378,16 +368,41 @@ export default function EmployeeAuthScreen() {
     }
   };
 
-  // ── App Review Demo (reviewer build only) ────────────────────────────────
-  const fillDemoCredentials = () => {
-    if (!IS_REVIEW_BUILD || !DEMO_CREDENTIALS.password) return;
-    setMode('returning');
-    setEmployeeCode(DEMO_CREDENTIALS.employeeCode);
-    setPassword(DEMO_CREDENTIALS.password);
-    setSavedHotel(DEMO_CREDENTIALS.hotel);
-    setHotel(DEMO_CREDENTIALS.hotel);
-    setErrors({});
+  // ── App Review Demo ───────────────────────────────────────────────────────
+  // Logs straight in with the pre-seeded DEMO01 account so Apple / Google
+  // reviewers can explore the app without creating an account.
+  // Remove this function (and the Try Demo button below) after approval.
+  const handleDemoLogin = async () => {
     setGlobalError(null);
+    setLoading(true);
+
+    try {
+      const result = await returningLogin(DEMO_EMPLOYEE_CODE, DEMO_HOTEL, DEMO_PASSWORD);
+
+      if (!result.ok) {
+        setGlobalError('Demo unavailable. Please try again later.');
+        return;
+      }
+
+      await persistHotel(result.hotel);
+      setSavedHotel(result.hotel);
+
+      await setEmployee({
+        employee_id:   result.employee_id,
+        full_name:     result.full_name,
+        employee_code: result.employee_code,
+        hotel:         result.hotel,
+        department:    result.department,
+        position:      null,
+        session_token: result.token,
+      });
+
+      await navigateAfterLogin();
+    } catch {
+      setGlobalError('Demo unavailable. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -413,11 +428,11 @@ export default function EmployeeAuthScreen() {
             <Text style={styles.cardTitle}>
               {mode === 'first' ? 'Create Account' : 'Welcome Back'}
             </Text>
-            <Text style={styles.cardSubtitle}>
-              {mode === 'first'
-                ? 'Verify your identity and set a secure password.'
-                : 'Fill out the information below in order to access your profile'}
-            </Text>
+            {mode === 'returning' && (
+              <Text style={styles.cardSubtitle}>
+                Fill out the information below in order to access your profile
+              </Text>
+            )}
 
             {/* Mode toggle */}
             <ModeToggle mode={mode} onChange={handleModeChange} />
@@ -533,6 +548,18 @@ export default function EmployeeAuthScreen() {
               )}
             </Pressable>
 
+            {/* ── Try Demo button ── */}
+            {/* REMOVE after Apple / Google approval */}
+            <TouchableOpacity
+              onPress={handleDemoLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+              style={styles.demoButton}
+            >
+              <Ionicons name="play-circle-outline" size={20} color={ACCENT} style={{ marginRight: 8 }} />
+              <Text style={styles.demoButtonText}>Try Demo</Text>
+            </TouchableOpacity>
+
             {/* ── Global error ── */}
             {globalError && (
               <View style={styles.errorBanner}>
@@ -542,25 +569,28 @@ export default function EmployeeAuthScreen() {
             )}
 
             {/* ── Forgot Password / mode switch ── */}
-            <Pressable
-              onPress={() => handleModeChange(mode === 'first' ? 'returning' : 'first')}
-              style={{ marginTop: 12, alignItems: 'center' }}
-            >
-              <Text style={styles.forgotText}>
-                {mode === 'first' ? 'Already have a password?' : 'Forgot Password?'}
-              </Text>
-            </Pressable>
+            {mode === 'returning' && (
+              <Pressable
+                onPress={() => handleModeChange('first')}
+                style={{ marginTop: 12, alignItems: 'center' }}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </Pressable>
+            )}
 
           </View>
 
           <Text style={styles.footerText}>INDABA HOSPITALITY GROUP</Text>
 
-          {/* Reviewer demo access — only rendered when IS_REVIEW_BUILD=true */}
-          {IS_REVIEW_BUILD && DEMO_CREDENTIALS.password ? (
-            <Pressable onPress={fillDemoCredentials} hitSlop={8} style={{ marginTop: 16 }}>
-              <Text style={styles.demoText}>App Review Demo</Text>
-            </Pressable>
-          ) : null}
+          <View style={{ marginTop: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => router.push('/(screens)/terms-of-service')} activeOpacity={0.7}>
+              <Text style={styles.policyLink}>Terms of Use</Text>
+            </TouchableOpacity>
+            <Text style={styles.policyDivider}>|</Text>
+            <TouchableOpacity onPress={() => router.push('/(screens)/privacy-policy')} activeOpacity={0.7}>
+              <Text style={styles.policyLink}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -776,15 +806,35 @@ const styles = StyleSheet.create({
     marginTop: 24,
     fontSize: 11,
     letterSpacing: 2,
-    color: '#bdbdbd',
+    color: '#757575',
     textAlign: 'center',
   },
+  policyLink: {
+    color: '#757575',
+    fontSize: 11,
+    textDecorationLine: 'underline',
+    marginHorizontal: 8,
+  },
+  policyDivider: {
+    color: '#757575',
+    fontSize: 11,
+  },
 
-  // Reviewer demo access (only shown when IS_REVIEW_BUILD=true)
-  demoText: {
-    fontSize: 10,
-    color: '#d4d4d4',
-    textAlign: 'center',
-    letterSpacing: 0.5,
+  // Try Demo button — REMOVE after Apple / Google approval
+  demoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(206,33,251,0.45)',
+    borderRadius: 14,
+    paddingVertical: 13,
+    marginTop: 10,
+  },
+  demoButtonText: {
+    color: ACCENT,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });

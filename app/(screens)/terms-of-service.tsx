@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PURPLE = '#7C3AED';
-const LAST_UPDATED = 'April 2025';
 
 export default function TermsOfServiceScreen() {
   return (
@@ -16,151 +15,123 @@ export default function TermsOfServiceScreen() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Terms of Service</Text>
+        <Text style={s.headerTitle}>Terms of Use</Text>
       </View>
 
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={s.lastUpdated}>Last updated: {LAST_UPDATED}</Text>
+      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        <Section title="1. Agreement to Terms">
+        <Text style={s.docTitle}>Indaba Hospitality Group{'\n'}Employee Rewards & Recognition Application</Text>
+
+        <Section title="1. INTRODUCTION">
           <Body>
-            By accessing or using IndabaCares ("the App"), you agree to be bound by
-            these Terms of Service. If you do not agree, do not use the App.{'\n'}
-            {'\n'}
-            These Terms govern your use of IndabaCares in your capacity as an employee
-            of a hotel or hospitality property that has licensed the platform. Your
-            employer has agreed to separate terms with Indaba Cares (Pty) Ltd.
+            These Terms of Use ("Terms") govern access to and use of the Indaba Hospitality Group Employee Rewards & Recognition Application ("the App").{'\n\n'}
+            The App is:{'\n'}
+            • Owned by Indaba Hospitality Group ("the Company"){'\n'}
+            • Managed and operated by Tenbucks-Mobile (PTY) Ltd ("Managing Agent"){'\n'}
+            • Restricted exclusively to verified employees of Indaba Hospitality Group and its subsidiaries{'\n\n'}
+            By accessing or using the App, you agree to be bound by these Terms. If you do not agree, you must immediately discontinue use.
           </Body>
         </Section>
 
-        <Section title="2. Eligibility">
+        <Section title="2. ELIGIBILITY AND ACCESS CONTROL">
+          <SubHeading>2.1 Restricted Access</SubHeading>
           <Body>
-            The App is available only to employees who have been registered in the
-            system by their employer. You must be at least 18 years old to use the App.
-            Your employer is responsible for ensuring that only eligible employees
-            are registered.
+            The App is a closed system, accessible only to:{'\n'}
+            • Current employees of Indaba Hospitality Group{'\n'}
+            • Employees of its subsidiaries and affiliated entities
+          </Body>
+          <SubHeading>2.2 Verification</SubHeading>
+          <Body>
+            Access is granted based on employee records, internal authentication systems, and employer-issued credentials. The Company reserves the right to approve or deny access, and revoke access at any time.
+          </Body>
+          <SubHeading>2.3 Termination of Access</SubHeading>
+          <Body>
+            Access will be terminated if employment ends, misuse is detected, or policy violations occur.
           </Body>
         </Section>
 
-        <Section title="3. Your Account">
+        <Section title="3. PURPOSE OF THE APPLICATION">
           <Body>
-            • Your employee code and password are personal and must not be shared.{'\n'}
-            • You are responsible for all activity that occurs under your account.{'\n'}
-            • You must notify your HR administrator immediately if you suspect
-            unauthorised access to your account.{'\n'}
-            • You may not create an account on behalf of another person.
+            The App provides:{'\n'}
+            • Employee reward allocation{'\n'}
+            • Recognition programs{'\n'}
+            • Incentive tracking{'\n'}
+            • Internal engagement features{'\n\n'}
+            The App is strictly for internal corporate use.
           </Body>
         </Section>
 
-        <Section title="4. Acceptable Use">
+        <Section title="4. USER RESPONSIBILITIES">
           <Body>
-            You agree NOT to use the App to:{'\n'}
-            {'\n'}
-            • Post recognition messages or chat content that is abusive, discriminatory,
-            sexually explicit, threatening, or defamatory.{'\n'}
-            • Harass, intimidate, or bully any colleague.{'\n'}
-            • Misrepresent your identity or impersonate another employee.{'\n'}
-            • Attempt to access another employee's account or data.{'\n'}
-            • Interfere with the App's functionality or security systems.{'\n'}
-            • Use the App for any unlawful purpose.{'\n'}
-            • Upload content to which you do not have the right to grant us a licence.
+            You agree to:{'\n'}
+            • Use the App lawfully and in good faith{'\n'}
+            • Maintain confidentiality of login credentials{'\n'}
+            • Not share access with unauthorized users{'\n'}
+            • Not manipulate or exploit reward systems{'\n\n'}
+            You may not:{'\n'}
+            • Reverse engineer the App{'\n'}
+            • Attempt unauthorized access{'\n'}
+            • Interfere with system security{'\n'}
+            • Use the App for fraudulent purposes
           </Body>
         </Section>
 
-        <Section title="5. Recognition & Points">
+        <Section title="5. REWARDS AND INCENTIVES">
+          <SubHeading>5.1 Nature of Rewards</SubHeading>
           <Body>
-            • Points earned through recognition are a reward mechanism provided at
-            your employer's discretion and have no cash value.{'\n'}
-            • Your employer retains the right to modify, suspend, or terminate the
-            points and rewards programme at any time.{'\n'}
-            • Points cannot be transferred between employees, converted to cash, or
-            used outside of the IndabaCares platform.{'\n'}
-            • Fraudulent manipulation of points or recognition submissions may result
-            in account suspension and disciplinary action.
+            Rewards are discretionary, have no cash equivalence unless explicitly stated, and are subject to internal policies.
+          </Body>
+          <SubHeading>5.2 Modification</SubHeading>
+          <Body>
+            The Company reserves the right to change reward structures, adjust point allocations, and withdraw or replace incentives.
+          </Body>
+          <SubHeading>5.3 No Guarantee</SubHeading>
+          <Body>
+            Participation does not guarantee rewards or continued availability of programs.
           </Body>
         </Section>
 
-        <Section title="6. Rewards Redemption">
+        <Section title="6. INTELLECTUAL PROPERTY">
           <Body>
-            • Reward availability is subject to stock and your employer's budget.{'\n'}
-            • All redemptions are subject to approval by your employer's
-            administration team.{'\n'}
-            • Your employer is responsible for fulfilling approved redemptions.
-            Indaba Cares (Pty) Ltd is not responsible for reward fulfilment.{'\n'}
-            • Approved and fulfilled redemptions cannot be reversed except at the
-            sole discretion of your employer.
+            All content within the App — including software, branding, design, and data — is owned by Indaba Hospitality Group and/or Tenbucks-Mobile (PTY) Ltd. Unauthorized use is strictly prohibited.
           </Body>
         </Section>
 
-        <Section title="7. Content You Post">
+        <Section title="7. DATA USAGE AND PRIVACY">
           <Body>
-            You retain ownership of content you submit (recognition messages, chat
-            messages, profile photos). By posting content, you grant Indaba Cares
-            (Pty) Ltd and your employer a non-exclusive, royalty-free licence to
-            display that content within the platform.{'\n'}
-            {'\n'}
-            You are solely responsible for the content you post. We may remove any
-            content that violates these Terms or applicable law.
+            Use of the App is subject to the Privacy Policy, in compliance with the Protection of Personal Information Act (POPIA) and the Electronic Communications and Transactions Act (ECTA).
           </Body>
         </Section>
 
-        <Section title="8. Intellectual Property">
+        <Section title="8. DISCLAIMERS">
           <Body>
-            The App, its design, logos, and software are owned by or licenced to
-            Indaba Cares (Pty) Ltd. Nothing in these Terms grants you ownership of
-            any intellectual property rights in the App.
+            The App is provided "as is" with no warranties of uninterrupted service, no guarantee of accuracy of all content, and is subject to system downtime and maintenance.
           </Body>
         </Section>
 
-        <Section title="9. Availability">
+        <Section title="9. LIMITATION OF LIABILITY">
           <Body>
-            We aim to keep the App available at all times but do not guarantee
-            uninterrupted access. We may suspend, modify, or discontinue the App
-            or any features at any time with or without notice.
+            To the fullest extent permitted by law, the Company and Managing Agent are not liable for indirect or consequential damages, loss of rewards due to technical issues, or unauthorized access due to user negligence.
           </Body>
         </Section>
 
-        <Section title="10. Limitation of Liability">
+        <Section title="10. TERMINATION">
           <Body>
-            To the maximum extent permitted by law, Indaba Cares (Pty) Ltd is not
-            liable for any indirect, incidental, special, or consequential damages
-            arising from your use of the App, including lost points, unavailable
-            rewards, or data loss.
+            The Company may suspend or terminate access without prior notice, for operational, legal, or disciplinary reasons.
           </Body>
         </Section>
 
-        <Section title="11. Account Termination">
+        <Section title="11. GOVERNING LAW">
           <Body>
-            Your access to the App is tied to your employment. Your employer may
-            deactivate your account at any time, including upon termination of your
-            employment. You may request deletion of your account and personal data
-            at any time via Settings → Delete Account.
+            These Terms are governed by the laws of the Republic of South Africa. Disputes will be subject to South African courts.
           </Body>
         </Section>
 
-        <Section title="12. Changes to These Terms">
+        <Section title="12. CONTACT DETAILS">
           <Body>
-            We may update these Terms from time to time. Significant changes will be
-            communicated via an in-app notification. Continued use of the App after
-            the updated Terms take effect constitutes your acceptance.
-          </Body>
-        </Section>
-
-        <Section title="13. Governing Law">
-          <Body>
-            These Terms are governed by the laws of the Republic of South Africa.
-            Any disputes will be subject to the jurisdiction of the South African
-            courts.
-          </Body>
-        </Section>
-
-        <Section title="14. Contact">
-          <Body>
-            Questions about these Terms: legal@indabacares.com
+            Managing Agent:{'\n'}
+            Tenbucks-Mobile (PTY) Ltd{'\n'}
+            Email: support@tenbucks-mobile.co.za
           </Body>
         </Section>
 
@@ -177,6 +148,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </View>
   );
+}
+
+function SubHeading({ children }: { children: string }) {
+  return <Text style={s.subHeading}>{children}</Text>;
 }
 
 function Body({ children }: { children: React.ReactNode }) {
@@ -204,8 +179,17 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
 
-  lastUpdated: { fontSize: 12, color: '#94a3b8', marginBottom: 24, fontStyle: 'italic' },
-  section:     { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1e1b4b', marginBottom: 8 },
-  body:        { fontSize: 14, color: '#374151', lineHeight: 22, marginBottom: 8 },
+  docTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e1b4b',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+
+  section:      { marginBottom: 24 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#4c1d95', marginBottom: 8 },
+  subHeading:   { fontSize: 13, fontWeight: '600', color: '#6d28d9', marginTop: 8, marginBottom: 4 },
+  body:         { fontSize: 13, color: '#374151', lineHeight: 21, marginBottom: 6 },
 });

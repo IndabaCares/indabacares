@@ -24,11 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const inAuthGroup    = segments[0] === '(auth)';
     const inScreensGroup = segments[0] === '(screens)';
+    const screen         = segments[1] as string;
     // Allow authenticated employees to stay on the notification-permission screen
-    const onNotifScreen  = inScreensGroup && (segments[1] as string) === 'notification-permission';
+    const onNotifScreen  = inScreensGroup && screen === 'notification-permission';
+    // Allow unauthenticated users to view policy screens
+    const onPolicyScreen = inScreensGroup && (screen === 'privacy-policy' || screen === 'terms-of-service');
 
     if (!employee) {
-      if (!inAuthGroup) router.replace('/(auth)/employee-auth');
+      if (!inAuthGroup && !onPolicyScreen) router.replace('/(auth)/employee-auth');
       return;
     }
 
