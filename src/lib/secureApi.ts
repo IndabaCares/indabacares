@@ -121,8 +121,16 @@ export async function secureFetch(
         `Redirect to disallowed domain blocked: ${sanitizeUrl(location)}`
       );
     }
-    // Safe redirect — follow manually
-    return secureFetch(location, { ...init, method: 'GET', body: undefined }, hops + 1);
+    // Safe redirect — follow manually.
+    // 307 Temporary Redirect / 308 Permanent Redirect require the original
+    // method and body to be preserved (RFC 7231 §6.4.7 / RFC 7538 §3).
+    // 301 / 302 / 303 conventionally downgrade to GET.
+    const preserveMethod = response.status === 307 || response.status === 308;
+    return secureFetch(
+      location,
+      preserveMethod ? init : { ...init, method: 'GET', body: undefined },
+      hops + 1,
+    );
   }
 
   // ── 4. Content-Type validation for JSON-returning endpoints ────────────────

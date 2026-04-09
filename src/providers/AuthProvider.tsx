@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Authenticated — do not redirect if on the notification-permission screen
     if (inAuthGroup && !onNotifScreen) router.replace('/(tabs)/profile');
-  }, [employee, isLoaded, segments]);
+  }, [employee, isLoaded, segments, router]);
 
   return <>{children}</>;
 }

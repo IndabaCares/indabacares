@@ -43,10 +43,14 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // In production wire this to your observability tool (Sentry, etc.)
-    if (__DEV__) {
-      console.error('[ErrorBoundary] caught:', error.message, info.componentStack);
-    }
+    // Always log — full stack in dev, sanitised message in production.
+    // To add Sentry: replace this line with
+    //   Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+    console.error(
+      '[ErrorBoundary]',
+      error.message,
+      __DEV__ ? info.componentStack : '',
+    );
   }
 
   reset = () => {

@@ -1,8 +1,5 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,19 +20,11 @@ const queryClient = new QueryClient({
   },
 });
 
-const asyncStoragePersister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-  key: 'INDABACARES_QUERY_CACHE',
-});
-
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister }}
-    >
+    <QueryClientProvider client={queryClient}>
       {children}
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 }
 

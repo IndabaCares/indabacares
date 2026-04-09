@@ -44,3 +44,6 @@ expo-env.d.ts
 
 # Windows reserved device name (created accidentally)
 nul
+
+# Firebase
+google-services.json

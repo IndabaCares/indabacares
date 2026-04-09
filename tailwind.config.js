@@ -46,9 +46,7 @@ module.exports = {
           600: '#dc2626',
         },
       },
-      fontFamily: {
-        sans: ['System'],
-      },
+      fontFamily: {},
     },
   },
   plugins: [],
