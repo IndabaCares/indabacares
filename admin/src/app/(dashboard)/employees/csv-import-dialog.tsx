@@ -84,9 +84,9 @@ const STATUS_CONFIG = {
 
 function downloadTemplate() {
   const csv = [
-    'full_name,employee_code,hotel,department,position',
-    'Jane Smith,EMP001,Indaba Hotel,Front Office,Receptionist',
-    'John Doe,EMP002,Chobe Safari Lodge,F&B,Waiter',
+    'full_name,employee_code,hotel,department,position,email',
+    'Jane Smith,EMP001,Indaba Hotel,Front Office,Receptionist,jane.smith@indabahotel.com',
+    'John Doe,EMP002,Chobe Safari Lodge,F&B,Waiter,john.doe@chobesafari.com',
   ].join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -221,9 +221,12 @@ function DropStep({
           Drop your CSV here, or click to browse
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Required columns: <code className="rounded bg-muted px-1">full_name</code>,{' '}
+          Required: <code className="rounded bg-muted px-1">full_name</code>,{' '}
           <code className="rounded bg-muted px-1">employee_code</code>,{' '}
           <code className="rounded bg-muted px-1">hotel</code>
+          {' '}· Optional: <code className="rounded bg-muted px-1">department</code>,{' '}
+          <code className="rounded bg-muted px-1">position</code>,{' '}
+          <code className="rounded bg-muted px-1">email</code>
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">Max 2,000 rows · 5 MB</p>
         <input

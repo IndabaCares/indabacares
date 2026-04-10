@@ -8,7 +8,7 @@ async function getEmployees(hotel?: string) {
   const db = createAdminClient();
   let q = db
     .from('employees')
-    .select('id, employee_code, full_name, hotel, department, position, status, points_balance, created_at')
+    .select('id, employee_code, full_name, hotel, department, position, email, status, points_balance, created_at')
     .order('hotel')
     .order('full_name');
 

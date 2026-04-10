@@ -239,6 +239,7 @@ export async function POST(req: NextRequest) {
         full_name:  row.full_name,
         department: row.raw.department?.trim() || null,
         position:   row.raw.position?.trim()   || null,
+        email:      row.email,
       })
       .eq('employee_code', row.employee_code)
       .eq('hotel', row.hotel);
@@ -265,6 +266,7 @@ function rowToPayload(row: ValidatedRow) {
     hotel:         row.hotel,
     department:    row.raw.department?.trim() || null,
     position:      row.raw.position?.trim()   || null,
+    email:         row.email,
     status:        'active',
   };
 }

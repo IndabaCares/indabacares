@@ -32,6 +32,7 @@ interface Employee {
   hotel:          string;
   department:     string | null;
   position:       string | null;
+  email:          string | null;
   status:         string;
   points_balance: number;
   created_at:     string;
@@ -133,6 +134,7 @@ export function EmployeesClient({
               <TableHead>Hotel</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Position</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead className="text-right">Points</TableHead>
               <TableHead>Status</TableHead>
               <TableHead />
@@ -141,7 +143,7 @@ export function EmployeesClient({
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                   No employees found.
                 </TableCell>
               </TableRow>
@@ -153,6 +155,7 @@ export function EmployeesClient({
                 <TableCell className="text-sm text-muted-foreground">{emp.hotel}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{emp.department ?? '—'}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{emp.position  ?? '—'}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{emp.email ?? '—'}</TableCell>
                 <TableCell className="text-right font-semibold">{emp.points_balance ?? 0}</TableCell>
                 <TableCell>
                   <span

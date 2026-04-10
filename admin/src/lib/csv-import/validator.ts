@@ -31,6 +31,7 @@ export interface ValidatedRow {
   employee_code: string;
   full_name:     string;
   hotel:         string;
+  email:         string | null;
   /** Whether this row will INSERT or UPDATE. */
   status:        RowStatus;
   /** Human-readable error messages. Empty when status !== 'error'. */
@@ -67,6 +68,8 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
     const full_name     = (raw.fields.full_name     ?? '').trim();
     const employee_code = (raw.fields.employee_code ?? '').trim().toUpperCase();
     const hotel         = (raw.fields.hotel         ?? '').trim();
+    const emailRaw      = (raw.fields.email         ?? '').trim();
+    const email         = emailRaw || null;
 
     // Required field checks
     if (!full_name)     errors.push('full_name is required');
@@ -87,6 +90,11 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
       );
     }
 
+    // Email format (optional but validated when present)
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('email is not a valid email address');
+    }
+
     // Within-file duplicate detection
     if (employee_code && hotel) {
       const dedupeKey = `${employee_code}::${hotel}`;
@@ -105,6 +113,7 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
       employee_code,
       full_name,
       hotel,
+      email,
       status:        errors.length > 0 ? 'error' : 'valid',
       errors,
     };
