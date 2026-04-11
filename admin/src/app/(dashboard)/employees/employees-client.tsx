@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Upload, Search, Filter, Pencil } from 'lucide-react';
+import { Upload, Search, Filter, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input }  from '@/components/ui/input';
 import { Label }  from '@/components/ui/label';
@@ -22,6 +22,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -30,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { HOTELS } from '@/lib/hotels';
-import { toggleEmployeeStatus, updateEmployee } from '@/app/actions/employees';
+import { toggleEmployeeStatus, updateEmployee, deleteEmployee } from '@/app/actions/employees';
 import { CsvImportDialog } from './csv-import-dialog';
 
 interface Employee {
@@ -137,9 +147,10 @@ export function EmployeesClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [search,      setSearch]     = useState('');
-  const [importOpen,  setImportOpen] = useState(false);
-  const [editTarget,  setEditTarget] = useState<Employee | null>(null);
+  const [search,       setSearch]      = useState('');
+  const [importOpen,   setImportOpen]  = useState(false);
+  const [editTarget,   setEditTarget]  = useState<Employee | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
 
@@ -262,6 +273,14 @@ export function EmployeesClient({
                     >
                       {emp.status === 'active' ? 'Deactivate' : 'Activate'}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(emp)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -286,6 +305,42 @@ export function EmployeesClient({
           }}
         />
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete employee?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deleteTarget?.full_name}</strong> ({deleteTarget?.employee_code}).
+              This action cannot be undone.{' '}
+              If this employee has existing activity, deletion will be blocked — use Deactivate instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteTarget) return;
+                startTransition(async () => {
+                  try {
+                    await deleteEmployee(deleteTarget.id);
+                    toast.success('Employee deleted');
+                    setDeleteTarget(null);
+                    router.refresh();
+                  } catch (err: any) {
+                    toast.error(err.message);
+                    setDeleteTarget(null);
+                  }
+                });
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

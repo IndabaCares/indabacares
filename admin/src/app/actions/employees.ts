@@ -17,6 +17,30 @@ export async function toggleEmployeeStatus(id: string, currentStatus: string) {
   revalidatePath('/employees');
 }
 
+/**
+ * Delete an employee record.
+ * Blocked if the employee has any recognitions or redemptions — deactivate instead.
+ */
+export async function deleteEmployee(id: string) {
+  const db = createAdminClient();
+
+  // Check for linked activity
+  const [{ count: recCount }, { count: redCount }] = await Promise.all([
+    db.from('recognitions').select('id', { count: 'exact', head: true }).or(`sender_id.eq.${id},recipient_id.eq.${id}`),
+    db.from('redemptions').select('id', { count: 'exact', head: true }).eq('employee_id', id),
+  ]);
+
+  if ((recCount ?? 0) > 0 || (redCount ?? 0) > 0) {
+    throw new Error(
+      'This employee has existing activity (recognitions or redemptions) and cannot be deleted. Use Deactivate instead.',
+    );
+  }
+
+  const { error } = await db.from('employees').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/employees');
+}
+
 /** Update editable fields on an employee record. */
 export async function updateEmployee(
   id: string,
