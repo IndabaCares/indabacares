@@ -47,3 +47,8 @@ nul
 
 # Firebase
 google-services.json
+
+# Build outputs
+*.apk
+*.aab
+npx
