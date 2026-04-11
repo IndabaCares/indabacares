@@ -82,18 +82,34 @@ Deno.serve(
     // Sanitize: strip HTML
     const message = body.message.replace(/<[^>]*>/g, "").trim();
 
-    // ── Verify receiver exists in the same hotel ──────────────────────
-    const { data: receiver, error: receiverError } = await adminClient
+    // ── Verify receiver exists ────────────────────────────────────────
+    // APA employees (group directors) can recognise across all hotels.
+    // All other employees can only recognise within their own hotel.
+    const isApa = employee.hotel === "African Procurement Agencies";
+
+    let receiverQuery = adminClient
       .from("employees")
-      .select("id, full_name")
+      .select("id, full_name, hotel")
       .eq("id", body.receiverId)
-      .eq("hotel", employee.hotel)
-      .eq("status", "active")
-      .single();
+      .eq("status", "active");
+
+    if (!isApa) {
+      receiverQuery = receiverQuery.eq("hotel", employee.hotel);
+    }
+
+    const { data: receiver, error: receiverError } = await receiverQuery.single();
 
     if (receiverError || !receiver) {
-      return errorResponse("Recipient not found or is not active at your hotel", 404);
+      return errorResponse(
+        isApa
+          ? "Recipient not found or is not active"
+          : "Recipient not found or is not active at your hotel",
+        404
+      );
     }
+
+    // Tag the recognition to the recipient's hotel so it appears in their feed.
+    const recognitionHotel = isApa ? receiver.hotel : employee.hotel;
 
     // ── Insert recognition ────────────────────────────────────────────
     const { data: recognition, error: insertError } = await adminClient
@@ -103,7 +119,7 @@ Deno.serve(
         receiver_id: body.receiverId,
         message,
         badge:  body.badge,
-        hotel:  employee.hotel,
+        hotel:  recognitionHotel,
       })
       .select("id, message, badge, hotel, created_at")
       .single();
