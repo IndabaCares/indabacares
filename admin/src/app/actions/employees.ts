@@ -17,6 +17,34 @@ export async function toggleEmployeeStatus(id: string, currentStatus: string) {
   revalidatePath('/employees');
 }
 
+/** Create a single employee record. */
+export async function createEmployee(fields: {
+  full_name:     string;
+  employee_code: string;
+  hotel:         string;
+  department:    string | null;
+  position:      string | null;
+  email:         string | null;
+}) {
+  const db = createAdminClient();
+
+  const { error } = await db.from('employees').insert({
+    full_name:     fields.full_name.trim(),
+    employee_code: fields.employee_code.trim().toUpperCase(),
+    hotel:         fields.hotel,
+    department:    fields.department?.trim() || null,
+    position:      fields.position?.trim()   || null,
+    email:         fields.email?.trim().toLowerCase() || null,
+    status:        'active',
+  });
+
+  if (error) {
+    if (error.code === '23505') throw new Error('Employee code already exists for this hotel.');
+    throw new Error(error.message);
+  }
+  revalidatePath('/employees');
+}
+
 /**
  * Delete an employee record.
  * Blocked if the employee has any recognitions or redemptions — deactivate instead.

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Upload, Search, Filter, Pencil, Trash2 } from 'lucide-react';
+import { Upload, Search, Filter, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input }  from '@/components/ui/input';
 import { Label }  from '@/components/ui/label';
@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { HOTELS } from '@/lib/hotels';
-import { toggleEmployeeStatus, updateEmployee, deleteEmployee } from '@/app/actions/employees';
+import { toggleEmployeeStatus, updateEmployee, deleteEmployee, createEmployee } from '@/app/actions/employees';
 import { CsvImportDialog } from './csv-import-dialog';
 
 interface Employee {
@@ -136,6 +136,96 @@ function EditEmployeeDialog({
   );
 }
 
+// ── Add Employee Dialog ───────────────────────────────────────────────────────
+
+function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
+  const [isPending, startTransition] = useTransition();
+  const [fullName,     setFullName]     = useState('');
+  const [employeeCode, setEmployeeCode] = useState('');
+  const [hotel,        setHotel]        = useState('');
+  const [department,   setDepartment]   = useState('');
+  const [position,     setPosition]     = useState('');
+  const [email,        setEmail]        = useState('');
+
+  function handleSave() {
+    if (!fullName.trim())     { toast.error('Full name is required');     return; }
+    if (!employeeCode.trim()) { toast.error('Employee code is required'); return; }
+    if (!hotel)               { toast.error('Hotel is required');         return; }
+
+    startTransition(async () => {
+      try {
+        await createEmployee({
+          full_name:     fullName,
+          employee_code: employeeCode,
+          hotel,
+          department:    department || null,
+          position:      position   || null,
+          email:         email      || null,
+        });
+        toast.success('Employee created');
+        onClose();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Employee</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Full Name <span className="text-red-500">*</span></Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Smith" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Employee Code <span className="text-red-500">*</span></Label>
+            <Input
+              value={employeeCode}
+              onChange={(e) => setEmployeeCode(e.target.value)}
+              placeholder="EMP001"
+              className="font-mono uppercase"
+            />
+            <p className="text-xs text-muted-foreground">Letters, numbers, hyphens and underscores only. Stored in uppercase.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Hotel <span className="text-red-500">*</span></Label>
+            <Select value={hotel} onValueChange={setHotel}>
+              <SelectTrigger><SelectValue placeholder="Select hotel…" /></SelectTrigger>
+              <SelectContent>
+                {HOTELS.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Department</Label>
+            <Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Front Office" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Position</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Receptionist" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Email</Label>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane.smith@hotel.com" type="email" />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending ? 'Creating…' : 'Create Employee'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function EmployeesClient({
@@ -149,6 +239,7 @@ export function EmployeesClient({
   const [isPending, startTransition] = useTransition();
   const [search,       setSearch]      = useState('');
   const [importOpen,   setImportOpen]  = useState(false);
+  const [addOpen,      setAddOpen]     = useState(false);
   const [editTarget,   setEditTarget]  = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
@@ -207,6 +298,10 @@ export function EmployeesClient({
           </SelectContent>
         </Select>
 
+        <Button variant="outline" onClick={() => setAddOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add Employee
+        </Button>
         <Button onClick={() => setImportOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
           Import CSV
@@ -294,6 +389,16 @@ export function EmployeesClient({
         open={importOpen}
         onClose={() => setImportOpen(false)}
       />
+
+      {/* Add employee dialog */}
+      {addOpen && (
+        <AddEmployeeDialog
+          onClose={() => {
+            setAddOpen(false);
+            router.refresh();
+          }}
+        />
+      )}
 
       {/* Edit dialog */}
       {editTarget && (
