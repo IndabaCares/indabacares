@@ -60,18 +60,11 @@ CREATE POLICY "recognitions_hotel_select"
   );
 
 
--- ── 4. leaderboard_cache — APA sees all ──────────────────────────────────────
-
-DROP POLICY IF EXISTS "leaderboard_hotel_select" ON public.leaderboard_cache;
-
-CREATE POLICY "leaderboard_hotel_select"
-  ON public.leaderboard_cache
-  FOR SELECT
-  TO anon, authenticated
-  USING (
-    hotel = public.current_employee_hotel()
-    OR public.current_employee_is_apa()
-  );
+-- ── 4. leaderboard — fully dynamic via get_leaderboard() RPC ────────────────
+-- leaderboard_cache was dropped in migrations 029/030.
+-- The leaderboard is now a live aggregation function — no RLS policy needed.
+-- APA cross-hotel leaderboard access is handled in the mobile app by passing
+-- hotel = NULL (or all hotels) to get_leaderboard().
 
 
 -- ── 5. rewards — APA sees all ─────────────────────────────────────────────────
