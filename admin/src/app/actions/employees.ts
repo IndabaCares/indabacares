@@ -35,7 +35,7 @@ export async function updateEmployee(
       full_name:  fields.full_name.trim(),
       department: fields.department?.trim() || null,
       position:   fields.position?.trim()   || null,
-      email:      fields.email?.trim()       || null,
+      email:      fields.email?.trim().toLowerCase() || null,
     })
     .eq('id', id);
 

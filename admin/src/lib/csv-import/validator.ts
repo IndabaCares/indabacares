@@ -68,7 +68,7 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
     const full_name     = (raw.fields.full_name     ?? '').trim();
     const employee_code = (raw.fields.employee_code ?? '').trim().toUpperCase();
     const hotel         = (raw.fields.hotel         ?? '').trim();
-    const emailRaw      = (raw.fields.email         ?? '').trim();
+    const emailRaw      = (raw.fields.email         ?? '').trim().toLowerCase();
     const email         = emailRaw || null;
 
     // Required field checks
