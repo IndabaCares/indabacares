@@ -3,9 +3,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Upload, Search, Filter } from 'lucide-react';
+import { Upload, Search, Filter, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input }  from '@/components/ui/input';
+import { Label }  from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -22,8 +30,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { HOTELS } from '@/lib/hotels';
-import { toggleEmployeeStatus } from '@/app/actions/employees';
-import { CsvImportDialog }      from './csv-import-dialog';
+import { toggleEmployeeStatus, updateEmployee } from '@/app/actions/employees';
+import { CsvImportDialog } from './csv-import-dialog';
 
 interface Employee {
   id:             string;
@@ -44,6 +52,82 @@ const STATUS_CHIP: Record<string, string> = {
   pending:  'bg-amber-100  text-amber-700',
 };
 
+// ── Edit Dialog ───────────────────────────────────────────────────────────────
+
+function EditEmployeeDialog({
+  employee,
+  onClose,
+}: {
+  employee: Employee;
+  onClose:  () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [fullName,   setFullName]   = useState(employee.full_name);
+  const [department, setDepartment] = useState(employee.department ?? '');
+  const [position,   setPosition]   = useState(employee.position   ?? '');
+  const [email,      setEmail]      = useState(employee.email      ?? '');
+
+  function handleSave() {
+    if (!fullName.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await updateEmployee(employee.id, {
+          full_name:  fullName,
+          department: department || null,
+          position:   position   || null,
+          email:      email      || null,
+        });
+        toast.success('Employee updated');
+        onClose();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Employee</DialogTitle>
+          <p className="text-sm text-muted-foreground font-mono">{employee.employee_code} · {employee.hotel}</p>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Full Name <span className="text-red-500">*</span></Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Department</Label>
+            <Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Front Office" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Position</Label>
+            <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Receptionist" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Email</Label>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="employee@hotel.com" type="email" />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending ? 'Saving…' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
 export function EmployeesClient({
   employees,
   selectedHotel,
@@ -53,8 +137,9 @@ export function EmployeesClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [search,     setSearch]      = useState('');
-  const [importOpen, setImportOpen]  = useState(false);
+  const [search,      setSearch]     = useState('');
+  const [importOpen,  setImportOpen] = useState(false);
+  const [editTarget,  setEditTarget] = useState<Employee | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
 
@@ -70,8 +155,6 @@ export function EmployeesClient({
     if (val !== 'all') url.set('hotel', val);
     router.push(`/employees${url.toString() ? '?' + url.toString() : ''}`);
   }
-
-  // ── Status toggle ──────────────────────────────────────────────────────────
 
   function handleToggle(id: string, status: string) {
     startTransition(async () => {
@@ -158,23 +241,28 @@ export function EmployeesClient({
                 <TableCell className="text-sm text-muted-foreground">{emp.email ?? '—'}</TableCell>
                 <TableCell className="text-right font-semibold">{emp.points_balance ?? 0}</TableCell>
                 <TableCell>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      STATUS_CHIP[emp.status] ?? 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CHIP[emp.status] ?? 'bg-slate-100 text-slate-600'}`}>
                     {emp.status}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleToggle(emp.id, emp.status)}
-                  >
-                    {emp.status === 'active' ? 'Deactivate' : 'Activate'}
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditTarget(emp)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => handleToggle(emp.id, emp.status)}
+                    >
+                      {emp.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -187,6 +275,17 @@ export function EmployeesClient({
         open={importOpen}
         onClose={() => setImportOpen(false)}
       />
+
+      {/* Edit dialog */}
+      {editTarget && (
+        <EditEmployeeDialog
+          employee={editTarget}
+          onClose={() => {
+            setEditTarget(null);
+            router.refresh();
+          }}
+        />
+      )}
     </>
   );
 }
