@@ -249,13 +249,13 @@ export function RewardsClient({
   function handleDelete() {
     if (!deleteId) return;
     startTransition(async () => {
-      try {
-        await deleteReward(deleteId);
+      const result = await deleteReward(deleteId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
         toast.success('Reward deleted');
-        setDeleteId(null);
-      } catch (err: any) {
-        toast.error(err.message);
       }
+      setDeleteId(null);
     });
   }
 

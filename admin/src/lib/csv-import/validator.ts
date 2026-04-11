@@ -28,10 +28,12 @@ export interface ValidatedRow {
   /** Raw field values from the CSV. */
   raw:           Record<string, string>;
   /** Normalised values (uppercase code, trimmed strings). */
-  employee_code: string;
-  full_name:     string;
-  hotel:         string;
-  email:         string | null;
+  employee_code:  string;
+  full_name:      string;
+  hotel:          string;
+  email:          string | null;
+  date_of_birth:  string | null;  // YYYY-MM-DD or null
+  start_date:     string | null;  // YYYY-MM-DD or null
   /** Whether this row will INSERT or UPDATE. */
   status:        RowStatus;
   /** Human-readable error messages. Empty when status !== 'error'. */
@@ -46,6 +48,40 @@ export interface ValidationSummary {
   errorCount:  number;  // will skip
   /** True when at least one row can be imported (valid + update). */
   canImport:   boolean;
+}
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+//
+// Accepts YYYY-MM-DD or DD/MM/YYYY. Returns YYYY-MM-DD or null.
+
+function parseDate(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : trimmed;
+  }
+
+  // DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    const [dd, mm, yyyy] = trimmed.split('/');
+    const iso = `${yyyy}-${mm}-${dd}`;
+    const d   = new Date(iso);
+    return isNaN(d.getTime()) ? null : iso;
+  }
+
+  return null;
+}
+
+function validateDate(raw: string, fieldName: string): { value: string | null; error?: string } {
+  if (!raw.trim()) return { value: null };
+  const value = parseDate(raw);
+  if (!value) {
+    return { value: null, error: `${fieldName} must be in YYYY-MM-DD or DD/MM/YYYY format` };
+  }
+  return { value };
 }
 
 // ─── Required columns ─────────────────────────────────────────────────────────
@@ -70,6 +106,11 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
     const hotel         = (raw.fields.hotel         ?? '').trim();
     const emailRaw      = (raw.fields.email         ?? '').trim().toLowerCase();
     const email         = emailRaw || null;
+
+    const dobResult   = validateDate(raw.fields.date_of_birth ?? '', 'date_of_birth');
+    const startResult = validateDate(raw.fields.start_date    ?? '', 'start_date');
+    if (dobResult.error)   errors.push(dobResult.error);
+    if (startResult.error) errors.push(startResult.error);
 
     // Required field checks
     if (!full_name)     errors.push('full_name is required');
@@ -114,6 +155,8 @@ export function validateRows(rawRows: RawRow[]): ValidatedRow[] {
       full_name,
       hotel,
       email,
+      date_of_birth: dobResult.value,
+      start_date:    startResult.value,
       status:        errors.length > 0 ? 'error' : 'valid',
       errors,
     };

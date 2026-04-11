@@ -36,6 +36,7 @@ const HOTELS = [
   'Chobe Safari Lodge',
   'Chobe Bush Lodge',
   'Nata Lodge',
+  'African Procurement Agencies',
 ] as const;
 
 // ─── Hotel Dropdown ───────────────────────────────────────────────────────────
@@ -548,13 +549,12 @@ export default function EmployeeAuthScreen() {
               )}
             </Pressable>
 
-            {/* ── Try Demo button ── */}
-            {/* REMOVE after Apple / Google approval */}
+            {/* ── Try Demo button — hidden during testing, restore for app store review ── */}
             <TouchableOpacity
               onPress={handleDemoLogin}
               disabled={loading}
               activeOpacity={0.8}
-              style={styles.demoButton}
+              style={[styles.demoButton, { display: 'none' }]}
             >
               <Ionicons name="play-circle-outline" size={20} color={ACCENT} style={{ marginRight: 8 }} />
               <Text style={styles.demoButtonText}>Try Demo</Text>

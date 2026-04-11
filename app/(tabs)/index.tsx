@@ -4,12 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
 import { useFeedSearch } from '@/hooks/use-feed-search';
+import { useCelebrations } from '@/hooks/use-celebrations';
 import { RecognitionCard } from '@/components/feed/RecognitionCard';
+import { CelebrationCard } from '@/components/feed/CelebrationCard';
 import { FeedHeader, type FeedFilter } from '@/components/feed/FeedHeader';
 import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useUIStore } from '@/stores/ui-store';
 import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
+import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
+import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
 
@@ -37,12 +41,14 @@ export default function FeedScreen() {
     isLoading: searchLoading,
   } = useFeedSearch(searchTerm);
 
+  const { data: celebrations = [] } = useCelebrations();
+
   const resetNewFeedItems = useUIStore((s) => s.resetNewFeedItems);
   const liveRecognitions  = data?.pages.flatMap((page) => page) ?? [];
 
   const baseItems = isSearching ? (searchResults ?? []) : liveRecognitions;
 
-  const feedItems = (() => {
+  const filteredItems = (() => {
     if (!activeFilter) return baseItems;
     const { category, value } = activeFilter;
     if (category === 'latest') {
@@ -58,6 +64,12 @@ export default function FeedScreen() {
     }
     return baseItems;
   })();
+
+  // Celebrations always appear at the top when not searching or filtering
+  type FeedEntry = RecognitionFeedItem | CelebrationFeedItem;
+  const feedItems: FeedEntry[] = (!isSearching && !activeFilter)
+    ? [...celebrations, ...filteredItems]
+    : filteredItems;
 
   const handleRefresh = useCallback(() => {
     resetNewFeedItems();
@@ -106,8 +118,16 @@ export default function FeedScreen() {
         ) : (
           <FlatList
             data={feedItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <RecognitionCard recognition={item as any} />}
+            keyExtractor={(item) =>
+              (item as CelebrationFeedItem)._type === 'celebration'
+                ? `cel-${item.id}`
+                : item.id
+            }
+            renderItem={({ item }) =>
+              (item as CelebrationFeedItem)._type === 'celebration'
+                ? <CelebrationCard celebration={item as CelebrationFeedItem} />
+                : <RecognitionCard recognition={item as RecognitionFeedItem} />
+            }
             ListEmptyComponent={
               !isLoading ? (
                 <View style={styles.emptySearch}>

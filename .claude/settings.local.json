@@ -41,7 +41,28 @@
       "Bash(grep -l \"department\" C:/Users/Personel/Desktop/IndabaCares/supabase/migrations/*.sql)",
       "Bash(npx expo:*)",
       "Bash(cat -n \"/c/Users/Personel/Desktop/IndabaCares/app/\\(tabs\\)/leaderboard.tsx\" | head -20)",
-      "Bash(ls \"/c/Users/Personel/Desktop/IndabaCares/app/\\(tabs\\)/\")"
+      "Bash(ls \"/c/Users/Personel/Desktop/IndabaCares/app/\\(tabs\\)/\")",
+      "Bash(grep -l \"initiative\\\\|campaign\\\\|reward\" C:/Users/Personel/Desktop/IndabaCares/supabase/migrations/*.sql)",
+      "Bash(grep:*)",
+      "Bash(supabase --version)",
+      "Bash(curl:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(ls -la /c/Users/Personel/Desktop/IndabaCares/admin/src/app/\\\\\\(dashboard\\\\\\)/*/page.tsx)",
+      "Bash(git config:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npm run:*)",
+      "Bash(gh run:*)",
+      "Bash(git -C \"C:\\\\Users\\\\Personel\\\\Desktop\\\\tenbucks-hub\" remote -v)",
+      "Bash(git:*)",
+      "Bash(sed:*)",
+      "Bash(xargs cat:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k,v in sorted\\(deps.items\\(\\)\\)]\")",
+      "Read(//c/Users/Personel/Desktop/fizzog-mobile/**)",
+      "Read(//c/Users/Personel/Desktop//**)",
+      "Bash(powershell -Command ':*)",
+      "Bash(npm uninstall:*)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

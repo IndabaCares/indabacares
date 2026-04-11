@@ -18,9 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/utils/image';
+import { useQuery } from '@tanstack/react-query';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
 import { useRecognitionBalance, MONTHLY_RECOGNITION_LIMIT } from '@/hooks/use-recognition-balance';
 import { useUserBadges } from '@/hooks/use-user-badges';
+import { QUERY_KEYS } from '@/lib/constants';
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
@@ -57,13 +59,33 @@ const MENU_ITEMS = [
 export default function ProfileScreen() {
   const { employee, clearEmployee } = useEmployee();
 
-  const [pointsBalance,  setPointsBalance]  = useState<number | null>(null);
-  const [pointsLoading,  setPointsLoading]  = useState(true);
-  const [jobTitle,       setJobTitle]       = useState<string | null>(null);
-  const [photoUrl,       setPhotoUrl]       = useState<string | null>(null);
-  const [uploading,      setUploading]      = useState(false);
-  const [activeTab,     setActiveTab]     = useState<'gamification' | 'announcements'>('gamification');
-  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [photoUrl,   setPhotoUrl] = useState<string | null>(null);
+  const [uploading,  setUploading] = useState(false);
+  const [activeTab,  setActiveTab] = useState<'gamification' | 'announcements'>('gamification');
+  const [menuOpen,   setMenuOpen]  = useState(false);
+
+  const { data: profileData, isLoading: profileLoading } = useQuery({
+    queryKey: QUERY_KEYS.employeeProfile(employee?.employee_id ?? ''),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('employees')
+        .select('points_balance, job_title, photo_url')
+        .eq('id', employee!.employee_id)
+        .single();
+      return data as { points_balance: number; job_title: string | null; photo_url: string | null } | null;
+    },
+    enabled: !!employee,
+    staleTime: 60_000,
+  });
+
+  // Seed photo URL from fetched data (only if not already set by an upload)
+  useEffect(() => {
+    if (profileData?.photo_url && !photoUrl) setPhotoUrl(profileData.photo_url);
+  }, [profileData?.photo_url]);
+
+  const pointsBalance = profileData?.points_balance ?? null;
+  const pointsLoading = profileLoading;
+  const jobTitle      = profileData?.job_title ?? null;
 
   const { data: reactionBalance,     isLoading: reactionLoading }       = useReactionBalance();
   const { data: recognitionRemaining, isLoading: recognitionLoading }   = useRecognitionBalance();
@@ -74,25 +96,6 @@ export default function ProfileScreen() {
   const recognitionsGiven = recognitionLoading
     ? null
     : MONTHLY_RECOGNITION_LIMIT - (recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT);
-
-  // ── Fetch employee profile data ────────────────────────────────────────────
-  useEffect(() => {
-    if (!employee) return;
-    supabase
-      .from('employees')
-      .select('points_balance, job_title, photo_url')
-      .eq('id', employee.employee_id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          const row = data as { points_balance: number; job_title: string | null; photo_url: string | null };
-          setPointsBalance(row.points_balance);
-          setJobTitle(row.job_title ?? null);
-          setPhotoUrl(row.photo_url ?? null);
-        }
-        setPointsLoading(false);
-      });
-  }, [employee?.employee_id]);
 
   if (!employee) return null;
 
@@ -269,7 +272,8 @@ export default function ProfileScreen() {
               {jobTitle ? <Text style={styles.subtitle}>{jobTitle}</Text> : null}
               <View style={styles.metaRow}>
                 <Text style={styles.metaText}>{employee.hotel}</Text>
-                <View style={styles.metaDivider} />
+              </View>
+              <View style={[styles.metaRow, { marginTop: 2 }]}>
                 <Text style={styles.metaText}>{employee.department ?? '—'}</Text>
               </View>
             </View>
@@ -295,7 +299,7 @@ export default function ProfileScreen() {
                     {pointsLoading ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0}</Text>
                     )}
                   </View>
                 </View>
@@ -306,7 +310,7 @@ export default function ProfileScreen() {
                     {pointsLoading ? (
                       <ActivityIndicator size="small" color={ACCENT} />
                     ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0} pts</Text>
+                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0}</Text>
                     )}
                   </View>
                 </View>
@@ -334,7 +338,7 @@ export default function ProfileScreen() {
                 {stats.map((stat, i) => (
                   <Text key={i} style={styles.statIcon}>{stat.icon}</Text>
                 ))}
-                <Text style={styles.reactionPtsDark}>= {remainingReactionPts} pts</Text>
+                <Text style={styles.reactionPtsDark}>= {remainingReactionPts}</Text>
               </View>
             </View>
             <View style={styles.statsPill}>
@@ -674,12 +678,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#ffffff',
     fontWeight: '400',
-  },
-
-  metaDivider: {
-    width: 1,
-    height: 10,
-    backgroundColor: 'rgba(255,255,255,0.3)',
   },
 
   // ── Stats card (white) — sits 50% below image border radius ─────────────────

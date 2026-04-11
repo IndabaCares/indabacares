@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Upload, Search, Filter, Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Upload, Search, Filter, Pencil, Trash2, UserPlus, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input }  from '@/components/ui/input';
 import { Label }  from '@/components/ui/label';
@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { HOTELS } from '@/lib/hotels';
-import { toggleEmployeeStatus, updateEmployee, deleteEmployee, createEmployee } from '@/app/actions/employees';
+import { toggleEmployeeStatus, updateEmployee, deleteEmployee, createEmployee, resetEmployeePassword } from '@/app/actions/employees';
 import { CsvImportDialog } from './csv-import-dialog';
 
 interface Employee {
@@ -71,11 +71,13 @@ function EditEmployeeDialog({
   employee: Employee;
   onClose:  () => void;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const [fullName,   setFullName]   = useState(employee.full_name);
-  const [department, setDepartment] = useState(employee.department ?? '');
-  const [position,   setPosition]   = useState(employee.position   ?? '');
-  const [email,      setEmail]      = useState(employee.email      ?? '');
+  const [isPending,    startTransition] = useTransition();
+  const [fullName,     setFullName]     = useState(employee.full_name);
+  const [department,   setDepartment]   = useState(employee.department   ?? '');
+  const [position,     setPosition]     = useState(employee.position     ?? '');
+  const [email,        setEmail]        = useState(employee.email        ?? '');
+  const [dateOfBirth,  setDateOfBirth]  = useState((employee as any).date_of_birth ?? '');
+  const [startDate,    setStartDate]    = useState((employee as any).start_date    ?? '');
 
   function handleSave() {
     if (!fullName.trim()) {
@@ -85,10 +87,12 @@ function EditEmployeeDialog({
     startTransition(async () => {
       try {
         await updateEmployee(employee.id, {
-          full_name:  fullName,
-          department: department || null,
-          position:   position   || null,
-          email:      email      || null,
+          full_name:     fullName,
+          department:    department    || null,
+          position:      position      || null,
+          email:         email         || null,
+          date_of_birth: dateOfBirth   || null,
+          start_date:    startDate     || null,
         });
         toast.success('Employee updated');
         onClose();
@@ -123,6 +127,16 @@ function EditEmployeeDialog({
             <Label>Email</Label>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="employee@hotel.com" type="email" />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Date of Birth</Label>
+              <Input value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} type="date" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Start Date</Label>
+              <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -139,13 +153,15 @@ function EditEmployeeDialog({
 // ── Add Employee Dialog ───────────────────────────────────────────────────────
 
 function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
-  const [isPending, startTransition] = useTransition();
+  const [isPending,    startTransition] = useTransition();
   const [fullName,     setFullName]     = useState('');
   const [employeeCode, setEmployeeCode] = useState('');
   const [hotel,        setHotel]        = useState('');
   const [department,   setDepartment]   = useState('');
   const [position,     setPosition]     = useState('');
   const [email,        setEmail]        = useState('');
+  const [dateOfBirth,  setDateOfBirth]  = useState('');
+  const [startDate,    setStartDate]    = useState('');
 
   function handleSave() {
     if (!fullName.trim())     { toast.error('Full name is required');     return; }
@@ -158,9 +174,11 @@ function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
           full_name:     fullName,
           employee_code: employeeCode,
           hotel,
-          department:    department || null,
-          position:      position   || null,
-          email:         email      || null,
+          department:    department   || null,
+          position:      position     || null,
+          email:         email        || null,
+          date_of_birth: dateOfBirth  || null,
+          start_date:    startDate    || null,
         });
         toast.success('Employee created');
         onClose();
@@ -213,6 +231,16 @@ function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
             <Label>Email</Label>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane.smith@hotel.com" type="email" />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Date of Birth</Label>
+              <Input value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} type="date" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Start Date</Label>
+              <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -242,6 +270,7 @@ export function EmployeesClient({
   const [addOpen,      setAddOpen]     = useState(false);
   const [editTarget,   setEditTarget]  = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [resetTarget,  setResetTarget]  = useState<Employee | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
 
@@ -371,6 +400,14 @@ export function EmployeesClient({
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Reset password"
+                      onClick={() => setResetTarget(emp)}
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-destructive hover:text-destructive"
                       onClick={() => setDeleteTarget(emp)}
                     >
@@ -410,6 +447,39 @@ export function EmployeesClient({
           }}
         />
       )}
+
+      {/* Reset password confirmation */}
+      <AlertDialog open={!!resetTarget} onOpenChange={(o) => { if (!o) setResetTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear <strong>{resetTarget?.full_name}</strong>'s password and log them out of all devices.
+              They will need to re-register using the <strong>Register</strong> tab in the mobile app.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!resetTarget) return;
+                startTransition(async () => {
+                  try {
+                    await resetEmployeePassword(resetTarget.id);
+                    toast.success('Password reset — employee can now re-register');
+                    setResetTarget(null);
+                  } catch (err: any) {
+                    toast.error(err.message);
+                    setResetTarget(null);
+                  }
+                });
+              }}
+            >
+              Reset Password
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>

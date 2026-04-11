@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator,
+  FlatList, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -10,9 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTeamByDepartment } from '@/hooks/use-team';
 import type { TeamMember } from '@/api/team-service';
 
-const PURPLE = '#7B1FA2';
+const PURPLE     = '#7B1FA2';
+const COLUMNS    = 2;
+const H_PADDING  = 16;
+const CARD_GAP   = 10;
+const CARD_WIDTH = (Dimensions.get('window').width - H_PADDING * 2 - CARD_GAP) / COLUMNS;
 
-// ─── Member card ──────────────────────────────────────────────────────────────
+// ─── Member card (grid tile) ──────────────────────────────────────────────────
 
 function MemberCard({ member }: { member: TeamMember }) {
   const initials = member.full_name
@@ -28,16 +32,16 @@ function MemberCard({ member }: { member: TeamMember }) {
       style={styles.card}
       onPress={() => router.push(`/(screens)/user/${member.id}` as any)}
     >
-      {/* Avatar */}
-      <View style={styles.avatarWrap}>
+      {/* Photo */}
+      <View style={styles.photoWrap}>
         {member.photo_url ? (
           <Image
             source={{ uri: member.photo_url }}
-            style={styles.avatar}
+            style={styles.photo}
             contentFit="cover"
           />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View style={styles.photoPlaceholder}>
             <Text style={styles.initials}>{initials}</Text>
           </View>
         )}
@@ -45,13 +49,11 @@ function MemberCard({ member }: { member: TeamMember }) {
 
       {/* Info */}
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{member.full_name}</Text>
+        <Text style={styles.name} numberOfLines={2}>{member.full_name}</Text>
         {member.job_title ? (
           <Text style={styles.jobTitle} numberOfLines={1}>{member.job_title}</Text>
         ) : null}
       </View>
-
-      <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
     </TouchableOpacity>
   );
 }
@@ -83,31 +85,33 @@ export default function TeamDepartmentScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      {isLoading && (
+        <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
+      )}
 
-        {isLoading && (
-          <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
-        )}
+      {isError && (
+        <View style={styles.empty}>
+          <Ionicons name="alert-circle-outline" size={48} color="#fca5a5" />
+          <Text style={styles.emptyText}>Failed to load team</Text>
+        </View>
+      )}
 
-        {isError && (
-          <View style={styles.empty}>
-            <Ionicons name="alert-circle-outline" size={48} color="#fca5a5" />
-            <Text style={styles.emptyText}>Failed to load team</Text>
-          </View>
-        )}
-
-        {!isLoading && !isError && members.length === 0 && (
-          <View style={styles.empty}>
-            <Ionicons name="people-outline" size={48} color="#cbd5e1" />
-            <Text style={styles.emptyText}>No team members found</Text>
-          </View>
-        )}
-
-        {members.map((member) => (
-          <MemberCard key={member.id} member={member} />
-        ))}
-
-      </ScrollView>
+      {!isLoading && !isError && (
+        <FlatList
+          data={members}
+          keyExtractor={(m) => m.id}
+          numColumns={COLUMNS}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.body}
+          renderItem={({ item }) => <MemberCard member={item} />}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="people-outline" size={48} color="#cbd5e1" />
+              <Text style={styles.emptyText}>No team members found</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -152,63 +156,63 @@ const styles = StyleSheet.create({
   },
 
   body: {
-    paddingHorizontal: 16,
+    paddingHorizontal: H_PADDING,
     paddingTop: 20,
     paddingBottom: 40,
-    gap: 10,
+    gap: CARD_GAP,
   },
 
+  row: {
+    gap: CARD_GAP,
+  },
+
+  // ── Grid card ──────────────────────────────────────────────────────────────
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: CARD_WIDTH,
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.07,
     shadowRadius: 6,
     elevation: 3,
   },
 
-  avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
+  photoWrap: {
+    width: '100%',
+    height: CARD_WIDTH,   // square photo
   },
-  avatar: {
-    width: 48,
-    height: 48,
+  photo: {
+    width: '100%',
+    height: '100%',
   },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  photoPlaceholder: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#ede9fe',
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
-    fontSize: 18,
+    fontSize: 32,
     fontWeight: '700',
     color: PURPLE,
   },
 
   info: {
-    flex: 1,
+    padding: 10,
+    gap: 2,
   },
   name: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1e293b',
+    lineHeight: 17,
   },
   jobTitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
-    marginTop: 2,
   },
 
   empty: {

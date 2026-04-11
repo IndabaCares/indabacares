@@ -38,7 +38,8 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
-        "android.permission.RECEIVE_BOOT_COMPLETED"
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -61,7 +62,8 @@
             "minSdkVersion": 24,
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "extraProguardRules": "-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.react.fabric.** { *; }\n-keep class com.swmansion.reanimated.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-dontwarn com.facebook.react.**\n-dontwarn okio.**\n-dontwarn okhttp3.**"
+            "extraProguardRules": "-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.react.fabric.** { *; }\n-keep class com.swmansion.reanimated.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-dontwarn com.facebook.react.**\n-dontwarn okio.**\n-dontwarn okhttp3.**",
+            "enableMinifyInReleaseBuilds": true
           }
         }
       ],
@@ -99,6 +101,12 @@
       "eas": {
         "projectId": "2769acb0-54c1-4935-9da1-864c41506d37"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2769acb0-54c1-4935-9da1-864c41506d37"
     }
   }
 }

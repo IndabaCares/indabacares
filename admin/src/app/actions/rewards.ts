@@ -42,11 +42,30 @@ export async function updateReward(id: string, raw: unknown) {
   revalidatePath('/rewards');
 }
 
-export async function deleteReward(id: string) {
-  employeeIdSchema.parse({ id });
+export async function deleteReward(id: string): Promise<{ error?: string }> {
+  try {
+    employeeIdSchema.parse({ id });
 
-  const db = createAdminClient();
-  const { error } = await db.from('rewards').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/rewards');
+    const db = createAdminClient();
+
+    // Block deletion if redemptions reference this reward (FK constraint).
+    const { count } = await db
+      .from('redemptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('reward_id', id);
+
+    if ((count ?? 0) > 0) {
+      return {
+        error: 'This reward has existing redemptions and cannot be deleted. Set stock to 0 to hide it instead.',
+      };
+    }
+
+    const { error } = await db.from('rewards').delete().eq('id', id);
+    if (error) return { error: error.message };
+
+    revalidatePath('/rewards');
+    return {};
+  } catch (err: any) {
+    return { error: err.message ?? 'Delete failed.' };
+  }
 }

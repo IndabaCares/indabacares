@@ -25,6 +25,8 @@ export async function createEmployee(fields: {
   department:    string | null;
   position:      string | null;
   email:         string | null;
+  date_of_birth: string | null;
+  start_date:    string | null;
 }) {
   const db = createAdminClient();
 
@@ -35,6 +37,8 @@ export async function createEmployee(fields: {
     department:    fields.department?.trim() || null,
     position:      fields.position?.trim()   || null,
     email:         fields.email?.trim().toLowerCase() || null,
+    date_of_birth: fields.date_of_birth || null,
+    start_date:    fields.start_date    || null,
     status:        'active',
   });
 
@@ -69,14 +73,27 @@ export async function deleteEmployee(id: string) {
   revalidatePath('/employees');
 }
 
+/** Reset an employee's password (clears hash + revokes sessions). */
+export async function resetEmployeePassword(id: string) {
+  const db = createAdminClient();
+
+  const { data, error } = await db.rpc('reset_employee_password', { p_id: id });
+
+  if (error) throw new Error(error.message);
+  if (!(data as any)?.ok) throw new Error((data as any)?.error ?? 'Reset failed.');
+  revalidatePath('/employees');
+}
+
 /** Update editable fields on an employee record. */
 export async function updateEmployee(
   id: string,
   fields: {
-    full_name:  string;
-    department: string | null;
-    position:   string | null;
-    email:      string | null;
+    full_name:     string;
+    department:    string | null;
+    position:      string | null;
+    email:         string | null;
+    date_of_birth: string | null;
+    start_date:    string | null;
   },
 ) {
   const db = createAdminClient();
@@ -84,10 +101,12 @@ export async function updateEmployee(
   const { error } = await db
     .from('employees')
     .update({
-      full_name:  fields.full_name.trim(),
-      department: fields.department?.trim() || null,
-      position:   fields.position?.trim()   || null,
-      email:      fields.email?.trim().toLowerCase() || null,
+      full_name:     fields.full_name.trim(),
+      department:    fields.department?.trim() || null,
+      position:      fields.position?.trim()   || null,
+      email:         fields.email?.trim().toLowerCase() || null,
+      date_of_birth: fields.date_of_birth || null,
+      start_date:    fields.start_date    || null,
     })
     .eq('id', id);
 

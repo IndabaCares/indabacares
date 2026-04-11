@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Modal } from 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { useSubmitMood } from '@/hooks/use-mood';
 import { RECOGNITION_BADGES, MOOD_MAP, type MoodValue } from '@/lib/constants';
 
 const MOOD_STORAGE_KEY = 'daily_mood';
@@ -65,6 +66,7 @@ const cb = StyleSheet.create({
 
 export function FeedHeader({ searchTerm, onSearchChange, activeFilter, onFilterChange }: FeedHeaderProps) {
   const { employee } = useEmployee();
+  const submitMood   = useSubmitMood();
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [filterOpen,    setFilterOpen]    = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -96,6 +98,7 @@ export function FeedHeader({ searchTerm, onSearchChange, activeFilter, onFilterC
     setMoodEmoji(emoji);
     AsyncStorage.setItem(MOOD_STORAGE_KEY, JSON.stringify({ date: today, emoji }));
     setPickerVisible(false);
+    submitMood.mutate({ mood: key });
   }
 
   function openSearch() {

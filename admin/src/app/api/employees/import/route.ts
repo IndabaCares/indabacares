@@ -236,10 +236,12 @@ export async function POST(req: NextRequest) {
     const { error } = await db
       .from('employees')
       .update({
-        full_name:  row.full_name,
-        department: row.raw.department?.trim() || null,
-        position:   row.raw.position?.trim()   || null,
-        email:      row.email,
+        full_name:     row.full_name,
+        department:    row.raw.department?.trim() || null,
+        position:      row.raw.position?.trim()   || null,
+        email:         row.email,
+        date_of_birth: row.date_of_birth ?? null,
+        start_date:    row.start_date    ?? null,
       })
       .eq('employee_code', row.employee_code)
       .eq('hotel', row.hotel);
@@ -267,6 +269,8 @@ function rowToPayload(row: ValidatedRow) {
     department:    row.raw.department?.trim() || null,
     position:      row.raw.position?.trim()   || null,
     email:         row.email,
+    date_of_birth: row.date_of_birth ?? null,
+    start_date:    row.start_date    ?? null,
     status:        'active',
   };
 }

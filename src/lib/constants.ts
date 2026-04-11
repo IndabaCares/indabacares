@@ -115,4 +115,5 @@ export const QUERY_KEYS = {
   recognitionReactions: (id: string) => ['recognition-reactions', id] as const,
   reactionBalance:     (employeeId: string) => ['reaction-balance',     employeeId] as const,
   recognitionBalance:  (employeeId: string) => ['recognition-balance',  employeeId] as const,
+  employeeProfile:     (employeeId: string) => ['employee-profile',     employeeId] as const,
 } as const;

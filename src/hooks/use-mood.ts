@@ -49,7 +49,9 @@ export function useSubmitMood() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.moodHistory });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
+      if (employee) {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.employeeProfile(employee.employee_id) });
+      }
       showToast({ type: 'success', message: `${data.message} (+${data.pointsEarned} pts)` });
     },
     onError: (error: Error) => {
