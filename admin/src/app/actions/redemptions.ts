@@ -18,7 +18,7 @@ export async function approveRedemption(id: string) {
     const { data: redemption } = await db
       .from('redemptions')
       .select(`
-        id, points_used, approved_at,
+        id, points_used, approved_at, hotel,
         employee:employees!employee_id ( full_name, email ),
         reward:rewards!reward_id       ( title, image_url, category, terms )
       `)
@@ -31,7 +31,7 @@ export async function approveRedemption(id: string) {
     if (reward?.category === 'hotel' && emp?.email) {
       const { subject, html } = buildVoucherEmail({
         employeeName:   emp.full_name,
-        hotelName:      redemption!.hotel ?? '',
+        hotelName:      (redemption as any)?.hotel ?? '',
         rewardTitle:    reward.title,
         rewardImageUrl: reward.image_url ?? null,
         voucherCode:    id,
