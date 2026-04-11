@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Filter, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Filter, Package, Hotel, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,8 @@ import {
 import { HOTELS } from '@/lib/hotels';
 import { createReward, updateReward, deleteReward } from '@/app/actions/rewards';
 
+type Category = 'hotel' | 'retail';
+
 interface Reward {
   id:              string;
   title:           string;
@@ -50,6 +52,8 @@ interface Reward {
   hotel:           string;
   stock:           number | null;
   image_url:       string | null;
+  category:        Category;
+  wicode:          string | null;
   created_at:      string;
 }
 
@@ -60,11 +64,109 @@ interface RewardForm {
   hotel:           string;
   stock:           string;
   image_url:       string;
+  wicode:          string;
 }
 
 const EMPTY: RewardForm = {
-  title: '', description: '', points_required: '', hotel: '', stock: '', image_url: '',
+  title: '', description: '', points_required: '', hotel: '', stock: '', image_url: '', wicode: '',
 };
+
+// ── Tab button ─────────────────────────────────────────────────────────────────
+
+function TabBtn({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  count,
+}: {
+  active:  boolean;
+  onClick: () => void;
+  icon:    React.ElementType;
+  label:   string;
+  count:   number;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+        active
+          ? 'bg-violet-700 text-white shadow'
+          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+      <span className={`rounded-full px-1.5 py-0.5 text-xs ${active ? 'bg-white/20' : 'bg-background'}`}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+// ── Reward card ────────────────────────────────────────────────────────────────
+
+function RewardCard({
+  r,
+  category,
+  onEdit,
+  onDelete,
+}: {
+  r:        Reward;
+  category: Category;
+  onEdit:   (r: Reward) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base leading-snug">{r.title}</CardTitle>
+          <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
+            {r.points_required} pts
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">{r.hotel}</p>
+      </CardHeader>
+
+      <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
+        <p>{r.description ?? <span className="italic opacity-50">No description</span>}</p>
+        {category === 'retail' && r.wicode && (
+          <div className="flex items-center gap-1.5 rounded-md border border-dashed border-violet-300 bg-violet-50 px-2 py-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-violet-500">WiCode</span>
+            <span className="font-mono text-xs font-bold text-violet-800">{r.wicode}</span>
+          </div>
+        )}
+        {category === 'retail' && !r.wicode && (
+          <div className="flex items-center gap-1.5 rounded-md border border-dashed border-amber-300 bg-amber-50 px-2 py-1">
+            <span className="text-[10px] font-semibold text-amber-600">⚠ WiCode not set</span>
+          </div>
+        )}
+      </CardContent>
+
+      <CardFooter className="flex items-center justify-between border-t pt-3">
+        <span className="text-xs text-muted-foreground">
+          Stock: {r.stock != null ? r.stock : '∞'}
+        </span>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(r)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(r.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 
 export function RewardsClient({
   rewards,
@@ -75,10 +177,15 @@ export function RewardsClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [form, setForm]       = useState<RewardForm>(EMPTY);
-  const [editId, setEditId]   = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen]   = useState(false);
-  const [deleteId, setDeleteId]       = useState<string | null>(null);
+  const [activeTab,   setActiveTab]  = useState<Category>('hotel');
+  const [form,        setForm]       = useState<RewardForm>(EMPTY);
+  const [editId,      setEditId]     = useState<string | null>(null);
+  const [dialogOpen,  setDialogOpen] = useState(false);
+  const [deleteId,    setDeleteId]   = useState<string | null>(null);
+
+  const hotelRewards     = rewards.filter((r) => r.category === 'hotel');
+  const retailRewards    = rewards.filter((r) => r.category === 'retail');
+  const displayedRewards = activeTab === 'hotel' ? hotelRewards : retailRewards;
 
   function handleHotelFilter(val: string) {
     const url = new URLSearchParams();
@@ -100,6 +207,7 @@ export function RewardsClient({
       hotel:           r.hotel,
       stock:           r.stock != null ? String(r.stock) : '',
       image_url:       r.image_url ?? '',
+      wicode:          r.wicode    ?? '',
     });
     setEditId(r.id);
     setDialogOpen(true);
@@ -111,12 +219,14 @@ export function RewardsClient({
       description:     form.description.trim() || undefined,
       points_required: Number(form.points_required),
       hotel:           form.hotel,
-      stock:           form.stock !== '' ? Number(form.stock) : null,
+      stock:           form.stock !== '' ? Number(form.stock) : undefined,
       image_url:       form.image_url.trim() || undefined,
+      category:        activeTab,
+      wicode:          form.wicode.trim() || undefined,
     };
 
     if (!payload.title || !payload.hotel || !payload.points_required) {
-      toast.error('Title, hotel, and points required are mandatory.');
+      toast.error('Title, hotel, and points are required.');
       return;
     }
 
@@ -151,8 +261,27 @@ export function RewardsClient({
 
   return (
     <>
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
+      {/* Tabs + toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-2">
+          <TabBtn
+            active={activeTab === 'hotel'}
+            onClick={() => setActiveTab('hotel')}
+            icon={Hotel}
+            label="Hotel Rewards"
+            count={hotelRewards.length}
+          />
+          <TabBtn
+            active={activeTab === 'retail'}
+            onClick={() => setActiveTab('retail')}
+            icon={ShoppingBag}
+            label="Marketplace"
+            count={retailRewards.length}
+          />
+        </div>
+
+        <div className="flex-1" />
+
         <Select value={selectedHotel ?? 'all'} onValueChange={handleHotelFilter}>
           <SelectTrigger className="w-52">
             <Filter className="mr-2 h-4 w-4" />
@@ -166,58 +295,29 @@ export function RewardsClient({
           </SelectContent>
         </Select>
 
-        <div className="flex-1" />
-
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          New Reward
+          New {activeTab === 'hotel' ? 'Hotel Reward' : 'Marketplace Reward'}
         </Button>
       </div>
 
       {/* Grid */}
-      {rewards.length === 0 ? (
+      {displayedRewards.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20 text-muted-foreground">
           <Package className="mb-3 h-10 w-10 opacity-40" />
-          <p className="font-medium">No rewards yet</p>
-          <p className="text-sm">Create your first reward to get started.</p>
+          <p className="font-medium">No {activeTab === 'hotel' ? 'hotel rewards' : 'marketplace rewards'} yet</p>
+          <p className="text-sm">Click "New {activeTab === 'hotel' ? 'Hotel Reward' : 'Marketplace Reward'}" to get started.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {rewards.map((r) => (
-            <Card key={r.id} className="flex flex-col">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base leading-snug">{r.title}</CardTitle>
-                  <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
-                    {r.points_required} pts
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{r.hotel}</p>
-              </CardHeader>
-
-              <CardContent className="flex-1 text-sm text-muted-foreground">
-                {r.description ?? <span className="italic opacity-50">No description</span>}
-              </CardContent>
-
-              <CardFooter className="flex items-center justify-between border-t pt-3">
-                <span className="text-xs text-muted-foreground">
-                  Stock: {r.stock != null ? r.stock : '∞'}
-                </span>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => setDeleteId(r.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
+          {displayedRewards.map((r) => (
+            <RewardCard
+              key={r.id}
+              r={r}
+              category={activeTab}
+              onEdit={openEdit}
+              onDelete={setDeleteId}
+            />
           ))}
         </div>
       )}
@@ -226,7 +326,9 @@ export function RewardsClient({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Edit Reward' : 'New Reward'}</DialogTitle>
+            <DialogTitle>
+              {editId ? 'Edit' : 'New'} {activeTab === 'hotel' ? 'Hotel Reward' : 'Marketplace Reward'}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -235,7 +337,7 @@ export function RewardsClient({
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Weekend spa voucher"
+                placeholder={activeTab === 'hotel' ? 'Weekend spa voucher' : 'R100 Woolworths voucher'}
               />
             </div>
 
@@ -294,6 +396,21 @@ export function RewardsClient({
                 placeholder="https://…"
               />
             </div>
+
+            {activeTab === 'retail' && (
+              <div className="space-y-1">
+                <Label>WiCode</Label>
+                <Input
+                  value={form.wicode}
+                  onChange={(e) => setForm({ ...form, wicode: e.target.value })}
+                  placeholder="Enter WiCode…"
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The WiCode used to redeem this marketplace reward at point of sale.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

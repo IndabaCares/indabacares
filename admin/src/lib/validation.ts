@@ -60,6 +60,8 @@ export const rewardSchema = z.object({
     .url('Image URL must be a valid URL.')
     .optional()
     .or(z.literal('')),
+  category:        z.enum(['hotel', 'retail']).default('hotel'),
+  wicode:          z.string().trim().optional().or(z.literal('')),
 });
 
 export type RewardInput = z.infer<typeof rewardSchema>;

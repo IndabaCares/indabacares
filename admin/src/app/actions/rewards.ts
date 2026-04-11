@@ -16,6 +16,8 @@ export async function createReward(raw: unknown) {
     hotel:           payload.hotel,
     stock:           payload.stock ?? null,
     image_url:       payload.image_url || null,
+    category:        payload.category ?? 'hotel',
+    wicode:          payload.wicode   || null,
   });
   if (error) throw new Error(error.message);
   revalidatePath('/rewards');
@@ -33,6 +35,8 @@ export async function updateReward(id: string, raw: unknown) {
     hotel:           payload.hotel,
     stock:           payload.stock ?? null,
     image_url:       payload.image_url || null,
+    category:        payload.category ?? 'hotel',
+    wicode:          payload.wicode   || null,
   }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/rewards');
