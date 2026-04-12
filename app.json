@@ -4,7 +4,7 @@
     "slug": "indabacares",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/usedlogo.png",
     "scheme": "indabacares",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -27,8 +27,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7C3AED"
+        "foregroundImage": "./assets/usedlogo.png",
+        "backgroundColor": "#ffffff"
       },
       "package": "com.indabacares.app",
       "googleServicesFile": "./google-services.json",
