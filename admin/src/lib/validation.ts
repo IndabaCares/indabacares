@@ -53,7 +53,7 @@ export const rewardSchema = z.object({
   title:           trimmedText(2, 120, 'Title'),
   description:     z.string().transform((s) => s.trim()).optional(),
   points_required: z.number().int().min(1, 'Points required must be at least 1.').max(100_000),
-  hotel,
+  hotels:          z.array(hotel).min(1, 'Select at least one hotel.'),
   stock:           z.number().int().min(0, 'Stock cannot be negative.').optional(),
   image_url:       z
     .string()

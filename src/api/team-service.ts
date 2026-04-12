@@ -1,12 +1,13 @@
 import { supabase } from '@/lib/supabase';
 
 export interface TeamMember {
-  id:          string;
-  full_name:   string;
-  job_title:   string | null;
-  department:  string | null;
-  photo_url:   string | null;
-  employee_code: string;
+  id:             string;
+  full_name:      string;
+  job_title:      string | null;
+  department:     string | null;
+  photo_url:      string | null;
+  employee_code:  string;
+  points_balance: number;
 }
 
 /**
@@ -15,7 +16,7 @@ export interface TeamMember {
 export async function getTeamByDepartment(hotel: string, department: string): Promise<TeamMember[]> {
   const { data, error } = await supabase
     .from('employees')
-    .select('id, full_name, job_title, department, photo_url, employee_code')
+    .select('id, full_name, job_title, department, photo_url, employee_code, points_balance')
     .eq('hotel', hotel)
     .eq('department', department)
     .eq('status', 'active')

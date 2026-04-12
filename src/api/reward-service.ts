@@ -86,11 +86,10 @@ export interface AdminActionResult {
  * Fetch all rewards for a hotel, newest first.
  * Includes out-of-stock items so employees see the full catalogue.
  */
-export async function getRewards(hotel: string): Promise<Reward[]> {
+export async function getRewards(_hotel: string): Promise<Reward[]> {
   const { data, error } = await supabase
     .from('rewards')
     .select('id, title, description, points_required, image_url, hotel, stock, category, terms, created_at')
-    .eq('hotel', hotel)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);

@@ -8,7 +8,7 @@ async function getRewards(hotel?: string) {
   const db = createAdminClient();
   let q = db
     .from('rewards')
-    .select('id, title, description, points_required, hotel, stock, image_url, category, wicode, created_at')
+    .select('id, title, description, points_required, hotel, hotels, stock, image_url, category, wicode, created_at')
     .order('hotel')
     .order('points_required');
 

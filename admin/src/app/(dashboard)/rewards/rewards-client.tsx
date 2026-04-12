@@ -50,6 +50,7 @@ interface Reward {
   description:     string | null;
   points_required: number;
   hotel:           string;
+  hotels:          string[];
   stock:           number | null;
   image_url:       string | null;
   category:        Category;
@@ -61,14 +62,14 @@ interface RewardForm {
   title:           string;
   description:     string;
   points_required: string;
-  hotel:           string;
+  hotels:          string[];
   stock:           string;
   image_url:       string;
   wicode:          string;
 }
 
 const EMPTY: RewardForm = {
-  title: '', description: '', points_required: '', hotel: '', stock: '', image_url: '', wicode: '',
+  title: '', description: '', points_required: '', hotels: [], stock: '', image_url: '', wicode: '',
 };
 
 // ── Tab button ─────────────────────────────────────────────────────────────────
@@ -126,7 +127,9 @@ function RewardCard({
             {r.points_required} pts
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">{r.hotel}</p>
+        <p className="text-xs text-muted-foreground">
+          {(r.hotels?.length ? r.hotels : [r.hotel]).join(' · ')}
+        </p>
       </CardHeader>
 
       <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
@@ -194,7 +197,7 @@ export function RewardsClient({
   }
 
   function openCreate() {
-    setForm({ ...EMPTY, hotel: selectedHotel ?? '' });
+    setForm({ ...EMPTY, hotels: selectedHotel ? [selectedHotel] : [] });
     setEditId(null);
     setDialogOpen(true);
   }
@@ -204,7 +207,7 @@ export function RewardsClient({
       title:           r.title,
       description:     r.description ?? '',
       points_required: String(r.points_required),
-      hotel:           r.hotel,
+      hotels:          r.hotels?.length ? r.hotels : [r.hotel],
       stock:           r.stock != null ? String(r.stock) : '',
       image_url:       r.image_url ?? '',
       wicode:          r.wicode    ?? '',
@@ -218,15 +221,15 @@ export function RewardsClient({
       title:           form.title.trim(),
       description:     form.description.trim() || undefined,
       points_required: Number(form.points_required),
-      hotel:           form.hotel,
+      hotels:          form.hotels,
       stock:           form.stock !== '' ? Number(form.stock) : undefined,
       image_url:       form.image_url.trim() || undefined,
       category:        activeTab,
       wicode:          form.wicode.trim() || undefined,
     };
 
-    if (!payload.title || !payload.hotel || !payload.points_required) {
-      toast.error('Title, hotel, and points are required.');
+    if (!payload.title || !payload.hotels.length || !payload.points_required) {
+      toast.error('Title, at least one hotel, and points are required.');
       return;
     }
 
@@ -375,17 +378,33 @@ export function RewardsClient({
             </div>
 
             <div className="space-y-1">
-              <Label>Hotel *</Label>
-              <Select value={form.hotel} onValueChange={(v) => setForm({ ...form, hotel: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select hotel…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {HOTELS.map((h) => (
-                    <SelectItem key={h} value={h}>{h}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Hotels * <span className="text-muted-foreground font-normal">(select all that apply)</span></Label>
+              <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
+                {HOTELS.map((h) => {
+                  const checked = form.hotels.includes(h);
+                  return (
+                    <label key={h} className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setForm({
+                            ...form,
+                            hotels: checked
+                              ? form.hotels.filter((x) => x !== h)
+                              : [...form.hotels, h],
+                          })
+                        }
+                        className="h-4 w-4 rounded border-gray-300 accent-violet-700"
+                      />
+                      <span className="text-sm">{h}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {form.hotels.length === 0 && (
+                <p className="text-xs text-destructive">Select at least one hotel.</p>
+              )}
             </div>
 
             <div className="space-y-1">

@@ -27,11 +27,7 @@ function MemberCard({ member }: { member: TeamMember }) {
     .slice(0, 2);
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
-      style={styles.card}
-      onPress={() => router.push(`/(screens)/user/${member.id}` as any)}
-    >
+    <View style={styles.card}>
       {/* Photo */}
       <View style={styles.photoWrap}>
         {member.photo_url ? (
@@ -53,8 +49,12 @@ function MemberCard({ member }: { member: TeamMember }) {
         {member.job_title ? (
           <Text style={styles.jobTitle} numberOfLines={1}>{member.job_title}</Text>
         ) : null}
+        <View style={styles.pointsRow}>
+          <Ionicons name="star" size={11} color="#f59e0b" />
+          <Text style={styles.points}>{member.points_balance.toLocaleString()} pts</Text>
+        </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -213,6 +213,17 @@ const styles = StyleSheet.create({
   jobTitle: {
     fontSize: 11,
     color: '#64748b',
+  },
+  pointsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  points: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#f59e0b',
   },
 
   empty: {
