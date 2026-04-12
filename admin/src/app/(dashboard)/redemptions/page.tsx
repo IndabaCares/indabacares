@@ -31,7 +31,24 @@ export default async function RedemptionsPage({
   searchParams: Promise<{ hotel?: string; status?: string }>;
 }) {
   const { hotel, status } = await searchParams;
-  const redemptions = await getRedemptions(hotel, status);
+
+  let redemptions: any[] = [];
+  let debugError: string | null = null;
+
+  try {
+    redemptions = await getRedemptions(hotel, status);
+  } catch (err: any) {
+    debugError = err?.message ?? String(err);
+  }
+
+  if (debugError) {
+    return (
+      <div className="p-8 space-y-2">
+        <h2 className="text-lg font-semibold text-red-600">Redemptions query failed</h2>
+        <pre className="rounded bg-red-50 p-4 text-sm text-red-800 whitespace-pre-wrap">{debugError}</pre>
+      </div>
+    );
+  }
 
   const counts = {
     pending:   redemptions.filter((r: any) => r.status === 'pending').length,

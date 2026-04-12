@@ -24,6 +24,15 @@ import { useRecognitionBalance, MONTHLY_RECOGNITION_LIMIT } from '@/hooks/use-re
 import { useUserBadges } from '@/hooks/use-user-badges';
 import { QUERY_KEYS } from '@/lib/constants';
 
+// ─── Hotel background images ──────────────────────────────────────────────────
+
+const HOTEL_BACKGROUNDS: Record<string, ReturnType<typeof require>> = {
+  'Indaba Hotel':                  require('../../assets/Indaba-long.jpg'),
+  'Indaba Lodge Gaborone':         require('../../assets/ILG.jpg'),
+  'Indaba Lodge Richards Bay':     require('../../assets/ILRB.jpg'),
+};
+const DEFAULT_BG = require('../../assets/Indaba-long.jpg');
+
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
 const PURPLE     = '#7B1FA2';
@@ -202,7 +211,7 @@ export default function ProfileScreen() {
 
         {/* ── Image header card ───────────────────────────────────────────── */}
         <ImageBackground
-          source={require('../../assets/Indaba-long.jpg')}
+          source={HOTEL_BACKGROUNDS[employee.hotel] ?? DEFAULT_BG}
           style={styles.header}
           resizeMode="cover"
         >
