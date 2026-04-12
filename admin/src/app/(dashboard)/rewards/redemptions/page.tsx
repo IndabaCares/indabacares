@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRedemptions, useManageRedemption } from '@/hooks/use-rewards';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/data-table/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -14,39 +13,110 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, CheckCircle, XCircle, Package, Truck, CircleCheck, Loader2 } from 'lucide-react';
-import { REDEMPTION_STATUS } from '@/lib/constants';
+import { CheckCircle, XCircle, CircleCheck } from 'lucide-react';
 import { formatDateTime, getInitials } from '@/lib/utils';
-import { exportRedemptions } from '@/api/export';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { RedemptionAction } from '@/types/api';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface RedemptionRow {
-  id: string; star_cost: number; status: string; admin_note: string | null;
-  created_at: string; updated_at: string;
-  user: { id: string; full_name: string; email: string; avatar_url: string | null } | null;
-  reward: { id: string; name: string; image_url: string | null; star_cost: number } | null;
-  processor: { id: string; full_name: string } | null;
+  id:               string;
+  points_used:      number;
+  status:           string;
+  hotel:            string;
+  rejection_reason: string | null;
+  created_at:       string;
+  approved_at:      string | null;
+  rejected_at:      string | null;
+  fulfilled_at:     string | null;
+  employee: { id: string; full_name: string; photo_url: string | null; employee_code: string } | null;
+  reward:   { id: string; title: string; image_url: string | null; points_required: number } | null;
 }
 
-const STATUS_TABS = ['all', 'pending', 'approved', 'in_preparation', 'shipped', 'fulfilled', 'rejected'];
+// ── Status config ─────────────────────────────────────────────────────────────
 
-const ACTION_MAP: Record<string, { actions: { action: RedemptionAction; label: string; icon: React.ElementType; variant: 'default' | 'destructive' }[] }> = {
-  pending: { actions: [{ action: 'approve', label: 'Approve', icon: CheckCircle, variant: 'default' }, { action: 'reject', label: 'Reject', icon: XCircle, variant: 'destructive' }] },
-  approved: { actions: [{ action: 'prepare', label: 'Prepare', icon: Package, variant: 'default' }] },
-  in_preparation: { actions: [{ action: 'ship', label: 'Ship', icon: Truck, variant: 'default' }] },
-  shipped: { actions: [{ action: 'fulfill', label: 'Fulfill', icon: CircleCheck, variant: 'default' }] },
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  all:       { label: 'All',       color: '' },
+  pending:   { label: 'Pending',   color: 'bg-amber-100 text-amber-800 border-amber-200' },
+  approved:  { label: 'Approved',  color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  fulfilled: { label: 'Fulfilled', color: 'bg-green-100 text-green-800 border-green-200' },
+  rejected:  { label: 'Rejected',  color: 'bg-red-100 text-red-800 border-red-200' },
 };
 
-export default function RedemptionsPage() {
-  const [status, setStatus] = useState('pending');
-  const [page, setPage] = useState(0);
-  const [rejectId, setRejectId] = useState<string | null>(null);
-  const [rejectNote, setRejectNote] = useState('');
-  const { data, isLoading } = useRedemptions({ status, page });
-  const manage = useManageRedemption();
+const STATUS_TABS = ['all', 'pending', 'approved', 'fulfilled', 'rejected'];
 
-  function handleAction(id: string, action: RedemptionAction) {
+const PAGE_SIZE = 20;
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
+
+async function fetchRedemptions(status: string, page: number) {
+  const db   = createAdminClient();
+  const from = page * PAGE_SIZE;
+  const to   = from + PAGE_SIZE - 1;
+
+  let q = db
+    .from('redemptions')
+    .select(
+      `id, points_used, status, rejection_reason, hotel, created_at, approved_at, rejected_at, fulfilled_at,
+       employee:employees!employee_id ( id, full_name, photo_url, employee_code ),
+       reward:rewards!reward_id ( id, title, image_url, points_required )`,
+      { count: 'exact' },
+    )
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (status !== 'all') q = q.eq('status', status);
+
+  const { data, error, count } = await q;
+  if (error) throw new Error(error.message);
+  return { redemptions: (data ?? []) as unknown as RedemptionRow[], total: count ?? 0 };
+}
+
+async function performAction(id: string, action: 'approve' | 'reject' | 'fulfill', reason?: string) {
+  const db = createAdminClient();
+
+  if (action === 'approve') {
+    const { error } = await db.rpc('approve_redemption', { p_redemption_id: id });
+    if (error) throw new Error(error.message);
+  } else if (action === 'fulfill') {
+    const { error } = await db.rpc('fulfill_redemption', { p_redemption_id: id });
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await db.rpc('reject_redemption', {
+      p_redemption_id: id,
+      p_reason:        reason ?? null,
+    });
+    if (error) throw new Error(error.message);
+  }
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function RedemptionsPage() {
+  const qc = useQueryClient();
+  const [status,    setStatus]    = useState('pending');
+  const [page,      setPage]      = useState(0);
+  const [rejectId,  setRejectId]  = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-redemptions', status, page],
+    queryFn:  () => fetchRedemptions(status, page),
+  });
+
+  const manage = useMutation({
+    mutationFn: ({ id, action, reason }: { id: string; action: 'approve' | 'reject' | 'fulfill'; reason?: string }) =>
+      performAction(id, action, reason),
+    onSuccess: () => {
+      toast.success('Redemption updated');
+      qc.invalidateQueries({ queryKey: ['admin-redemptions'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  function handleAction(id: string, action: 'approve' | 'reject' | 'fulfill') {
     if (action === 'reject') {
       setRejectId(id);
       setRejectNote('');
@@ -57,55 +127,162 @@ export default function RedemptionsPage() {
 
   function confirmReject() {
     if (!rejectId) return;
-    manage.mutate({ id: rejectId, action: 'reject', note: rejectNote }, { onSuccess: () => setRejectId(null) });
+    manage.mutate(
+      { id: rejectId, action: 'reject', reason: rejectNote },
+      { onSuccess: () => setRejectId(null) },
+    );
   }
 
   const columns: ColumnDef<RedemptionRow, unknown>[] = [
-    { accessorKey: 'user', header: 'User', cell: ({ row }) => {
-      const u = row.original.user;
-      return u ? <div className="flex items-center gap-2"><Avatar className="h-7 w-7"><AvatarImage src={u.avatar_url ?? undefined} /><AvatarFallback className="text-xs">{getInitials(u.full_name)}</AvatarFallback></Avatar><span className="text-sm">{u.full_name}</span></div> : '—';
-    }},
-    { accessorKey: 'reward', header: 'Reward', cell: ({ row }) => <span className="text-sm font-medium">{row.original.reward?.name ?? '—'}</span> },
-    { accessorKey: 'star_cost', header: 'Stars', cell: ({ row }) => <Badge variant="secondary">{row.original.star_cost}</Badge> },
-    { accessorKey: 'status', header: 'Status', cell: ({ row }) => {
-      const s = REDEMPTION_STATUS[row.original.status];
-      return <Badge className={s?.color}>{s?.label ?? row.original.status}</Badge>;
-    }},
-    { accessorKey: 'created_at', header: 'Requested', cell: ({ row }) => <span className="text-xs text-muted-foreground">{formatDateTime(row.original.created_at)}</span> },
-    { accessorKey: 'processor', header: 'Processed By', cell: ({ row }) => <span className="text-sm">{row.original.processor?.full_name ?? '—'}</span> },
-    { id: 'actions', cell: ({ row }) => {
-      const acts = ACTION_MAP[row.original.status];
-      if (!acts) return null;
-      return <div className="flex items-center gap-1">{acts.actions.map((a) => {
-        const Icon = a.icon;
-        return <Button key={a.action} variant={a.variant === 'destructive' ? 'destructive' : 'outline'} size="sm" onClick={() => handleAction(row.original.id, a.action)} disabled={manage.isPending}>
-          {manage.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Icon className="mr-1 h-3 w-3" />}{a.label}
-        </Button>;
-      })}</div>;
-    }},
+    {
+      accessorKey: 'employee',
+      header: 'Employee',
+      cell: ({ row }) => {
+        const e = row.original.employee;
+        return e ? (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={e.photo_url ?? undefined} />
+              <AvatarFallback className="text-xs">{getInitials(e.full_name)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium leading-none">{e.full_name}</p>
+              <p className="text-xs text-muted-foreground">{e.employee_code}</p>
+            </div>
+          </div>
+        ) : '—';
+      },
+    },
+    {
+      accessorKey: 'reward',
+      header: 'Reward',
+      cell: ({ row }) => (
+        <span className="text-sm font-medium">{row.original.reward?.title ?? '—'}</span>
+      ),
+    },
+    {
+      accessorKey: 'points_used',
+      header: 'Points',
+      cell: ({ row }) => (
+        <Badge variant="secondary">{row.original.points_used} pts</Badge>
+      ),
+    },
+    {
+      accessorKey: 'hotel',
+      header: 'Hotel',
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{row.original.hotel}</span>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => {
+        const meta = STATUS_META[row.original.status];
+        return (
+          <Badge className={meta?.color ?? ''} variant="outline">
+            {meta?.label ?? row.original.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'created_at',
+      header: 'Requested',
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{formatDateTime(row.original.created_at)}</span>
+      ),
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <div className="flex items-center gap-1">
+            {s === 'pending' && (
+              <>
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => handleAction(row.original.id, 'approve')}
+                  disabled={manage.isPending}
+                >
+                  <CheckCircle className="mr-1 h-3 w-3" />Approve
+                </Button>
+                <Button
+                  variant="destructive" size="sm"
+                  onClick={() => handleAction(row.original.id, 'reject')}
+                  disabled={manage.isPending}
+                >
+                  <XCircle className="mr-1 h-3 w-3" />Reject
+                </Button>
+              </>
+            )}
+            {s === 'approved' && (
+              <Button
+                variant="outline" size="sm"
+                onClick={() => handleAction(row.original.id, 'fulfill')}
+                disabled={manage.isPending}
+              >
+                <CircleCheck className="mr-1 h-3 w-3" />Fulfill
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   return (
-    <div>
-      <PageHeader title="Redemption Queue" description="Manage reward redemption orders"
-        actions={<Button variant="outline" size="sm" onClick={() => data?.redemptions && exportRedemptions(data.redemptions)} disabled={!data?.redemptions?.length}><Download className="mr-2 h-4 w-4" />Export</Button>} />
+    <div className="space-y-4">
+      <PageHeader
+        title="Redemption Queue"
+        description="Review and process employee reward redemptions"
+      />
 
-      <Tabs value={status} onValueChange={(v) => { setStatus(v); setPage(0); }} className="mb-4">
-        <TabsList>{STATUS_TABS.map((s) => <TabsTrigger key={s} value={s} className="capitalize">{REDEMPTION_STATUS[s]?.label ?? 'All'}</TabsTrigger>)}</TabsList>
+      <Tabs value={status} onValueChange={(v) => { setStatus(v); setPage(0); }}>
+        <TabsList>
+          {STATUS_TABS.map((s) => (
+            <TabsTrigger key={s} value={s} className="capitalize">
+              {STATUS_META[s]?.label ?? s}
+            </TabsTrigger>
+          ))}
+        </TabsList>
       </Tabs>
 
-      <DataTable columns={columns} data={data?.redemptions ?? []} totalCount={data?.total ?? 0} page={page} onPageChange={setPage} isLoading={isLoading} emptyMessage="No redemptions found." />
+      <DataTable
+        columns={columns}
+        data={data?.redemptions ?? []}
+        totalCount={data?.total ?? 0}
+        page={page}
+        onPageChange={setPage}
+        isLoading={isLoading}
+        emptyMessage="No redemptions found."
+      />
 
+      {/* Reject dialog */}
       <Dialog open={!!rejectId} onOpenChange={(v) => !v && setRejectId(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Reject Redemption</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Reject Redemption</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-4">
-            <div><Label>Reason (required)</Label><Textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} placeholder="Explain why this is being rejected..." /></div>
+            <div>
+              <Label>Reason (optional)</Label>
+              <Textarea
+                value={rejectNote}
+                onChange={(e) => setRejectNote(e.target.value)}
+                placeholder="Explain why this is being rejected…"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmReject} disabled={!rejectNote.trim() || manage.isPending}>
-              {manage.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Reject & Refund
+            <Button
+              variant="destructive"
+              onClick={confirmReject}
+              disabled={manage.isPending}
+            >
+              Reject &amp; Refund Points
             </Button>
           </DialogFooter>
         </DialogContent>

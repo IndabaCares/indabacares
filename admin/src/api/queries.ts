@@ -171,10 +171,9 @@ export function redemptionsAdminQuery(params: {
   let query = supabase()
     .from('redemptions')
     .select(
-      `id, star_cost, status, admin_note, delivery_info, shipping_address, cancelled_at, created_at, updated_at,
-       user:profiles!user_id ( id, full_name, email, avatar_url ),
-       reward:rewards!reward_id ( id, name, image_url, star_cost, reward_type, fulfillment_instructions ),
-       processor:profiles!processed_by ( id, full_name )`,
+      `id, points_used, status, rejection_reason, hotel, created_at, approved_at, rejected_at, fulfilled_at,
+       employee:employees!employee_id ( id, full_name, photo_url, employee_code ),
+       reward:rewards!reward_id ( id, title, image_url, points_required )`,
       { count: 'exact' }
     )
     .order('created_at', { ascending: false })
