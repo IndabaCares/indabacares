@@ -10,9 +10,11 @@ export interface CelebrationFeedItem {
   celebrated_on: string;
   created_at:   string;
   employee: {
-    id:        string;
-    full_name: string;
-    hotel:     string;
+    id:         string;
+    full_name:  string;
+    hotel:      string;
+    department: string | null;
+    position:   string | null;
   };
 }
 
@@ -34,7 +36,7 @@ export function useCelebrations(hotel: string) {
           milestone,
           celebrated_on,
           created_at,
-          employee:employees!employee_id ( id, full_name, hotel )
+          employee:employees!employee_id ( id, full_name, hotel, department, position )
         `)
         .eq('celebrated_on', today)
         .eq('hotel', hotel)
@@ -49,7 +51,13 @@ export function useCelebrations(hotel: string) {
         milestone:     row.milestone,
         celebrated_on: row.celebrated_on,
         created_at:    row.created_at,
-        employee:      row.employee,
+        employee: {
+          id:         row.employee.id,
+          full_name:  row.employee.full_name,
+          hotel:      row.employee.hotel,
+          department: row.employee.department ?? null,
+          position:   row.employee.position   ?? null,
+        },
       }));
     },
     enabled:   !!employee,
