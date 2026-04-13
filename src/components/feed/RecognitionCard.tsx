@@ -149,7 +149,7 @@ const s = StyleSheet.create({
   // Logo
   logo: {
     position: 'absolute',
-    top: 12,
+    bottom: 12,
     right: 12,
     width: 34,
     height: 34,
@@ -161,6 +161,7 @@ const s = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     marginBottom: 14,
+    paddingRight: 0,
   },
 
   // Receiver — hero header
