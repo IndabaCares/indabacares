@@ -135,8 +135,8 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
           </TouchableOpacity>
         )}
 
-        {/* Thumbs up: all celebration cards */}
-        <TouchableOpacity
+        {/* Thumbs up: milestone only */}
+        {!isBirthday && <TouchableOpacity
           onPress={handleThumb}
           disabled={toggleThumb.isPending}
           style={s.heartBtn}
@@ -146,7 +146,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
           {thumbCount > 0 && (
             <Text style={s.thumbCount}>{thumbCount}</Text>
           )}
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
 
     </LinearGradient>
