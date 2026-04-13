@@ -66,7 +66,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
             <View style={s.divider} />
             <View style={s.cardBottom}>
               <View style={s.cardTitleRow}>
-                <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
                 <View style={s.pill}>
                   <Ionicons name="cash-outline" size={9} color="#16a34a" />
                   <Text style={[s.pillTxt, { color: '#16a34a' }]}> {item.points_required}</Text>
@@ -97,7 +97,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
                 </>
               ) : (
                 <View style={s.cardTitleRow}>
-                  <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
                   <View style={s.pill}>
                     <Ionicons name="cash-outline" size={9} color="#16a34a" />
                     <Text style={[s.pillTxt, { color: '#16a34a' }]}> {item.points_required}</Text>
@@ -425,7 +425,7 @@ const s = StyleSheet.create({
   hotelLogoText: { fontSize: 9, fontWeight: '800', color: '#7B1FA2', letterSpacing: 1, marginRight: 4 },
   divider:       { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 8 },
   cardBottom:    { paddingLeft: 8, paddingRight: 38, paddingTop: 4, paddingBottom: 8 },
-  cardTitleRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 3 },
+  cardTitleRow:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, marginBottom: 3 },
   cardPillRow:   { flexDirection: 'row', justifyContent: 'flex-end' },
   cardTitle:     { fontSize: 11, fontWeight: '700', color: '#1e1b4b', lineHeight: 15, flex: 1 },
   canAfford:     { fontSize: 9, fontWeight: '700', color: '#16a34a', textAlign: 'center', paddingBottom: 4 },
