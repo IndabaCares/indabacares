@@ -118,9 +118,9 @@ export const RecognitionCard = memo(function RecognitionCard({
         ) : (
           <>
             <TouchableOpacity
-              style={[s.respondBtn, !isRecipient && s.respondBtnDisabled]}
-              onPress={() => isRecipient && setShowResponseMenu((v) => !v)}
-              activeOpacity={isRecipient ? 0.7 : 1}
+              style={s.respondBtn} // TODO: restore [s.respondBtn, !isRecipient && s.respondBtnDisabled]
+              onPress={() => setShowResponseMenu((v) => !v)}
+              activeOpacity={0.7}
             >
               <Text style={s.respondBtnText}>
                 {showResponseMenu ? 'Cancel' : 'Respond'}
