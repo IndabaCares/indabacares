@@ -3,7 +3,8 @@ import { supabase } from '@/lib/supabase';
 export interface TeamMember {
   id:             string;
   full_name:      string;
-  job_title:      string | null;
+  job_title:      string | null;  // legacy column
+  position:       string | null;  // admin-portal field
   department:     string | null;
   photo_url:      string | null;
   employee_code:  string;
@@ -16,7 +17,7 @@ export interface TeamMember {
 export async function getTeamByDepartment(hotel: string, department: string): Promise<TeamMember[]> {
   const { data, error } = await supabase
     .from('employees')
-    .select('id, full_name, job_title, department, photo_url, employee_code, points_balance')
+    .select('id, full_name, job_title, position, department, photo_url, employee_code, points_balance')
     .eq('hotel', hotel)
     .eq('department', department)
     .eq('status', 'active')

@@ -48,8 +48,8 @@ function MemberCard({ member }: { member: TeamMember }) {
       {/* Info */}
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={2}>{member.full_name}</Text>
-        {member.job_title ? (
-          <Text style={styles.jobTitle} numberOfLines={1}>{member.job_title}</Text>
+        {(member.position ?? member.job_title) ? (
+          <Text style={styles.jobTitle} numberOfLines={1}>{member.position ?? member.job_title}</Text>
         ) : null}
         <View style={styles.pointsRow}>
           <Ionicons name="star" size={11} color="#f59e0b" />
