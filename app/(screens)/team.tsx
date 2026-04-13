@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDepartments } from '@/hooks/use-team';
+import { useEmployee } from '@/providers/EmployeeContext';
+import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 
 const PURPLE = '#7B1FA2';
 
@@ -24,10 +26,114 @@ const DEPT_ICONS: Record<string, { icon: keyof typeof import('@expo/vector-icons
 
 const DEFAULT_ICON = { icon: 'briefcase-outline' as const, color: PURPLE, bg: '#ede9fe' };
 
+const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  'Indaba Hotel':                 'business-outline',
+  'Indaba Lodge Richards Bay':    'water-outline',
+  'Indaba Lodge Gaborone':        'globe-outline',
+  'Chobe Safari Lodge':           'leaf-outline',
+  'Chobe Bush Lodge':             'leaf-outline',
+  'Nata Lodge':                   'sunny-outline',
+  'African Procurement Agencies': 'briefcase-outline',
+};
+
+// ─── Hotel picker (APA only) ──────────────────────────────────────────────────
+
+function HotelPicker() {
+  return (
+    <ScrollView contentContainerStyle={styles.body}>
+      {HOTELS.map((hotel) => (
+        <TouchableOpacity
+          key={hotel}
+          activeOpacity={0.75}
+          style={styles.row}
+          onPress={() =>
+            router.push({
+              pathname: '/(screens)/team',
+              params: { hotel },
+            })
+          }
+        >
+          <View style={styles.iconWrap}>
+            <Ionicons
+              name={HOTEL_ICON[hotel] ?? 'business-outline'}
+              size={22}
+              color={PURPLE}
+            />
+          </View>
+          <Text style={styles.rowLabel}>{hotel}</Text>
+          <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+// ─── Department list ──────────────────────────────────────────────────────────
+
+function DepartmentList({ hotel }: { hotel: string }) {
+  const { data: departments = [], isLoading } = useDepartments(hotel);
+
+  if (isLoading) {
+    return <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />;
+  }
+
+  if (departments.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Ionicons name="people-outline" size={48} color="#cbd5e1" />
+        <Text style={styles.emptyText}>No departments found</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.body}>
+      {departments.map((dept) => {
+        const cfg = DEPT_ICONS[dept] ?? DEFAULT_ICON;
+        return (
+          <TouchableOpacity
+            key={dept}
+            activeOpacity={0.75}
+            style={styles.row}
+            onPress={() =>
+              router.push({
+                pathname: '/(screens)/team/[department]',
+                params: { department: encodeURIComponent(dept), hotel },
+              })
+            }
+          >
+            <View style={[styles.iconWrap, { backgroundColor: cfg.bg }]}>
+              <Ionicons name={cfg.icon} size={22} color={cfg.color} />
+            </View>
+            <Text style={styles.rowLabel}>{dept}</Text>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function TeamListScreen() {
-  const { data: departments = [], isLoading } = useDepartments();
+  const { employee } = useEmployee();
+  const { hotel: hotelParam } = useLocalSearchParams<{ hotel?: string }>();
+
+  const isAPA = employee?.hotel === APA_HOTEL;
+
+  // APA with no hotel chosen → show picker
+  // APA with hotel chosen → show that hotel's departments
+  // Regular employee → always show their own hotel's departments
+  const effectiveHotel = isAPA
+    ? (hotelParam ?? '')
+    : (employee?.hotel ?? '');
+
+  const showPicker = isAPA && !hotelParam;
+
+  const subtitle = showPicker
+    ? 'Select a property to explore'
+    : `Explore ${effectiveHotel || 'your hotel'} departments`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -39,41 +145,30 @@ export default function TeamListScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Know Your Team</Text>
-          <View style={{ width: 38 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Know Your Team</Text>
+            {!showPicker && effectiveHotel ? (
+              <Text style={styles.hotelName}>{effectiveHotel}</Text>
+            ) : null}
+          </View>
+          {/* APA viewing a specific hotel: quick-switch back to picker */}
+          {isAPA && !showPicker ? (
+            <TouchableOpacity
+              onPress={() => router.push('/(screens)/team')}
+              style={styles.switchBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="swap-horizontal-outline" size={20} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 38 }} />
+          )}
         </View>
-        <Text style={styles.subtitle}>Explore your hotel departments</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
 
-      {/* List */}
-      <ScrollView contentContainerStyle={styles.body}>
-        {isLoading ? (
-          <ActivityIndicator color={PURPLE} style={{ marginTop: 40 }} />
-        ) : departments.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons name="people-outline" size={48} color="#cbd5e1" />
-            <Text style={styles.emptyText}>No departments found</Text>
-          </View>
-        ) : (
-          departments.map((dept) => {
-            const cfg = DEPT_ICONS[dept] ?? DEFAULT_ICON;
-            return (
-              <TouchableOpacity
-                key={dept}
-                activeOpacity={0.75}
-                style={styles.row}
-                onPress={() => router.push(`/(screens)/team/${encodeURIComponent(dept)}` as any)}
-              >
-                <View style={[styles.iconWrap, { backgroundColor: cfg.bg }]}>
-                  <Ionicons name={cfg.icon} size={22} color={cfg.color} />
-                </View>
-                <Text style={styles.rowLabel}>{dept}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-              </TouchableOpacity>
-            );
-          })
-        )}
-      </ScrollView>
+      {showPicker ? <HotelPicker /> : <DepartmentList hotel={effectiveHotel} />}
+
     </SafeAreaView>
   );
 }
@@ -104,12 +199,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  switchBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    flex: 1,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
+  },
+  hotelName: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500',
+    marginTop: 2,
   },
   subtitle: {
     textAlign: 'center',
@@ -143,6 +252,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
+    backgroundColor: '#ede9fe',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -7,7 +7,9 @@ import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { useTeamByDepartment } from '@/hooks/use-team';
+import { APA_HOTEL } from '@/lib/hotels';
 import type { TeamMember } from '@/api/team-service';
 
 const PURPLE     = '#7B1FA2';
@@ -61,9 +63,15 @@ function MemberCard({ member }: { member: TeamMember }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function TeamDepartmentScreen() {
-  const { department: raw } = useLocalSearchParams<{ department: string }>();
+  const { employee } = useEmployee();
+  const { department: raw, hotel: hotelParam } = useLocalSearchParams<{ department: string; hotel?: string }>();
   const department = decodeURIComponent(raw ?? '');
-  const { data: members = [], isLoading, isError } = useTeamByDepartment(department);
+
+  // APA employees pass the chosen hotel via params; regular employees use their own.
+  const isAPA = employee?.hotel === APA_HOTEL;
+  const hotel = (isAPA && hotelParam) ? hotelParam : (employee?.hotel ?? '');
+
+  const { data: members = [], isLoading, isError } = useTeamByDepartment(hotel, department);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -75,7 +83,12 @@ export default function TeamDepartmentScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title} numberOfLines={1}>{department}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} numberOfLines={1}>{department}</Text>
+            {isAPA && hotel ? (
+              <Text style={styles.hotelName}>{hotel}</Text>
+            ) : null}
+          </View>
           <View style={{ width: 38 }} />
         </View>
         {!isLoading && (
@@ -143,11 +156,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    flex: 1,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
+  },
+  hotelName: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500',
+    marginTop: 2,
   },
   subtitle: {
     textAlign: 'center',
@@ -181,7 +200,7 @@ const styles = StyleSheet.create({
 
   photoWrap: {
     width: '100%',
-    height: CARD_WIDTH,   // square photo
+    height: CARD_WIDTH,
   },
   photo: {
     width: '100%',

@@ -1,25 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTeamByDepartment, getDepartments } from '@/api/team-service';
-import { useEmployee } from '@/providers/EmployeeContext';
 
-export function useDepartments() {
-  const { employee } = useEmployee();
-
+/**
+ * Fetch distinct departments for the given hotel.
+ * The caller passes the correct hotel — either employee.hotel for regular
+ * users, or the APA-chosen hotel for directors.
+ */
+export function useDepartments(hotel: string) {
   return useQuery({
-    queryKey: ['departments', employee?.hotel ?? ''],
-    queryFn:  () => getDepartments(employee!.hotel),
-    enabled:  !!employee,
+    queryKey: ['departments', hotel],
+    queryFn:  () => getDepartments(hotel),
+    enabled:  !!hotel,
     staleTime: 10 * 60 * 1000,
   });
 }
 
-export function useTeamByDepartment(department: string) {
-  const { employee } = useEmployee();
-
+/**
+ * Fetch all active employees in a department for the given hotel.
+ * The caller passes the correct hotel.
+ */
+export function useTeamByDepartment(hotel: string, department: string) {
   return useQuery({
-    queryKey: ['team', employee?.hotel ?? '', department],
-    queryFn:  () => getTeamByDepartment(employee!.hotel, department),
-    enabled:  !!employee && !!department,
+    queryKey: ['team', hotel, department],
+    queryFn:  () => getTeamByDepartment(hotel, department),
+    enabled:  !!hotel && !!department,
     staleTime: 5 * 60 * 1000,
   });
 }
