@@ -196,7 +196,7 @@ const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
 };
 
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'Chobe Bush Lodge': 'leaf-outline',
+  'African Procurement Agencies': 'briefcase-outline',
 };
 
 function HotelPickerView({ onSelect }: { onSelect: (hotel: string) => void }) {

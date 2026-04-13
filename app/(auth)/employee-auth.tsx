@@ -34,7 +34,6 @@ const HOTELS = [
   'Indaba Lodge Richards Bay',
   'Indaba Lodge Gaborone',
   'Chobe Safari Lodge',
-  'Chobe Bush Lodge',
   'Nata Lodge',
   'African Procurement Agencies',
 ] as const;

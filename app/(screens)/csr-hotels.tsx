@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator,
+  ScrollView, ActivityIndicator, Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +10,17 @@ import { useInitiativeHotels } from '@/hooks/use-initiatives';
 
 const PURPLE = '#7B1FA2';
 
-// Icon to display alongside each hotel card
+// Logo images for hotels that have assets
+const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
+  'Indaba Hotel':              require('../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                require('../../assets/natalodge.png'),
+};
+
+// Fallback Ionicons for hotels without a logo asset
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'Indaba Hotel':                 'business-outline',
-  'Indaba Lodge Richards Bay':    'water-outline',
-  'Indaba Lodge Gaborone':        'globe-outline',
-  'Chobe Safari Lodge':           'leaf-outline',
-  'Chobe Bush Lodge':             'leaf-outline',
-  'Nata Lodge':                   'sunny-outline',
   'African Procurement Agencies': 'briefcase-outline',
 };
 
@@ -79,11 +82,19 @@ export default function CSRHotelsScreen() {
             }
           >
             <View style={styles.iconWrap}>
-              <Ionicons
-                name={HOTEL_ICON[hotel] ?? DEFAULT_ICON}
-                size={24}
-                color={PURPLE}
-              />
+              {HOTEL_LOGOS[hotel] ? (
+                <Image
+                  source={HOTEL_LOGOS[hotel]}
+                  style={styles.hotelLogo}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons
+                  name={HOTEL_ICON[hotel] ?? DEFAULT_ICON}
+                  size={24}
+                  color={PURPLE}
+                />
+              )}
             </View>
             <Text style={styles.rowLabel}>{hotel}</Text>
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
@@ -183,6 +194,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f3ff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  hotelLogo: {
+    width: 44,
+    height: 44,
   },
 
   rowLabel: {
