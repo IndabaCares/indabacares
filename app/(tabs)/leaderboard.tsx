@@ -188,11 +188,11 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
 const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':              require('../../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../../assets/natalodge.png'),
+  'Indaba Hotel':              require('../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                require('../../assets/natalodge.png'),
 };
 
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
