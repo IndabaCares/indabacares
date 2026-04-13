@@ -71,15 +71,17 @@ export const RecognitionCard = memo(function RecognitionCard({
         {/* ── Time ─────────────────────────────────────────── */}
         <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
 
-        {/* ── Receiver hero ─────────────────────────────────── */}
+        {/* ── Receiver header row ───────────────────────────── */}
         <View style={s.receiverBlock}>
           <Avatar name={recognition.receiver.full_name} size="lg" />
-          <Text style={s.receiverName}>{recognition.receiver.full_name}</Text>
-          {(recognition.receiver.department ?? recognition.receiver.position) ? (
-            <Text style={s.receiverDept} numberOfLines={1}>
-              {recognition.receiver.department ?? recognition.receiver.position}
-            </Text>
-          ) : null}
+          <View style={s.receiverInfo}>
+            <Text style={s.receiverName}>{recognition.receiver.full_name}</Text>
+            {(recognition.receiver.department ?? recognition.receiver.position) ? (
+              <Text style={s.receiverDept} numberOfLines={1}>
+                {recognition.receiver.department ?? recognition.receiver.position}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         {/* ── Badge pill ────────────────────────────────────── */}
@@ -164,24 +166,26 @@ const s = StyleSheet.create({
     paddingRight: 0,
   },
 
-  // Receiver — hero header
+  // Receiver — header row
   receiverBlock: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 14,
     paddingTop: 4,
   },
+  receiverInfo: {
+    flex: 1,
+  },
   receiverName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#1e1b4b',
-    marginTop: 10,
-    textAlign: 'center',
   },
   receiverDept: {
     fontSize: 13,
     color: '#64748b',
-    marginTop: 3,
-    textAlign: 'center',
+    marginTop: 2,
   },
 
   // Badge
