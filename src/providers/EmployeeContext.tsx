@@ -29,7 +29,8 @@ import {
   validateSessionWithDB,
   type EmployeeSession,
 } from '@/lib/EmployeeSessionManager';
-import { registerSessionExpiredHandler } from '@/lib/supabase';
+import { registerSessionExpiredHandler, supabase } from '@/lib/supabase';
+import { markWelcomeSeen as apiMarkWelcomeSeen } from '@/api/initiative-service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,22 +54,35 @@ interface EmployeeContextValue {
    * removes the header.
    */
   clearEmployee: () => Promise<void>;
+  /**
+   * Marks the welcome screen as seen in Supabase and updates local state.
+   * Called when the employee dismisses the first-time onboarding video.
+   */
+  markWelcomeSeen: () => Promise<void>;
+  /**
+   * Whether the current employee has already seen the welcome screen.
+   * null = not yet loaded from DB; true/false = known state.
+   */
+  hasSeenWelcome: boolean | null;
 }
 
 // ─── Context default ──────────────────────────────────────────────────────────
 
 const EmployeeContext = createContext<EmployeeContextValue>({
-  employee:      null,
-  isLoaded:      false,
-  setEmployee:   async () => {},
-  clearEmployee: async () => {},
+  employee:        null,
+  isLoaded:        false,
+  hasSeenWelcome:  null,
+  setEmployee:     async () => {},
+  clearEmployee:   async () => {},
+  markWelcomeSeen: async () => {},
 });
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function EmployeeProvider({ children }: { children: ReactNode }) {
-  const [employee, setEmployeeState] = useState<AuthenticatedEmployee | null>(null);
-  const [isLoaded, setIsLoaded]      = useState(false);
+  const [employee, setEmployeeState]     = useState<AuthenticatedEmployee | null>(null);
+  const [isLoaded, setIsLoaded]          = useState(false);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState<boolean | null>(null);
 
   // ── Boot sequence ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -81,6 +95,8 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
 
       if (session) {
         setEmployeeState(session);
+        // Fetch has_seen_welcome in parallel with session validation
+        fetchHasSeenWelcome(session.employee_id);
       }
 
       setIsLoaded(true);
@@ -93,6 +109,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
 
       if (!valid) {
         setEmployeeState(null);
+        setHasSeenWelcome(null);
         await clearSession(session.session_token);
       }
     }
@@ -104,6 +121,22 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── fetchHasSeenWelcome — reads the DB flag ───────────────────────────────
+
+  async function fetchHasSeenWelcome(employeeId: string) {
+    try {
+      const { data } = await supabase
+        .from('employees')
+        .select('has_seen_welcome')
+        .eq('id', employeeId)
+        .maybeSingle();
+      setHasSeenWelcome(data?.has_seen_welcome ?? false);
+    } catch {
+      // Fail-open: treat as already seen to avoid blocking login on network error
+      setHasSeenWelcome(true);
+    }
+  }
+
   // ── setEmployee — called after successful authentication ──────────────────
   //
   // The token comes directly from the auth RPC response.
@@ -112,6 +145,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   const setEmployee = useCallback(async (identity: AuthenticatedEmployee) => {
     await saveSession(identity);
     setEmployeeState(identity);
+    fetchHasSeenWelcome(identity.employee_id);
   }, []);
 
   // ── clearEmployee — logout ────────────────────────────────────────────────
@@ -119,7 +153,16 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   const clearEmployee = useCallback(async () => {
     const token = employee?.session_token;
     setEmployeeState(null);
+    setHasSeenWelcome(null);
     await clearSession(token);
+  }, [employee]);
+
+  // ── markWelcomeSeen — called when onboarding video is dismissed ───────────
+
+  const markWelcomeSeen = useCallback(async () => {
+    if (!employee) return;
+    setHasSeenWelcome(true); // optimistic
+    await apiMarkWelcomeSeen(employee.employee_id);
   }, [employee]);
 
   // ── Register auto-logout on session expiry ────────────────────────────────
@@ -131,7 +174,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   }, [clearEmployee]);
 
   return (
-    <EmployeeContext.Provider value={{ employee, isLoaded, setEmployee, clearEmployee }}>
+    <EmployeeContext.Provider value={{ employee, isLoaded, hasSeenWelcome, setEmployee, clearEmployee, markWelcomeSeen }}>
       {children}
     </EmployeeContext.Provider>
   );

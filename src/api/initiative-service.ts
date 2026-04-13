@@ -61,6 +61,44 @@ export async function getInitiativeThumbnails(hotel: string): Promise<Initiative
 }
 
 /**
+ * Fetch the welcome video URL — the first initiative row that has a video_url,
+ * preferring the employee's own hotel but falling back to any hotel.
+ * Used by the first-time welcome screen.
+ */
+export async function getWelcomeVideoUrl(hotel: string): Promise<string | null> {
+  // Try the employee's own hotel first
+  const { data: hotelData } = await supabase
+    .from('initiatives')
+    .select('video_url')
+    .eq('hotel', hotel)
+    .not('video_url', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (hotelData?.video_url) return hotelData.video_url;
+
+  // Fall back to any hotel (e.g. a shared onboarding video)
+  const { data: anyData } = await supabase
+    .from('initiatives')
+    .select('video_url')
+    .not('video_url', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  return anyData?.video_url ?? null;
+}
+
+/**
+ * Mark the employee's welcome screen as seen.
+ */
+export async function markWelcomeSeen(employeeId: string): Promise<void> {
+  await supabase
+    .from('employees')
+    .update({ has_seen_welcome: true })
+    .eq('id', employeeId);
+}
+
+/**
  * Fetch initiative content for a given hotel and tab, ordered by sort_order.
  */
 export async function getInitiatives(hotel: string, tab: string): Promise<Initiative[]> {
