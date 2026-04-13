@@ -182,12 +182,11 @@ const s = StyleSheet.create({
 
   // Birthday header — centered, animated
   birthdayHeader: {
-    fontSize: 24,
-    fontWeight: '900',
+    fontFamily: 'DancingScript_700Bold',
+    fontSize: 34,
     color: '#fff',
     textAlign: 'center',
     marginBottom: 12,
-    letterSpacing: 0.5,
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -214,10 +213,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   milestoneTitle: {
-    fontSize: 17,
-    fontWeight: '900',
+    fontFamily: 'DancingScript_700Bold',
+    fontSize: 28,
     color: '#fff',
-    letterSpacing: 1.5,
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -261,6 +259,7 @@ const s = StyleSheet.create({
     lineHeight: 20,
     color: '#fff',
     marginBottom: 10,
+    textAlign: 'center',
   },
 
   // Heart
@@ -276,7 +275,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 2,
   },
   heartEmoji: {
-    fontSize: 55,
+    fontSize: 26,
   },
   heartCount: {
     fontSize: 15,

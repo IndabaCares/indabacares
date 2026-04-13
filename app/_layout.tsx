@@ -10,8 +10,15 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { RealtimeProvider } from '@/providers/RealtimeProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import {
+  useFonts,
+  DancingScript_700Bold,
+} from '@expo-google-fonts/dancing-script';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ DancingScript_700Bold });
+
+  // Render app whether or not fonts have loaded — system font fallback used until ready
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
