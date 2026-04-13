@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, Pressable,
+  View, Text, TouchableOpacity,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { RESPONSE_OPTIONS } from '@/hooks/use-recognition-response';
@@ -42,20 +42,20 @@ export function ResponsePicker({
       <View style={s.inlineSheet}>
         <View style={s.inlineHeader}>
           <Text style={s.inlineTitle}>Choose a response</Text>
-          <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+          <TouchableOpacity onPress={() => setOpen(false)} hitSlop={8}>
             <Ionicons name="close" size={18} color="#94a3b8" />
-          </Pressable>
+          </TouchableOpacity>
         </View>
         <Text style={s.inlineSub}>+5 pts awarded for responding</Text>
 
         {RESPONSE_OPTIONS.map((opt, i) => (
-          <Pressable
+          <TouchableOpacity
             key={opt}
             style={[s.option, i === RESPONSE_OPTIONS.length - 1 && s.optionLast]}
             onPress={() => { setOpen(false); onSelect(opt); }}
           >
             <Text style={s.optionText}>{opt}</Text>
-          </Pressable>
+          </TouchableOpacity>
         ))}
       </View>
     );
@@ -63,7 +63,7 @@ export function ResponsePicker({
 
   // Trigger button
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={() => setOpen(true)}
       style={s.triggerBtn}
       disabled={loading}
@@ -73,7 +73,7 @@ export function ResponsePicker({
       ) : (
         <Text style={s.triggerText}>Respond</Text>
       )}
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 

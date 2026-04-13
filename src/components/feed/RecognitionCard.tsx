@@ -137,7 +137,7 @@ export const RecognitionCard = memo(function RecognitionCard({
         {/* ── Badge pill ────────────────────────────────────── */}
         <View style={[s.badgePill, { backgroundColor: badgeConfig.color + '28' }]}>
           <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
-          <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
+          <Text style={[s.badgeText, { color: badgeConfig.color }]} numberOfLines={1}>{recognition.badge}</Text>
         </View>
 
         {/* ── Message ───────────────────────────────────────── */}
@@ -160,8 +160,8 @@ export const RecognitionCard = memo(function RecognitionCard({
         ) : (
           <>
             <TouchableOpacity
-              style={s.respondBtn} // TODO: restore [s.respondBtn, !isRecipient && s.respondBtnDisabled]
-              onPress={() => setShowResponseMenu((v) => !v)}
+              style={[s.respondBtn, !isRecipient && s.respondBtnDisabled]}
+              onPress={() => isRecipient && setShowResponseMenu((v) => !v)}
               activeOpacity={0.7}
             >
               <Text style={s.respondBtnText}>

@@ -100,7 +100,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           <View style={s.receiverBlock}>
             <Avatar name={recognition.receiver.full_name} size="lg" />
             <View style={s.receiverInfo}>
-              <Text style={s.receiverName}>{recognition.receiver.full_name}</Text>
+              <Text style={s.receiverName} numberOfLines={1}>{recognition.receiver.full_name}</Text>
               {(recognition.receiver.department ?? recognition.receiver.position) ? (
                 <Text style={s.receiverDept} numberOfLines={1}>
                   {recognition.receiver.department ?? recognition.receiver.position}
@@ -112,7 +112,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           {/* ── Skill badge pill ──────────────────────────────── */}
           <View style={[s.badgePill, { backgroundColor: skillConfig.color + '18' }]}>
             <Text style={s.badgeEmoji}>{skillConfig.emoji}</Text>
-            <Text style={[s.badgeText, { color: skillConfig.color }]}>{recognition.badge}</Text>
+            <Text style={[s.badgeText, { color: skillConfig.color }]} numberOfLines={1}>{recognition.badge}</Text>
           </View>
 
           {/* ── Sent by ───────────────────────────────────────── */}
@@ -120,7 +120,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
             <Avatar name={recognition.sender.full_name} size="xs" />
             <View style={s.sentByInfo}>
               <Text style={s.sentByLabel}>Sent by</Text>
-              <Text style={s.sentByName}>{recognition.sender.full_name}</Text>
+              <Text style={s.sentByName} numberOfLines={1}>{recognition.sender.full_name}</Text>
               {(recognition.sender.department ?? recognition.sender.position) ? (
                 <Text style={s.sentByDept} numberOfLines={1}>
                   {recognition.sender.department ?? recognition.sender.position}
