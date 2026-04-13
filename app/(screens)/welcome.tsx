@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
           ref={videoRef}
           source={{ uri: videoUrl }}
           style={StyleSheet.absoluteFill}
-          resizeMode={ResizeMode.COVER}
+          resizeMode={ResizeMode.CONTAIN}
           shouldPlay={shouldPlay}
           isLooping={false}
           onReadyForDisplay={() => setVideoReady(true)}
