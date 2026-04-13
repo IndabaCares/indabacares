@@ -12,40 +12,22 @@ export default function WelcomeScreen() {
   const { employee, markWelcomeSeen } = useEmployee();
   const videoRef = useRef<Video>(null);
 
-  const [videoUrl, setVideoUrl]       = useState<string | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [videoReady, setVideoReady]   = useState(false);
-  const [shouldPlay, setShouldPlay]   = useState(false);
-  const [error, setError]             = useState(false);
+  const [videoUrl, setVideoUrl]     = useState<string | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [shouldPlay, setShouldPlay] = useState(false);
 
   // Fetch video URL on mount
   useEffect(() => {
     if (!employee) return;
-    getWelcomeVideoUrl(employee.hotel)
-      .then((url) => {
-        setVideoUrl(url);
-        setLoading(false);
-        if (!url) setError(true);
-      })
-      .catch(() => {
-        setLoading(false);
-        setError(true);
-      });
+    getWelcomeVideoUrl(employee.hotel).then(setVideoUrl);
   }, [employee]);
 
-  // 2-second delay before playback starts, once video is ready
+  // 2-second delay after video is ready before playback starts
   useEffect(() => {
     if (!videoReady) return;
     const timer = setTimeout(() => setShouldPlay(true), 2000);
     return () => clearTimeout(timer);
   }, [videoReady]);
-
-  // On error — navigate after a brief pause so the screen isn't a flash
-  useEffect(() => {
-    if (!error) return;
-    const timer = setTimeout(() => navigate(), 2500);
-    return () => clearTimeout(timer);
-  }, [error]);
 
   async function navigate() {
     await markWelcomeSeen();
@@ -73,24 +55,24 @@ export default function WelcomeScreen() {
         />
       )}
 
-      {/* Spinner while fetching / buffering */}
-      {(loading || (videoUrl && !videoReady)) && (
+      {/* Spinner while buffering */}
+      {!videoReady && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator color="#fff" size="large" />
         </View>
       )}
 
-      {/* Dark overlay */}
+      {/* Subtle dark overlay */}
       <View style={styles.overlay} pointerEvents="none" />
 
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        {/* Skip — only shown once video is playing */}
-        {videoReady && !error && (
+      {/* Skip button — bottom right, visible once playing */}
+      {videoReady && (
+        <SafeAreaView style={styles.safe} edges={['bottom']}>
           <TouchableOpacity style={styles.skipBtn} onPress={navigate} activeOpacity={0.7}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
-        )}
-      </SafeAreaView>
+        </SafeAreaView>
+      )}
     </View>
   );
 }
@@ -102,7 +84,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.15)',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -111,14 +93,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   safe: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    padding: 24,
   },
   skipBtn: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 50,
@@ -126,6 +107,6 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.85)',
   },
 });

@@ -61,31 +61,32 @@ export async function getInitiativeThumbnails(hotel: string): Promise<Initiative
 }
 
 /**
- * Fetch the welcome video URL — the first initiative row that has a video_url,
- * preferring the employee's own hotel but falling back to any hotel.
+ * The company-wide welcome/onboarding video stored directly in initiative-media bucket.
  * Used by the first-time welcome screen.
  */
-export async function getWelcomeVideoUrl(hotel: string): Promise<string | null> {
-  // Try the employee's own hotel first
-  const { data: hotelData } = await supabase
-    .from('initiatives')
-    .select('video_url')
-    .eq('hotel', hotel)
-    .not('video_url', 'is', null)
-    .limit(1)
-    .maybeSingle();
+export const WELCOME_VIDEO_URL =
+  'https://typfhdrmtusmffxfclfq.supabase.co/storage/v1/object/public/initiative-media/Billy_Video.mp4';
 
-  if (hotelData?.video_url) return hotelData.video_url;
+/**
+ * Returns the welcome video URL.
+ * Checks the initiatives table first; falls back to the fixed bucket URL.
+ */
+export async function getWelcomeVideoUrl(hotel: string): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('initiatives')
+      .select('video_url')
+      .eq('hotel', hotel)
+      .not('video_url', 'is', null)
+      .limit(1)
+      .maybeSingle();
 
-  // Fall back to any hotel (e.g. a shared onboarding video)
-  const { data: anyData } = await supabase
-    .from('initiatives')
-    .select('video_url')
-    .not('video_url', 'is', null)
-    .limit(1)
-    .maybeSingle();
+    if (data?.video_url) return data.video_url;
+  } catch {
+    // fall through to default
+  }
 
-  return anyData?.video_url ?? null;
+  return WELCOME_VIDEO_URL;
 }
 
 /**
