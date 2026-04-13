@@ -58,7 +58,7 @@ function getStatus(weeklyRecognitions: number) {
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Indaba Cares',    icon: 'ribbon-outline'  as const, route: '/(screens)/initiatives' },
+  { label: 'Indaba Cares',    icon: 'ribbon-outline'  as const, route: '/(screens)/csr-hotels' },
   { label: 'Know your team',  icon: 'people-outline'  as const, route: '/(screens)/team'        },
   { label: "FAQ's",           icon: 'help-circle-outline' as const, route: '/(screens)/faq'     },
 ];

@@ -17,6 +17,26 @@ export interface InitiativeThumbnail {
 }
 
 /**
+ * Returns distinct hotel names that have at least one initiative row.
+ * Used by the CSR hotel-picker screen.
+ * Requires migration 072 (initiatives_public_read policy).
+ */
+export async function getInitiativeHotels(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('initiatives')
+    .select('hotel')
+    .order('hotel', { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const seen = new Set<string>();
+  for (const row of (data ?? []) as { hotel: string }[]) {
+    seen.add(row.hotel);
+  }
+  return Array.from(seen);
+}
+
+/**
  * Fetch one mascot_url per tab for a hotel — used by the Indaba Cares list screen.
  */
 export async function getInitiativeThumbnails(hotel: string): Promise<InitiativeThumbnail[]> {
@@ -41,7 +61,7 @@ export async function getInitiativeThumbnails(hotel: string): Promise<Initiative
 }
 
 /**
- * Fetch initiative content for a given hotel and tab slug, ordered by sort_order.
+ * Fetch initiative content for a given hotel and tab, ordered by sort_order.
  */
 export async function getInitiatives(hotel: string, tab: string): Promise<Initiative[]> {
   const { data, error } = await supabase

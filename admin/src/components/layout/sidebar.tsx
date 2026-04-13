@@ -11,6 +11,7 @@ import {
   BarChart3,
   Megaphone,
   Zap,
+  Heart,
   ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
@@ -42,6 +43,7 @@ const NAV: NavSection[] = [
       { label: 'Rewards',       href: '/rewards',        icon: Gift            },
       { label: 'Redemptions',   href: '/redemptions',    icon: ClipboardList   },
       { label: 'Campaigns',     href: '/campaigns',      icon: Zap             },
+      { label: 'Indaba Cares',  href: '/initiatives',    icon: Heart           },
     ],
   },
   {

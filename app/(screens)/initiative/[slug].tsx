@@ -23,17 +23,7 @@ import type { Initiative } from '@/api/initiative-service';
 const PURPLE      = '#7B1FA2';
 const PURPLE_SOFT = '#ede9fe';
 
-// ─── Label map ────────────────────────────────────────────────────────────────
-
-const SLUG_MAP: Record<string, { label: string; dbTab: string }> = {
-  'billy-says':    { label: 'Billy Says',    dbTab: 'billy-says'    },
-  'feed-the-kids': { label: 'Feed the Kids', dbTab: 'Feed the Kids' },
-  'mandela-day':   { label: 'Mandela Day',   dbTab: 'Mandela Day'   },
-  'mobile-clinic': { label: 'Mobile Clinic', dbTab: 'Mobile Clinic' },
-};
-
 // ─── Lazy video (PERF-02) ─────────────────────────────────────────────────────
-// expo-av is only bundled / loaded when a video URI is present on the screen.
 
 const LazyVideoHero = lazy(() =>
   import('./VideoComponents').then((m) => ({ default: m.VideoHero }))
@@ -120,9 +110,11 @@ function InitiativeBlock({ item }: { item: Initiative }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function InitiativeDetailScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { label = slug, dbTab = slug } = SLUG_MAP[slug] ?? {};
-  const { data = [], isLoading, isError } = useInitiatives(dbTab);
+  // `slug` is the initiative tab name (e.g. "Billy Says").
+  // `hotel` is the property chosen on the hotel-picker screen.
+  const { slug, hotel } = useLocalSearchParams<{ slug: string; hotel: string }>();
+
+  const { data = [], isLoading, isError } = useInitiatives(hotel ?? '', slug ?? '');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -133,7 +125,7 @@ export default function InitiativeDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>{label}</Text>
+          <Text style={styles.title}>{slug}</Text>
           <View style={{ width: 38 }} />
         </View>
       </View>

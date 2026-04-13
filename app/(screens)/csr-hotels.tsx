@@ -1,17 +1,30 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { Image } from 'expo-image';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import {
+  View, Text, TouchableOpacity, StyleSheet,
+  ScrollView, ActivityIndicator,
+} from 'react-native';
+import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useInitiativeThumbnails } from '@/hooks/use-initiatives';
+import { useInitiativeHotels } from '@/hooks/use-initiatives';
 
 const PURPLE = '#7B1FA2';
 
-export default function IndabaCaresListScreen() {
-  const { hotel } = useLocalSearchParams<{ hotel: string }>();
+// Icon to display alongside each hotel card
+const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  'Indaba Hotel':                 'business-outline',
+  'Indaba Lodge Richards Bay':    'water-outline',
+  'Indaba Lodge Gaborone':        'globe-outline',
+  'Chobe Safari Lodge':           'leaf-outline',
+  'Chobe Bush Lodge':             'leaf-outline',
+  'Nata Lodge':                   'sunny-outline',
+  'African Procurement Agencies': 'briefcase-outline',
+};
 
-  const { data: tabs = [], isLoading, isError } = useInitiativeThumbnails(hotel ?? '');
+const DEFAULT_ICON: keyof typeof Ionicons.glyphMap = 'business-outline';
+
+export default function CSRHotelsScreen() {
+  const { data: hotels = [], isLoading, isError } = useInitiativeHotels();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -23,16 +36,12 @@ export default function IndabaCaresListScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Indaba Cares</Text>
-            {hotel ? <Text style={styles.hotelName}>{hotel}</Text> : null}
-          </View>
+          <Text style={styles.title}>Indaba Cares</Text>
           <View style={{ width: 38 }} />
         </View>
-        <Text style={styles.subtitle}>Choose an initiative to explore</Text>
+        <Text style={styles.subtitle}>Choose a property to explore their CSR projects</Text>
       </View>
 
-      {/* List */}
       <ScrollView contentContainerStyle={styles.body}>
 
         {isLoading && (
@@ -44,47 +53,39 @@ export default function IndabaCaresListScreen() {
         {isError && (
           <View style={styles.center}>
             <Ionicons name="alert-circle-outline" size={48} color="#e2d9f3" />
-            <Text style={styles.emptyTitle}>Could not load initiatives</Text>
+            <Text style={styles.emptyTitle}>Could not load hotels</Text>
             <Text style={styles.emptyText}>Please check your connection and try again.</Text>
           </View>
         )}
 
-        {!isLoading && !isError && tabs.length === 0 && (
+        {!isLoading && !isError && hotels.length === 0 && (
           <View style={styles.center}>
             <Ionicons name="ribbon-outline" size={56} color="#e2d9f3" />
-            <Text style={styles.emptyTitle}>Coming Soon</Text>
-            <Text style={styles.emptyText}>
-              CSR content for {hotel ?? 'this property'} will appear here.
-            </Text>
+            <Text style={styles.emptyTitle}>No CSR content yet</Text>
+            <Text style={styles.emptyText}>Check back soon — initiatives will appear here.</Text>
           </View>
         )}
 
-        {tabs.map((item) => (
+        {hotels.map((hotel) => (
           <TouchableOpacity
-            key={item.tab}
+            key={hotel}
             activeOpacity={0.75}
             style={styles.row}
             onPress={() =>
               router.push({
-                pathname: '/(screens)/initiative/[slug]',
-                params: { slug: item.tab, hotel: hotel ?? '' },
+                pathname: '/(screens)/initiatives',
+                params: { hotel },
               })
             }
           >
-            {/* Thumbnail */}
-            <View style={styles.thumb}>
-              {item.mascot_url ? (
-                <Image
-                  source={{ uri: item.mascot_url }}
-                  style={styles.thumbImage}
-                  contentFit="contain"
-                />
-              ) : (
-                <Ionicons name="ribbon-outline" size={22} color={PURPLE} />
-              )}
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name={HOTEL_ICON[hotel] ?? DEFAULT_ICON}
+                size={24}
+                color={PURPLE}
+              />
             </View>
-
-            <Text style={styles.rowLabel}>{item.tab}</Text>
+            <Text style={styles.rowLabel}>{hotel}</Text>
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
           </TouchableOpacity>
         ))}
@@ -122,17 +123,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    flex: 1,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-  },
-  hotelName: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    fontWeight: '500',
-    marginTop: 2,
   },
   subtitle: {
     textAlign: 'center',
@@ -172,7 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 18,
     gap: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -181,23 +176,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  thumb: {
-    width: 56,
-    height: 56,
+  iconWrap: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: '#f5f3ff',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  thumbImage: {
-    width: 56,
-    height: 56,
   },
 
   rowLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1e293b',
   },
