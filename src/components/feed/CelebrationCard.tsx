@@ -37,7 +37,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
   const bodyText = isBirthday
     ? `Happy Birthday to ${employee.full_name}, we hope you have an awesome day full of fun, love and celebrations.`
     : isMilestone
-      ? `Congratulations ${employee.full_name} on ${milestone} incredible year${(milestone ?? 1) !== 1 ? 's' : ''} of dedicated service. What an achievement!`
+      ? `Congratulations on achieving your milestone - we appreciate your long service and commitment.`
       : `${employee.full_name} is celebrating ${milestone} year${(milestone ?? 1) !== 1 ? 's' : ''} with the team today.`;
 
   // Heart — uses likes (no balance deduction)
