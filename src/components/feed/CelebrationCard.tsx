@@ -276,7 +276,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 2,
   },
   heartEmoji: {
-    fontSize: 22,
+    fontSize: 55,
   },
   heartCount: {
     fontSize: 15,
