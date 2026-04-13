@@ -53,7 +53,7 @@ function MemberCard({ member }: { member: TeamMember }) {
         ) : null}
         <View style={styles.pointsRow}>
           <Ionicons name="star" size={11} color="#f59e0b" />
-          <Text style={styles.points}>{member.points_balance.toLocaleString()} pts</Text>
+          <Text style={styles.points}>{member.points_balance.toLocaleString()}</Text>
         </View>
       </View>
     </View>
