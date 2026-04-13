@@ -30,14 +30,6 @@ UPDATE public.rewards
 SET    hotel = 'Chobe Safari Lodge'
 WHERE  hotel = 'Chobe Bush Lodge';
 
-UPDATE public.mood_entries
-SET    hotel = 'Chobe Safari Lodge'
-WHERE  hotel = 'Chobe Bush Lodge';
-
-UPDATE public.employee_active_sessions
-SET    hotel = 'Chobe Safari Lodge'
-WHERE  hotel = 'Chobe Bush Lodge';
-
 -- ─── 3. Rebuild hotel CHECK constraint ───────────────────────────────────────
 
 ALTER TABLE public.employees
