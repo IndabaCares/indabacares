@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import type { Reward } from '@/api/reward-service';
 
 const PURPLE = '#7B1FA2';
 
-// Distinct placeholder colours — cycles by card id
 const PLACEHOLDER_COLORS = [
   '#7B1FA2',
   '#5B21B6',
@@ -43,7 +43,7 @@ export function RewardCard({ reward, pointsBalance, onPress }: RewardCardProps) 
         pressed && styles.cardPressed,
       ]}
     >
-      {/* ── Background ─────────────────────────────────────────────────── */}
+      {/* ── Background ──────────────────────────────────────────────────── */}
       {reward.image_url ? (
         <Image
           source={{ uri: reward.image_url }}
@@ -61,18 +61,20 @@ export function RewardCard({ reward, pointsBalance, onPress }: RewardCardProps) 
         </View>
       )}
 
-      {/* ── Bottom scrim ───────────────────────────────────────────────── */}
-      <View style={styles.scrim} />
+      {/* ── Top scrim — darkens top so title is readable ────────────────── */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.72)', 'transparent']}
+        style={styles.topScrim}
+      />
 
-      {/* ── Top-left: Points badge ─────────────────────────────────────── */}
-      <View style={[styles.pointsBadge, canAfford ? styles.pointsBadgeGreen : styles.pointsBadgeRed]}>
-        <Ionicons name="cash-outline" size={20} color={canAfford ? '#16a34a' : '#db2777'} />
-        <Text style={[styles.pointsLabel, { color: canAfford ? '#16a34a' : '#db2777' }]}>
-          {reward.points_required}
+      {/* ── Title — top of card ─────────────────────────────────────────── */}
+      <View style={styles.titleBlock}>
+        <Text style={styles.title} numberOfLines={2}>
+          {reward.title}
         </Text>
       </View>
 
-      {/* ── Top-right: Stock badge ─────────────────────────────────────── */}
+      {/* ── Top-right: Stock badge ──────────────────────────────────────── */}
       {outOfStock ? (
         <View style={[styles.badge, styles.badgeTopRight, styles.badgeDark]}>
           <Text style={styles.badgeLabelWhite}>OUT OF STOCK</Text>
@@ -84,23 +86,29 @@ export function RewardCard({ reward, pointsBalance, onPress }: RewardCardProps) 
         </View>
       ) : null}
 
-      {/* ── Bottom: Title + affordability ──────────────────────────────── */}
-      <View style={styles.bottom}>
-        <Text style={styles.title} numberOfLines={2}>
-          {reward.title}
+      {/* ── Bottom-right: Points badge ──────────────────────────────────── */}
+      <View style={[styles.pointsBadge, canAfford ? styles.pointsBadgeGreen : styles.pointsBadgeRed]}>
+        <Ionicons name="cash-outline" size={22} color={canAfford ? '#16a34a' : '#db2777'} />
+        <Text style={[styles.pointsLabel, { color: canAfford ? '#16a34a' : '#db2777' }]}>
+          {reward.points_required}
         </Text>
-        {!outOfStock && canAfford && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-            <Ionicons name="checkmark-circle" size={20} color="#86efac" />
-            <Text style={[styles.subLabel, { color: '#86efac', marginLeft: 4 }]}>Can redeem</Text>
-          </View>
-        )}
-        {!outOfStock && !canAfford && (
-          <Text style={[styles.subLabel, { marginTop: 4, color: 'rgba(255,255,255,0.55)' }]}>
-            Need {reward.points_required - pointsBalance} more pts
-          </Text>
-        )}
       </View>
+
+      {/* ── Bottom-left: Affordability indicator ───────────────────────── */}
+      {!outOfStock && canAfford && (
+        <View style={styles.tickBadge}>
+          <Ionicons name="checkmark-circle" size={26} color="#86efac" />
+          <Text style={styles.tickLabel}>Can redeem</Text>
+        </View>
+      )}
+      {!outOfStock && !canAfford && (
+        <View style={styles.tickBadge}>
+          <Text style={styles.needLabel}>
+            Need {reward.points_required - pointsBalance} pts
+          </Text>
+        </View>
+      )}
+
     </Pressable>
   );
 }
@@ -122,20 +130,58 @@ const styles = StyleSheet.create({
   cardDisabled: { opacity: 0.5 },
   cardPressed:  { opacity: 0.82 },
 
-  scrim: {
+  // Top gradient scrim
+  topScrim: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    height: CARD_HEIGHT * 0.5,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    height: CARD_HEIGHT * 0.52,
   },
 
-  // Points badge — enlarged, top-left
+  // Title — top of card
+  titleBlock: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#ffffff',
+    lineHeight: 18,
+  },
+
+  // Stock badge — top-right
+  badge: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeTopRight: { top: 10, right: 10 },
+  badgeDark:  { backgroundColor: 'rgba(0,0,0,0.65)' },
+  badgeAmber: { backgroundColor: 'rgba(254,243,199,0.95)' },
+  badgeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  badgeLabelWhite: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: '#ffffff',
+  },
+
+  // Points badge — bottom-right
   pointsBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    bottom: 10,
+    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 14,
@@ -150,48 +196,23 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  // Stock / other badges
-  badge: {
+  // Tick / need pts — bottom-left
+  tickBadge: {
     position: 'absolute',
+    bottom: 10,
+    left: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: 4,
   },
-  badgeTopLeft:  { top: 10, left: 10 },
-  badgeTopRight: { top: 10, right: 10 },
-  badgeWhite: { backgroundColor: 'rgba(255,255,255,0.92)' },
-  badgePink:  { backgroundColor: 'rgba(252,231,243,0.92)' },
-  badgeDark:  { backgroundColor: 'rgba(0,0,0,0.65)' },
-  badgeAmber: { backgroundColor: 'rgba(254,243,199,0.95)' },
-
-  badgeLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+  tickLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#86efac',
   },
-  badgeLabelWhite: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    color: '#ffffff',
-  },
-
-  bottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-  },
-  title: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#ffffff',
-    lineHeight: 18,
-  },
-  subLabel: {
+  needLabel: {
     fontSize: 10,
     fontWeight: '500',
+    color: 'rgba(255,255,255,0.6)',
   },
 });
