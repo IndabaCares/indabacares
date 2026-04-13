@@ -1,7 +1,7 @@
 import React, { useRef, useState, memo } from 'react';
 import {
   Animated, View, Text, FlatList, ScrollView, StyleSheet,
-  Modal, TouchableWithoutFeedback, TouchableOpacity,
+  Modal, TouchableWithoutFeedback, TouchableOpacity, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -145,7 +145,17 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
       {!outOfStock && !flipped && (
         <TouchableOpacity
           style={[s.redeemBtn, !canAfford && s.redeemBtnDim, { elevation: 10 }]}
-          onPress={() => setConfirming(true)}
+          onPress={() => {
+            if (!canAfford) {
+              Alert.alert(
+                'Insufficient Balance',
+                'You do not have enough to redeem this reward at this time.',
+                [{ text: 'OK' }],
+              );
+              return;
+            }
+            setConfirming(true);
+          }}
           activeOpacity={0.7}
           hitSlop={8}
         >
