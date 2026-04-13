@@ -1,5 +1,6 @@
 import React, { memo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Image, GestureResponderEvent } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, GestureResponderEvent } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { RECOGNITION_BADGES } from '@/lib/constants';
 import { RecognitionReactionBar } from './RecognitionReactionBar';
@@ -8,8 +9,7 @@ import { useSubmitResponse } from '@/hooks/use-recognition-response';
 import { ResponsePicker } from './ResponsePicker';
 import type { RecognitionFeedItem } from '@/api/queries';
 
-const PURPLE = '#7B1FA2';
-const LOGO   = require('../../../assets/IndabaCaresLogo.png');
+const LOGO = require('../../../assets/IndabaCaresLogo.png');
 
 function getBadgeConfig(badge: string) {
   return (
@@ -48,8 +48,8 @@ export const RecognitionCard = memo(function RecognitionCard({
     setShowPicker(true);
   };
 
-  const badgeConfig  = getBadgeConfig(recognition.badge);
-  const isRecipient  = employee?.employee_id === recognition.receiver.id;
+  const badgeConfig = getBadgeConfig(recognition.badge);
+  const isRecipient = employee?.employee_id === recognition.receiver.id;
 
   const [localResponse, setLocalResponse] = useState<string | null>(
     recognition.recipient_response ?? null,
@@ -62,69 +62,79 @@ export const RecognitionCard = memo(function RecognitionCard({
   };
 
   return (
-    <Pressable onLongPress={handleLongPress} delayLongPress={350}>
+    <TouchableOpacity onLongPress={handleLongPress} delayLongPress={350} activeOpacity={0.97}>
       <View style={s.card}>
 
-        {/* ── IndabaCares logo — top-right corner ──────────── */}
-        <Image source={LOGO} style={s.logo} resizeMode="contain" />
+        {/* ── Gradient hero ─────────────────────────────────── */}
+        <LinearGradient
+          colors={['#4a0072', '#7B1FA2', '#ddd6fe']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.hero}
+        >
+          {/* Logo watermark — white on gradient */}
+          <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
-        {/* ── Time ─────────────────────────────────────────── */}
-        <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
-
-        {/* ── Receiver header row ───────────────────────────── */}
-        <View style={s.receiverBlock}>
-          <Avatar name={recognition.receiver.full_name} size="lg" />
-          <View style={s.receiverInfo}>
-            <Text style={s.receiverName}>{recognition.receiver.full_name}</Text>
-            {(recognition.receiver.department ?? recognition.receiver.position) ? (
-              <Text style={s.receiverDept} numberOfLines={1}>
-                {recognition.receiver.department ?? recognition.receiver.position}
-              </Text>
-            ) : null}
+          {/* Receiver + Time */}
+          <View style={s.receiverBlock}>
+            <Avatar name={recognition.receiver.full_name} size="lg" />
+            <View style={s.receiverInfo}>
+              <Text style={s.receiverName}>{recognition.receiver.full_name}</Text>
+              {(recognition.receiver.department ?? recognition.receiver.position) ? (
+                <Text style={s.receiverDept} numberOfLines={1}>
+                  {recognition.receiver.department ?? recognition.receiver.position}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
           </View>
-        </View>
 
-        {/* ── Badge pill ────────────────────────────────────── */}
-        <View style={[s.badgePill, { backgroundColor: badgeConfig.color + '18' }]}>
-          <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
-          <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
-        </View>
-
-        {/* ── Sent by ──────────────────────────────────────── */}
-        <View style={s.sentByRow}>
-          <Avatar name={recognition.sender.full_name} size="xs" />
-          <View style={s.sentByInfo}>
-            <Text style={s.sentByLabel}>Sent by</Text>
-            <Text style={s.sentByName}>{recognition.sender.full_name}</Text>
-            {(recognition.sender.department ?? recognition.sender.position) ? (
-              <Text style={s.sentByDept} numberOfLines={1}>
-                {recognition.sender.department ?? recognition.sender.position}
-              </Text>
-            ) : null}
+          {/* Badge pill */}
+          <View style={[s.badgePill, { backgroundColor: badgeConfig.color + '28' }]}>
+            <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
+            <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
           </View>
+        </LinearGradient>
+
+        {/* ── White body ────────────────────────────────────── */}
+        <View style={s.body}>
+
+          {/* Message */}
+          <Text style={s.message}>{recognition.message}</Text>
+
+          {/* Sent by */}
+          <View style={s.sentByRow}>
+            <Avatar name={recognition.sender.full_name} size="xs" />
+            <View style={s.sentByInfo}>
+              <Text style={s.sentByLabel}>Sent by</Text>
+              <Text style={s.sentByName}>{recognition.sender.full_name}</Text>
+              {(recognition.sender.department ?? recognition.sender.position) ? (
+                <Text style={s.sentByDept} numberOfLines={1}>
+                  {recognition.sender.department ?? recognition.sender.position}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Receiver response */}
+          <ResponsePicker
+            response={localResponse}
+            isRecipient={isRecipient}
+            onSelect={handleResponse}
+            loading={submitResponse.isPending}
+          />
+
+          {/* Emoji reactions (long-press) */}
+          <RecognitionReactionBar
+            recognitionId={recognition.id}
+            pickerVisible={showPicker}
+            pickerY={pickerY}
+            onPickerClose={() => setShowPicker(false)}
+          />
+
         </View>
-
-        {/* ── Message ──────────────────────────────────────── */}
-        <Text style={s.message}>{recognition.message}</Text>
-
-        {/* ── Receiver response ────────────────────────────── */}
-        <ResponsePicker
-          response={localResponse}
-          isRecipient={isRecipient}
-          onSelect={handleResponse}
-          loading={submitResponse.isPending}
-        />
-
-        {/* ── Emoji reactions (long-press) ─────────────────── */}
-        <RecognitionReactionBar
-          recognitionId={recognition.id}
-          pickerVisible={showPicker}
-          pickerY={pickerY}
-          onPickerClose={() => setShowPicker(false)}
-        />
-
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 });
 
@@ -135,68 +145,68 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ede9fe',
+    borderColor: '#a78bfa',
     marginBottom: 14,
+    overflow: 'hidden',
+    shadowColor: '#4a0072',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+
+  // ── Hero (gradient) ──────────────────────────────────
+  hero: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 16,
-    shadowColor: '#7B1FA2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 3,
-    overflow: 'hidden',
+    paddingBottom: 20,
   },
 
-  // Logo
   logo: {
     position: 'absolute',
-    bottom: 12,
+    top: 12,
     right: 12,
-    width: 34,
-    height: 34,
-    opacity: 0.15,
+    width: 36,
+    height: 36,
+    opacity: 0.2,
   },
 
-  // Time
   timeAgo: {
     fontSize: 11,
-    color: '#94a3b8',
-    marginBottom: 14,
-    paddingRight: 0,
+    color: 'rgba(255,255,255,0.65)',
+    alignSelf: 'flex-start',
+    paddingTop: 2,
   },
 
-  // Receiver — header row
   receiverBlock: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
-    paddingTop: 4,
+    marginBottom: 16,
   },
   receiverInfo: {
     flex: 1,
   },
   receiverName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#1e1b4b',
+    color: '#fff',
   },
   receiverDept: {
     fontSize: 13,
-    color: '#64748b',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.72)',
+    marginTop: 3,
   },
 
-  // Badge
   badgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   badgeEmoji: { fontSize: 14 },
   badgeText: {
@@ -205,14 +215,13 @@ const s = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // Divider
-  divider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginBottom: 12,
+  // ── Body (white) ─────────────────────────────────────
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
   },
 
-  // Sent by
   sentByRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,11 +254,10 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
 
-  // Message
   message: {
     fontSize: 14,
     lineHeight: 22,
     color: '#334155',
-    marginBottom: 4,
+    marginBottom: 12,
   },
 });
