@@ -287,7 +287,7 @@ export default function RewardsScreen() {
           onPress={() => setActiveTab('retail')}
           activeOpacity={0.8}
         >
-          <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>Retail Awards</Text>
+          <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>Marketplace</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.tabBtn, activeTab === 'hotel' && s.tabBtnActive]}
