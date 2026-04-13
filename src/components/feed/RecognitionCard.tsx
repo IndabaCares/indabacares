@@ -1,5 +1,5 @@
 import React, { memo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, GestureResponderEvent } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image, GestureResponderEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/ui/Avatar';
 import { RECOGNITION_BADGES } from '@/lib/constants';
@@ -12,6 +12,7 @@ import { ResponsePicker } from './ResponsePicker';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
+const LOGO   = require('../../../assets/IndabaCaresLogo.png');
 
 function getBadgeConfig(badge: string) {
   return (
@@ -34,16 +35,6 @@ function formatRelativeTime(iso: string): string {
   return `${d}d ago`;
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 interface RecognitionCardProps {
   recognition: RecognitionFeedItem;
 }
@@ -64,18 +55,19 @@ export const RecognitionCard = memo(function RecognitionCard({
   const { data: likes = [] } = useLikes(recognition.id);
   const toggleLike = useToggleLike(recognition.id);
 
-  const myLike    = likes.find((l) => l.employee_id === employee?.employee_id);
-  const liked     = !!myLike;
-  const likeCount = likes.length;
+  const myLike     = likes.find((l) => l.employee_id === employee?.employee_id);
+  const liked      = !!myLike;
+  const likeCount  = likes.length;
   const commentsCount = recognition.comments_count?.[0]?.count ?? 0;
   const badgeConfig   = getBadgeConfig(recognition.badge);
   const isRecipient   = employee?.employee_id === recognition.receiver.id;
 
-  const [localResponse, setLocalResponse] = useState<string | null>(recognition.recipient_response ?? null);
+  const [localResponse, setLocalResponse] = useState<string | null>(
+    recognition.recipient_response ?? null,
+  );
   const submitResponse = useSubmitResponse(recognition.id);
 
-  const handleLike = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
-
+  const handleLike     = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
   const handleResponse = (text: string) => {
     setLocalResponse(text);
     submitResponse.mutate(text);
@@ -84,94 +76,99 @@ export const RecognitionCard = memo(function RecognitionCard({
   return (
     <>
       <Pressable onLongPress={handleLongPress} delayLongPress={350}>
-      <View style={s.card}>
+        <View style={s.card}>
 
-        {/* ── Sender row ─────────────────────────────────── */}
-        <View style={s.senderRow}>
-          <Avatar name={recognition.sender.full_name} size="md" />
-          <View style={s.senderInfo}>
-            <Text style={s.senderName}>{recognition.sender.full_name}</Text>
-            {recognition.sender.position && (
-              <Text style={s.senderTitle}>{recognition.sender.position}</Text>
-            )}
-          </View>
-          <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
-        </View>
+          {/* ── IndabaCares logo — top-right corner ────────── */}
+          <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
-        {/* ── Badge pill ──────────────────────────────────── */}
-        <View style={s.badgePill}>
-          <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
-          <Text style={[s.badgeText, { color: badgeConfig.color }]}>{recognition.badge}</Text>
-        </View>
-
-        {/* ── Recipient card ──────────────────────────────── */}
-        <View style={s.recipientCard}>
-          <Ionicons name="arrow-forward-circle" size={17} color={PURPLE} />
-          <Text style={s.recognisingLabel}> Recognising </Text>
-          <Avatar name={recognition.receiver.full_name} size="xs" />
-          <View style={s.recipientTextWrap}>
-            <Text style={s.recipientName}>{recognition.receiver.full_name}</Text>
-            {recognition.receiver.position && (
-              <Text style={s.recipientTitle} numberOfLines={1}>
-                {' · '}{recognition.receiver.position}
+          {/* ── Sender row ─────────────────────────────────── */}
+          <View style={s.senderRow}>
+            <Avatar name={recognition.sender.full_name} size="md" />
+            <View style={s.senderInfo}>
+              <Text style={s.senderName}>{recognition.sender.full_name}</Text>
+              <Text style={s.senderMeta} numberOfLines={1}>
+                {[recognition.sender.department, recognition.sender.position]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
-            )}
+            </View>
+            <Text style={s.timeAgo}>{formatRelativeTime(recognition.created_at)}</Text>
           </View>
-        </View>
 
-        {/* ── Message ─────────────────────────────────────── */}
-        <Text style={s.message}>{recognition.message}</Text>
-
-        {/* ── Recipient response ──────────────────────────── */}
-        <ResponsePicker
-          response={localResponse}
-          isRecipient={isRecipient}
-          onSelect={handleResponse}
-          loading={submitResponse.isPending}
-        />
-
-        {/* ── Emoji reactions ─────────────────────────────── */}
-        <RecognitionReactionBar
-          recognitionId={recognition.id}
-          pickerVisible={showPicker}
-          pickerY={pickerY}
-          onPickerClose={() => setShowPicker(false)}
-        />
-
-        {/* ── Date/time ───────────────────────────────────── */}
-        <Text style={s.dateText}>{formatDateTime(recognition.created_at)}</Text>
-
-        {/* ── Divider ─────────────────────────────────────── */}
-        <View style={s.divider} />
-
-        {/* ── Action bar ──────────────────────────────────── */}
-        <View style={s.actionBar}>
-          <Pressable
-            onPress={handleLike}
-            disabled={toggleLike.isPending}
-            style={s.actionBtn}
-          >
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={20}
-              color={liked ? '#ef4444' : '#94a3b8'}
-            />
-            <Text style={[s.actionText, liked && { color: '#ef4444' }]}>
-              {likeCount > 0 ? likeCount : 'Like'}
+          {/* ── Badge pill ──────────────────────────────────── */}
+          <View style={[s.badgePill, { backgroundColor: badgeConfig.color + '18' }]}>
+            <Text style={s.badgeEmoji}>{badgeConfig.emoji}</Text>
+            <Text style={[s.badgeText, { color: badgeConfig.color }]}>
+              {recognition.badge}
             </Text>
-          </Pressable>
+          </View>
 
-          <Pressable
-            onPress={() => setShowComments(true)}
-            style={s.actionBtn}
-          >
-            <Ionicons name="chatbubble-outline" size={19} color="#94a3b8" />
-            <Text style={s.actionText}>
-              {commentsCount > 0 ? commentsCount : 'Comment'}
-            </Text>
-          </Pressable>
+          {/* ── Recipient ───────────────────────────────────── */}
+          <View style={s.recipientRow}>
+            <Ionicons name="arrow-forward-circle" size={16} color={PURPLE} />
+            <Text style={s.recognisingLabel}> Recognising </Text>
+            <Avatar name={recognition.receiver.full_name} size="xs" />
+            <View style={s.recipientTextWrap}>
+              <Text style={s.recipientName}>{recognition.receiver.full_name}</Text>
+              {recognition.receiver.department ? (
+                <Text style={s.recipientDept} numberOfLines={1}>
+                  {' · '}{recognition.receiver.department}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          {/* ── Message ─────────────────────────────────────── */}
+          <Text style={s.message}>{recognition.message}</Text>
+
+          {/* ── Recipient response ──────────────────────────── */}
+          <ResponsePicker
+            response={localResponse}
+            isRecipient={isRecipient}
+            onSelect={handleResponse}
+            loading={submitResponse.isPending}
+          />
+
+          {/* ── Emoji reactions ─────────────────────────────── */}
+          <RecognitionReactionBar
+            recognitionId={recognition.id}
+            pickerVisible={showPicker}
+            pickerY={pickerY}
+            onPickerClose={() => setShowPicker(false)}
+          />
+
+          {/* ── Divider ─────────────────────────────────────── */}
+          <View style={s.divider} />
+
+          {/* ── Action bar ──────────────────────────────────── */}
+          <View style={s.actionBar}>
+            <Pressable
+              onPress={handleLike}
+              disabled={toggleLike.isPending}
+              style={s.actionBtn}
+            >
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={20}
+                color={liked ? '#ef4444' : '#94a3b8'}
+              />
+              <Text style={[s.actionText, liked && { color: '#ef4444' }]}>
+                {likeCount > 0 ? likeCount : 'Like'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowComments(true)}
+              style={s.actionBtn}
+            >
+              <Ionicons name="chatbubble-outline" size={19} color="#94a3b8" />
+              <Text style={s.actionText}>
+                {commentsCount > 0 ? commentsCount : 'Comment'}
+              </Text>
+            </Pressable>
+          </View>
+
         </View>
-      </View>
       </Pressable>
 
       <CommentSheet
@@ -198,6 +195,17 @@ const s = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 8,
     elevation: 3,
+    overflow: 'hidden',
+  },
+
+  // IndabaCares logo
+  logo: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 38,
+    height: 38,
+    opacity: 0.18,
   },
 
   // Sender
@@ -205,6 +213,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    paddingRight: 44, // clear the logo
   },
   senderInfo: {
     flex: 1,
@@ -215,7 +224,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: '#1e1b4b',
   },
-  senderTitle: {
+  senderMeta: {
     fontSize: 12,
     color: '#94a3b8',
     marginTop: 1,
@@ -232,10 +241,10 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     marginBottom: 10,
   },
-  badgeEmoji: { fontSize: 14 },
+  badgeEmoji: { fontSize: 13 },
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
@@ -243,7 +252,7 @@ const s = StyleSheet.create({
   },
 
   // Recipient
-  recipientCard: {
+  recipientRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f7ff',
@@ -267,7 +276,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: '#1e1b4b',
   },
-  recipientTitle: {
+  recipientDept: {
     fontSize: 12,
     color: '#94a3b8',
     flex: 1,
@@ -281,18 +290,11 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
 
-  // Date
-  dateText: {
-    fontSize: 11,
-    color: '#94a3b8',
-    marginTop: 10,
-    marginBottom: 12,
-  },
-
   // Divider
   divider: {
     height: 1,
     backgroundColor: '#f1f5f9',
+    marginTop: 12,
     marginBottom: 4,
   },
 
