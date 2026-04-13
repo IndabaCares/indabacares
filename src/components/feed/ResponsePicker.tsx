@@ -3,7 +3,6 @@ import {
   View, Text, Pressable,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { RESPONSE_OPTIONS } from '@/hooks/use-recognition-response';
 
 const PURPLE      = '#7B1FA2';
@@ -29,8 +28,7 @@ export function ResponsePicker({
   if (response) {
     return (
       <View style={s.responseRow}>
-        <Ionicons name="chatbubble-ellipses" size={14} color={PURPLE} />
-        <Text style={s.responseText}>{response}</Text>
+        <Text style={s.responseText}>"{response}"</Text>
       </View>
     );
   }
@@ -56,7 +54,6 @@ export function ResponsePicker({
             style={[s.option, i === RESPONSE_OPTIONS.length - 1 && s.optionLast]}
             onPress={() => { setOpen(false); onSelect(opt); }}
           >
-            <Ionicons name="chatbubble-outline" size={14} color={PURPLE} />
             <Text style={s.optionText}>{opt}</Text>
           </Pressable>
         ))}
@@ -74,10 +71,7 @@ export function ResponsePicker({
       {loading ? (
         <ActivityIndicator size="small" color={PURPLE} />
       ) : (
-        <>
-          <Ionicons name="chatbubble-ellipses-outline" size={16} color={PURPLE} />
-          <Text style={s.triggerText}>Respond</Text>
-        </>
+        <Text style={s.triggerText}>Respond</Text>
       )}
     </Pressable>
   );

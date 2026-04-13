@@ -4,10 +4,10 @@ import { QUERY_KEYS } from '@/lib/constants';
 import { useEmployee } from '@/providers/EmployeeContext';
 
 export const RESPONSE_OPTIONS = [
-  'Thank you!',
-  'Much appreciated!',
-  'Only a pleasure!',
-  'Happy to be of service!',
+  'Thank you',
+  'It is my pleasure',
+  'Here to serve',
+  'You are welcome',
 ];
 
 export function useSubmitResponse(recognitionId: string) {
