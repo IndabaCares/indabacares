@@ -122,7 +122,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
         </View>
         <View style={s.divider} />
         <View style={s.backBody}>
-          <Text style={s.backTerms}>{item.terms ?? ''}</Text>
+          <Text style={s.backDesc}>{item.description ?? ''}</Text>
         </View>
         {!outOfStock && (
           canAfford
@@ -398,7 +398,7 @@ const s = StyleSheet.create({
   // Card container
   cardContainer: {
     flex: 1,
-    aspectRatio: 0.92,
+    aspectRatio: 0.72,
     marginHorizontal: 4,
   },
   cardDisabled: {
@@ -462,5 +462,5 @@ const s = StyleSheet.create({
   backHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 8, paddingBottom: 7 },
   backHeading:{ fontSize: 10, fontWeight: '700', color: '#1e1b4b' },
   backBody:   { flex: 1, padding: 10 },
-  backTerms:  { fontSize: 9, color: '#374151', lineHeight: 14 },
+  backDesc:   { fontSize: 11, color: '#374151', lineHeight: 16 },
 });
