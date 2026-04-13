@@ -78,10 +78,10 @@ export default function ProfileScreen() {
     queryFn: async () => {
       const { data } = await supabase
         .from('employees')
-        .select('points_balance, job_title, photo_url')
+        .select('points_balance, job_title, position, photo_url')
         .eq('id', employee!.employee_id)
         .single();
-      return data as { points_balance: number; job_title: string | null; photo_url: string | null } | null;
+      return data as { points_balance: number; job_title: string | null; position: string | null; photo_url: string | null } | null;
     },
     enabled: !!employee,
     staleTime: 60_000,
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
 
   const pointsBalance = profileData?.points_balance ?? null;
   const pointsLoading = profileLoading;
-  const jobTitle      = profileData?.job_title ?? null;
+  const jobTitle      = profileData?.position ?? profileData?.job_title ?? null;
 
   const { data: reactionBalance,     isLoading: reactionLoading }       = useReactionBalance();
   const { data: recognitionRemaining, isLoading: recognitionLoading }   = useRecognitionBalance();
@@ -281,9 +281,6 @@ export default function ProfileScreen() {
               {jobTitle ? <Text style={styles.subtitle}>{jobTitle}</Text> : null}
               <View style={styles.metaRow}>
                 <Text style={styles.metaText}>{employee.hotel}</Text>
-              </View>
-              <View style={[styles.metaRow, { marginTop: 2 }]}>
-                <Text style={styles.metaText}>{employee.department ?? '—'}</Text>
               </View>
             </View>
 
