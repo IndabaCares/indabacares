@@ -1,14 +1,29 @@
-import React, { memo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, GestureResponderEvent } from 'react-native';
+import React, { memo, useState, useRef, useEffect } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, Image,
+  Animated, GestureResponderEvent,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { RECOGNITION_BADGES } from '@/lib/constants';
-import { RecognitionReactionBar } from './RecognitionReactionBar';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { useSubmitResponse, RESPONSE_OPTIONS } from '@/hooks/use-recognition-response';
+import {
+  useRecognitionReactions,
+  useSubmitReaction,
+  type ReactionType,
+} from '@/hooks/use-recognition-reactions';
+import { useReactionBalance } from '@/hooks/use-reaction-balance';
+import { ReactionExhaustedModal } from '@/components/reactions/ReactionExhaustedModal';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const LOGO = require('../../../assets/usedlogo.png');
+
+const REACTIONS: { type: ReactionType; emoji: string }[] = [
+  { type: 'heart',     emoji: '❤️' },
+  { type: 'smile',     emoji: '😊' },
+  { type: 'thumbs_up', emoji: '👍' },
+];
 
 function getBadgeConfig(badge: string) {
   return (
@@ -39,22 +54,43 @@ export const RecognitionCard = memo(function RecognitionCard({
   recognition,
 }: RecognitionCardProps) {
   const { employee } = useEmployee();
-  const [showPicker, setShowPicker]           = useState(false);
-  const [pickerY, setPickerY]                 = useState(0);
+
+  // Response state
   const [showResponseMenu, setShowResponseMenu] = useState(false);
-
-  const handleLongPress = (e: GestureResponderEvent) => {
-    setPickerY(e.nativeEvent.pageY);
-    setShowPicker(true);
-  };
-
-  const badgeConfig = getBadgeConfig(recognition.badge);
-  const isRecipient = employee?.employee_id === recognition.receiver.id;
-
-  const [localResponse, setLocalResponse] = useState<string | null>(
+  const [localResponse, setLocalResponse]       = useState<string | null>(
     recognition.recipient_response ?? null,
   );
   const submitResponse = useSubmitResponse(recognition.id);
+
+  // Reaction state
+  const [showEmojiPicker, setShowEmojiPicker]   = useState(false);
+  const [exhaustedType, setExhaustedType]       = useState<ReactionType | null>(null);
+  const pickerAnim                              = useRef(new Animated.Value(0)).current;
+
+  const { data: reactions = [] } = useRecognitionReactions(recognition.id);
+  const { data: balance }        = useReactionBalance();
+  const submitReaction           = useSubmitReaction(recognition.id);
+
+  const isRecipient = employee?.employee_id === recognition.receiver.id;
+  const badgeConfig = getBadgeConfig(recognition.badge);
+  const senderDept   = recognition.sender.department   ?? recognition.sender.position   ?? null;
+  const receiverDept = recognition.receiver.department ?? recognition.receiver.position ?? null;
+
+  const myReaction = reactions.find((r) => r.employee_id === employee?.employee_id) ?? null;
+  const counts = reactions.reduce<Record<ReactionType, number>>(
+    (acc, r) => { acc[r.reaction_type] = (acc[r.reaction_type] ?? 0) + 1; return acc; },
+    { heart: 0, smile: 0, thumbs_up: 0 },
+  );
+  const hasReactions = Object.values(counts).some((c) => c > 0);
+
+  useEffect(() => {
+    Animated.spring(pickerAnim, {
+      toValue:        showEmojiPicker ? 1 : 0,
+      friction:       6,
+      tension:        140,
+      useNativeDriver: true,
+    }).start();
+  }, [showEmojiPicker]);
 
   const handleResponse = (text: string) => {
     setLocalResponse(text);
@@ -62,18 +98,24 @@ export const RecognitionCard = memo(function RecognitionCard({
     submitResponse.mutate(text);
   };
 
-  const senderDept   = recognition.sender.department   ?? recognition.sender.position   ?? null;
-  const receiverDept = recognition.receiver.department ?? recognition.receiver.position ?? null;
+  const handleReact = (type: ReactionType) => {
+    if (submitReaction.isPending) return;
+    setShowEmojiPicker(false);
+    const existingId = myReaction?.reaction_type === type ? myReaction.id : null;
+    submitReaction.mutate({ reactionType: type, existingId }, {
+      onError: () => { if (!existingId) setExhaustedType(type); },
+    });
+  };
 
   return (
-    <TouchableOpacity onLongPress={handleLongPress} delayLongPress={350} activeOpacity={0.97}>
+    <TouchableOpacity activeOpacity={0.97}>
       <LinearGradient
         colors={['#3b0764', '#6d28d9', '#7B1FA2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.card}
       >
-        {/* ── Logo watermark — bottom-right edge ───────────── */}
+        {/* ── Logo watermark — bottom-right ─────────────────── */}
         <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
         {/* ── Receiver row: avatar · name · dept · time ─────── */}
@@ -144,15 +186,81 @@ export const RecognitionCard = memo(function RecognitionCard({
           </>
         )}
 
-        {/* ── Emoji reactions (long-press) ──────────────────── */}
-        <RecognitionReactionBar
-          recognitionId={recognition.id}
-          pickerVisible={showPicker}
-          pickerY={pickerY}
-          onPickerClose={() => setShowPicker(false)}
-        />
+        {/* ── Reactions ─────────────────────────────────────── */}
+        <View style={s.reactionsRow}>
+          {/* Count pills */}
+          {hasReactions && (
+            <View style={s.countsRow}>
+              {REACTIONS.map(({ type, emoji }) => {
+                const count    = counts[type];
+                const isActive = myReaction?.reaction_type === type;
+                if (!count) return null;
+                return (
+                  <View key={type} style={[s.countPill, isActive && s.countPillActive]}>
+                    <Text style={s.countEmoji}>{emoji}</Text>
+                    <Text style={[s.countText, isActive && s.countTextActive]}>{count}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* React button */}
+          <TouchableOpacity
+            style={s.reactBtn}
+            onPress={() => setShowEmojiPicker((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Text style={s.reactBtnText}>{showEmojiPicker ? '✕' : '😊'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Emoji picker row (animated) ───────────────────── */}
+        {showEmojiPicker && (
+          <Animated.View
+            style={[
+              s.emojiPickerRow,
+              {
+                opacity:   pickerAnim,
+                transform: [
+                  { scale: pickerAnim },
+                  {
+                    translateY: pickerAnim.interpolate({
+                      inputRange:  [0, 1],
+                      outputRange: [8, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {REACTIONS.map(({ type, emoji }) => {
+              const isActive = myReaction?.reaction_type === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[s.emojiBtn, isActive && s.emojiBtnActive]}
+                  onPress={() => handleReact(type)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.emojiText}>{emoji}</Text>
+                  {isActive && <View style={s.activeDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </Animated.View>
+        )}
 
       </LinearGradient>
+
+      {exhaustedType && balance && (
+        <ReactionExhaustedModal
+          visible
+          onClose={() => setExhaustedType(null)}
+          exhaustedType={exhaustedType}
+          balance={balance}
+        />
+      )}
     </TouchableOpacity>
   );
 });
@@ -174,14 +282,15 @@ const s = StyleSheet.create({
     elevation: 8,
   },
 
-  // Logo — large watermark bottom-right
+  // Logo
   logo: {
     position: 'absolute',
-    bottom: -10,
-    right: -10,
-    width: 100,
-    height: 100,
-    opacity: 0.12,
+    bottom: -12,
+    right: -12,
+    width: 120,
+    height: 120,
+    opacity: 0.28,
+    tintColor: '#ffffff',
   },
 
   // Receiver row
@@ -269,13 +378,13 @@ const s = StyleSheet.create({
     flex: 1,
   },
 
-  // Response display (after responding)
+  // Response display
   responseDisplay: {
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   responseQuote: {
     fontSize: 13,
@@ -293,7 +402,7 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.35)',
     paddingHorizontal: 18,
     paddingVertical: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   respondBtnDisabled: {
     opacity: 0.4,
@@ -308,7 +417,7 @@ const s = StyleSheet.create({
   dropdown: {
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 14,
-    marginBottom: 10,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   dropdownOption: {
@@ -324,5 +433,92 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: '#3b0764',
     fontWeight: '600',
+  },
+
+  // Reactions row
+  reactionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  countsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    flex: 1,
+  },
+  countPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  countPillActive: {
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  countEmoji: { fontSize: 13 },
+  countText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    marginLeft: 3,
+  },
+  countTextActive: { color: '#fff' },
+
+  // React button
+  reactBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  reactBtnText: {
+    fontSize: 18,
+  },
+
+  // Emoji picker row
+  emojiPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 40,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  emojiBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  emojiBtnActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  emojiText: {
+    fontSize: 30,
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#fff',
   },
 });
