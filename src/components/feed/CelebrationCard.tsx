@@ -1,9 +1,12 @@
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { memo, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
 import { useEmployee } from '@/providers/EmployeeContext';
 import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
+
+const LOGO = require('../../../assets/usedlogo.png');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,23 +31,26 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
   const { type, milestone, employee } = celebration;
   const isBirthday = type === 'birthday';
 
-  const accentColor = isBirthday ? '#E91E8C' : '#7B1FA2';
-  const bgColor     = isBirthday ? '#FFF0F8' : '#F3E5F5';
-  const major       = !isBirthday && milestone != null && isMajorMilestone(milestone);
+  const gradientColors: [string, string, string] = isBirthday
+    ? ['#4a0000', '#b71c1c', '#dc2626']
+    : ['#3b0764', '#6d28d9', '#7B1FA2'];
+
+  const major = !isBirthday && milestone != null && isMajorMilestone(milestone);
 
   const header = isBirthday
-    ? 'Happy Birthday! 🎂'
+    ? '🎉 Happy Birthday! 🎉'
     : `${ordinal(milestone ?? 1)} Work Anniversary 🏆`;
 
-  const body = isBirthday
-    ? `${employee.full_name} is celebrating their birthday today!`
+  const dept = employee.department ?? employee.position ?? null;
+  const firstName = employee.full_name.split(' ')[0];
+
+  const bodyText = isBirthday
+    ? `Happy Birthday to ${employee.full_name}, we hope you have an awesome day full of fun, love and celebrations.`
     : major
       ? `${employee.full_name} is celebrating ${milestone} incredible year${(milestone ?? 1) !== 1 ? 's' : ''} with the team. What an achievement!`
       : `${employee.full_name} is celebrating ${milestone} year${(milestone ?? 1) !== 1 ? 's' : ''} with the team today.`;
 
-  const dept = employee.department ?? employee.position ?? null;
-
-  // Heart — uses the likes system (no reaction balance deduction)
+  // Heart — uses likes (no balance deduction)
   const { data: likes = [] } = useLikes(celebration.id);
   const toggleLike           = useToggleLike(celebration.id);
   const myLike               = likes.find((l) => l.employee_id === currentEmployee?.employee_id);
@@ -53,34 +59,71 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
   const handleHeart = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
 
+  // ── Pulse animation on header ──────────────────────────────────────────────
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue:         1.07,
+          duration:        700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue:         1,
+          duration:        700,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
   return (
-    <View style={[s.card, { backgroundColor: bgColor }]}>
+    <LinearGradient
+      colors={gradientColors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={s.card}
+    >
+      {/* ── Logo watermark ────────────────────────────────── */}
+      <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
-      {/* ── Header ──────────────────────────────────────── */}
-      <Text style={[s.header, { color: accentColor }]}>{header}</Text>
+      {/* ── Animated header ───────────────────────────────── */}
+      <Animated.Text
+        style={[s.header, { transform: [{ scale: pulseAnim }] }]}
+      >
+        {header}
+      </Animated.Text>
 
-      {/* ── Person row ──────────────────────────────────── */}
+      {/* ── Person row: avatar · name · dept ──────────────── */}
       <View style={s.personRow}>
-        <Avatar name={employee.full_name} size="md" />
+        <Avatar name={employee.full_name} size="lg" />
         <View style={s.personInfo}>
-          <Text style={[s.personName, { color: accentColor }]}>{employee.full_name}</Text>
-          {dept ? (
-            <Text style={s.personDept}>{dept}</Text>
-          ) : null}
+          <View style={s.nameRow}>
+            <Text style={s.personName} numberOfLines={1}>
+              {employee.full_name}
+            </Text>
+            {dept ? (
+              <Text style={s.personDept} numberOfLines={1}> · {dept}</Text>
+            ) : null}
+          </View>
         </View>
       </View>
 
-      {/* ── Body text ───────────────────────────────────── */}
-      <Text style={s.body}>{body}</Text>
+      {/* ── Body text ─────────────────────────────────────── */}
+      <Text style={s.body}>{bodyText}</Text>
 
-      {/* ── Milestone badge ─────────────────────────────── */}
+      {/* ── Milestone badge ───────────────────────────────── */}
       {major && (
-        <View style={[s.milestoneBadge, { backgroundColor: accentColor }]}>
+        <View style={s.milestoneBadge}>
           <Text style={s.milestoneText}>{milestone}-Year Milestone</Text>
         </View>
       )}
 
-      {/* ── Heart reaction ──────────────────────────────── */}
+      {/* ── Heart reaction ────────────────────────────────── */}
       <View style={s.heartRow}>
         <TouchableOpacity
           onPress={handleHeart}
@@ -90,38 +133,54 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
         >
           <Text style={s.heartEmoji}>{liked ? '❤️' : '🤍'}</Text>
           {likeCount > 0 && (
-            <Text style={[s.heartCount, { color: accentColor }]}>{likeCount}</Text>
+            <Text style={s.heartCount}>{likeCount}</Text>
           )}
         </TouchableOpacity>
       </View>
 
-    </View>
+    </LinearGradient>
   );
 });
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({});
-
 const s = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: 20,
+    marginBottom: 14,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingTop: 18,
+    paddingBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#7f0000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+
+  // Logo
+  logo: {
+    position: 'absolute',
+    bottom: 10,
+    right: 12,
+    width: 70,
+    height: 70,
+    opacity: 0.28,
+    tintColor: '#ffffff',
   },
 
   // Header
   header: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 14,
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 18,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 
   // Person row
@@ -129,36 +188,48 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
   },
   personInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+  },
   personName: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
   },
   personDept: {
     fontSize: 13,
-    color: '#64748b',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.65)',
   },
 
   // Body
   body: {
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 19,
-    marginBottom: 12,
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#fff',
+    marginBottom: 14,
   },
 
   // Milestone badge
   milestoneBadge: {
     alignSelf: 'flex-start',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: 14,
   },
   milestoneText: {
     fontSize: 11,
@@ -180,10 +251,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 2,
   },
   heartEmoji: {
-    fontSize: 24,
+    fontSize: 26,
   },
   heartCount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+    color: '#ff6b6b',
   },
 });
