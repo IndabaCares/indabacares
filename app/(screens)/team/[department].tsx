@@ -84,7 +84,7 @@ export default function TeamDepartmentScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>{department}</Text>
+            <Text style={styles.title} numberOfLines={2}>{department}</Text>
             {isAPA && hotel ? (
               <Text style={styles.hotelName}>{hotel}</Text>
             ) : null}
