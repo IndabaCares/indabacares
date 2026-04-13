@@ -92,7 +92,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
           <Text style={s.milestoneYear}>{milestone ?? ''}</Text>
           <View style={s.milestoneTitleWrap}>
             <Animated.Text style={[s.milestoneTitle, { transform: [{ scale: pulseAnim }] }]}>
-              SERVICE MILESTONE
+              Service Milestone
             </Animated.Text>
           </View>
           {/* Spacer balances the year number width */}
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
   },
   milestoneTitle: {
     fontFamily: 'DancingScript_700Bold',
-    fontSize: 28,
+    fontSize: 22,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
