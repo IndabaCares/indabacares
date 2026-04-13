@@ -15,6 +15,7 @@ export interface CelebrationFeedItem {
     hotel:      string;
     department: string | null;
     position:   string | null;
+    photo_url: string | null;
   };
 }
 
@@ -36,7 +37,7 @@ export function useCelebrations(hotel: string) {
           milestone,
           celebrated_on,
           created_at,
-          employee:employees!employee_id ( id, full_name, hotel, department, position )
+          employee:employees!employee_id ( id, full_name, hotel, department, position, photo_url )
         `)
         .eq('celebrated_on', today)
         .eq('hotel', hotel)
@@ -57,6 +58,7 @@ export function useCelebrations(hotel: string) {
           hotel:      row.employee.hotel,
           department: row.employee.department ?? null,
           position:   row.employee.position   ?? null,
+          photo_url: row.employee.photo_url ?? null,
         },
       }));
     },

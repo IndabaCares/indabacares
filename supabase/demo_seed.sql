@@ -106,6 +106,14 @@ BEGIN
     (v_ayanda, 'Ayanda Nkosi',   'IH004',  v_hotel, 'Housekeeping',    'active'),
     (v_thandi, 'Thandi Sithole', 'IH005',  v_hotel, 'Concierge',       'active');
 
+  -- Avatar photos for demo employees (stable randomuser.me portrait URLs)
+  -- photo_url is the actual column (migration 044); used by both feed queries and get_leaderboard()
+  UPDATE public.employees SET photo_url = 'https://randomuser.me/api/portraits/men/32.jpg'   WHERE id = v_demo01;
+  UPDATE public.employees SET photo_url = 'https://randomuser.me/api/portraits/women/44.jpg' WHERE id = v_zanele;
+  UPDATE public.employees SET photo_url = 'https://randomuser.me/api/portraits/men/52.jpg'   WHERE id = v_sipho;
+  UPDATE public.employees SET photo_url = 'https://randomuser.me/api/portraits/women/68.jpg' WHERE id = v_ayanda;
+  UPDATE public.employees SET photo_url = 'https://randomuser.me/api/portraits/women/26.jpg' WHERE id = v_thandi;
+
 
   -- ────────────────────────────────────────────────────────────────────────────
   -- 3. PASSWORD FOR DEMO01

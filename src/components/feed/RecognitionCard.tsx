@@ -120,7 +120,7 @@ export const RecognitionCard = memo(function RecognitionCard({
 
         {/* ── Receiver row: avatar · name · dept · time ─────── */}
         <View style={s.receiverBlock}>
-          <Avatar name={recognition.receiver.full_name} size="lg" />
+          <Avatar name={recognition.receiver.full_name} uri={recognition.receiver.photo_url ?? undefined} size="lg" />
           <View style={s.receiverInfo}>
             <View style={s.nameRow}>
               <Text style={s.receiverName} numberOfLines={1}>
@@ -285,8 +285,8 @@ const s = StyleSheet.create({
   // Logo
   logo: {
     position: 'absolute',
-    bottom: 10,
-    right: 12,
+    bottom: 4,
+    right: 6,
     width: 70,
     height: 70,
     opacity: 0.28,

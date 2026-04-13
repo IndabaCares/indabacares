@@ -98,7 +98,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
 
           {/* ── Receiver header row ───────────────────────────── */}
           <View style={s.receiverBlock}>
-            <Avatar name={recognition.receiver.full_name} size="lg" />
+            <Avatar name={recognition.receiver.full_name} uri={recognition.receiver.photo_url ?? undefined} size="lg" />
             <View style={s.receiverInfo}>
               <Text style={s.receiverName} numberOfLines={1}>{recognition.receiver.full_name}</Text>
               {(recognition.receiver.department ?? recognition.receiver.position) ? (
@@ -117,7 +117,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
 
           {/* ── Sent by ───────────────────────────────────────── */}
           <View style={s.sentByRow}>
-            <Avatar name={recognition.sender.full_name} size="xs" />
+            <Avatar name={recognition.sender.full_name} uri={recognition.sender.photo_url ?? undefined} size="xs" />
             <View style={s.sentByInfo}>
               <Text style={s.sentByLabel}>Sent by</Text>
               <Text style={s.sentByName} numberOfLines={1}>{recognition.sender.full_name}</Text>
@@ -216,8 +216,8 @@ const s = StyleSheet.create({
   // Logo
   logo: {
     position: 'absolute',
-    bottom: 12,
-    right: 12,
+    bottom: 4,
+    right: 6,
     width: 34,
     height: 34,
     opacity: 0.12,

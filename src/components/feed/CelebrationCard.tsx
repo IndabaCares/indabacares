@@ -102,7 +102,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
       {/* ── Person row: avatar · name · dept ──────────────── */}
       <View style={s.personRow}>
-        <Avatar name={employee.full_name} size="lg" />
+        <Avatar name={employee.full_name} uri={employee.photo_url ?? undefined} size="lg" />
         <View style={s.personInfo}>
           <View style={s.nameRow}>
             <Text style={s.personName} numberOfLines={1}>
@@ -172,8 +172,8 @@ const s = StyleSheet.create({
   // Logo
   logo: {
     position: 'absolute',
-    bottom: 10,
-    right: 12,
+    bottom: 4,
+    right: 6,
     width: 70,
     height: 70,
     opacity: 0.28,
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
   },
   milestoneTitle: {
     fontFamily: 'DancingScript_700Bold',
-    fontSize: 22,
+    fontSize: 32,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },

@@ -62,7 +62,10 @@
       "Read(//c/Users/Personel/Desktop//**)",
       "Bash(powershell -Command ':*)",
       "Bash(npm uninstall:*)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm list:*)",
+      "Bash(npx eas:*)",
+      "Bash(eas update:*)"
     ]
   }
 }
