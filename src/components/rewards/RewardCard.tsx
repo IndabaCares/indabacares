@@ -65,9 +65,9 @@ export function RewardCard({ reward, pointsBalance, onPress }: RewardCardProps) 
       <View style={styles.scrim} />
 
       {/* ── Top-left: Points badge ─────────────────────────────────────── */}
-      <View style={[styles.badge, styles.badgeTopLeft, canAfford ? styles.badgeWhite : styles.badgePink]}>
-        <Ionicons name="star" size={10} color={canAfford ? PURPLE : '#db2777'} />
-        <Text style={[styles.badgeLabel, { color: canAfford ? PURPLE : '#db2777', marginLeft: 3 }]}>
+      <View style={[styles.pointsBadge, canAfford ? styles.pointsBadgeGreen : styles.pointsBadgeRed]}>
+        <Ionicons name="cash-outline" size={20} color={canAfford ? '#16a34a' : '#db2777'} />
+        <Text style={[styles.pointsLabel, { color: canAfford ? '#16a34a' : '#db2777' }]}>
           {reward.points_required}
         </Text>
       </View>
@@ -91,7 +91,7 @@ export function RewardCard({ reward, pointsBalance, onPress }: RewardCardProps) 
         </Text>
         {!outOfStock && canAfford && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-            <Ionicons name="checkmark-circle" size={12} color="#86efac" />
+            <Ionicons name="checkmark-circle" size={20} color="#86efac" />
             <Text style={[styles.subLabel, { color: '#86efac', marginLeft: 4 }]}>Can redeem</Text>
           </View>
         )}
@@ -131,6 +131,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
 
+  // Points badge — enlarged, top-left
+  pointsBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 5,
+  },
+  pointsBadgeGreen: { backgroundColor: 'rgba(220,252,231,0.95)' },
+  pointsBadgeRed:   { backgroundColor: 'rgba(252,231,243,0.95)' },
+  pointsLabel: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  // Stock / other badges
   badge: {
     position: 'absolute',
     flexDirection: 'row',
