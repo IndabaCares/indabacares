@@ -1,5 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View, Text, FlatList, RefreshControl, StyleSheet,
+  ActivityIndicator, TouchableOpacity, ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
@@ -12,19 +15,106 @@ import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useUIStore } from '@/stores/ui-store';
 import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
+import { useEmployee } from '@/providers/EmployeeContext';
+import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
+
+const HOTEL_ICON: Record<string, keyof typeof import('@expo/vector-icons').Ionicons.glyphMap> = {
+  'Indaba Hotel':                 'business-outline',
+  'Indaba Lodge Richards Bay':    'water-outline',
+  'Indaba Lodge Gaborone':        'globe-outline',
+  'Chobe Safari Lodge':           'leaf-outline',
+  'Chobe Bush Lodge':             'leaf-outline',
+  'Nata Lodge':                   'sunny-outline',
+  'African Procurement Agencies': 'briefcase-outline',
+};
+
+// ─── APA Hotel Picker ─────────────────────────────────────────────────────────
+
+function HotelPicker({ onSelect }: { onSelect: (hotel: string) => void }) {
+  return (
+    <ScrollView contentContainerStyle={picker.body}>
+      <Text style={picker.hint}>Select a property to view its feed</Text>
+      {HOTELS.filter((h) => h !== APA_HOTEL).map((hotel) => (
+        <TouchableOpacity
+          key={hotel}
+          activeOpacity={0.75}
+          style={picker.row}
+          onPress={() => onSelect(hotel)}
+        >
+          <View style={picker.iconWrap}>
+            <Ionicons name={HOTEL_ICON[hotel] ?? 'business-outline'} size={22} color={PURPLE} />
+          </View>
+          <Text style={picker.label}>{hotel}</Text>
+          <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+const picker = StyleSheet.create({
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  hint: {
+    fontSize: 13,
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#ede9fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+});
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
   useReactionRealtime();
 
+  const { employee } = useEmployee();
+  const isAPA = employee?.hotel === APA_HOTEL;
+
+  const [selectedHotel, setSelectedHotel] = useState<string | null>(
+    isAPA ? null : (employee?.hotel ?? ''),
+  );
   const [searchTerm,   setSearchTerm]   = useState('');
   const [activeFilter, setActiveFilter] = useState<FeedFilter | null>(null);
   const isSearching = searchTerm.trim().length > 0;
+
+  const hotel = selectedHotel ?? '';
 
   const {
     data,
@@ -34,14 +124,10 @@ export default function FeedScreen() {
     fetchNextPage,
     refetch,
     isRefetching,
-  } = useFeed();
+  } = useFeed(hotel);
 
-  const {
-    data:      searchResults,
-    isLoading: searchLoading,
-  } = useFeedSearch(searchTerm);
-
-  const { data: celebrations = [] } = useCelebrations();
+  const { data: searchResults, isLoading: searchLoading } = useFeedSearch(searchTerm, hotel);
+  const { data: celebrations = [] } = useCelebrations(hotel);
 
   const resetNewFeedItems = useUIStore((s) => s.resetNewFeedItems);
   const liveRecognitions  = data?.pages.flatMap((page) => page) ?? [];
@@ -65,7 +151,6 @@ export default function FeedScreen() {
     return baseItems;
   })();
 
-  // Celebrations always appear at the top when not searching or filtering
   type FeedEntry = RecognitionFeedItem | CelebrationFeedItem;
   const feedItems: FeedEntry[] = (!isSearching && !activeFilter)
     ? [...celebrations, ...filteredItems]
@@ -80,13 +165,42 @@ export default function FeedScreen() {
     if (!isSearching && hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // APA with no hotel selected — show picker below the purple header
+  if (isAPA && !selectedHotel) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: PURPLE }} edges={['top']}>
+        <View style={{ flex: 1, backgroundColor: '#F2F2F2' }}>
+          <FeedHeader
+            searchTerm=""
+            onSearchChange={() => {}}
+            activeFilter={null}
+            onFilterChange={() => {}}
+          />
+          <HotelPicker onSelect={setSelectedHotel} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const header = (
-    <FeedHeader
-      searchTerm={searchTerm}
-      onSearchChange={setSearchTerm}
-      activeFilter={activeFilter}
-      onFilterChange={setActiveFilter}
-    />
+    <>
+      <FeedHeader
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+      />
+      {/* APA hotel strip — shows selected hotel + swap button */}
+      {isAPA && selectedHotel && (
+        <View style={styles.hotelStrip}>
+          <Ionicons name="business-outline" size={14} color={PURPLE} />
+          <Text style={styles.hotelStripText}>{selectedHotel}</Text>
+          <TouchableOpacity onPress={() => setSelectedHotel(null)} hitSlop={8}>
+            <Ionicons name="swap-horizontal-outline" size={18} color={PURPLE} />
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 
   if (isLoading) {
@@ -165,4 +279,18 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   emptySearch:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
   emptySearchText: { fontSize: 15, color: '#94a3b8', textAlign: 'center' },
+  hotelStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#ede9fe',
+  },
+  hotelStripText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: PURPLE,
+  },
 });

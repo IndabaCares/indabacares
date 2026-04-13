@@ -18,18 +18,18 @@ function useDebouncedValue(value: string, delayMs: number): string {
   return debounced;
 }
 
-export function useFeedSearch(searchTerm: string) {
+export function useFeedSearch(searchTerm: string, hotel: string) {
   const { employee } = useEmployee();
   const trimmed  = searchTerm.trim();
   const debounced = useDebouncedValue(trimmed, SEARCH_DEBOUNCE_MS);
 
   return useQuery<RecognitionFeedItem[]>({
-    queryKey: ['feed-search', employee?.hotel, debounced],
+    queryKey: ['feed-search', hotel, debounced],
     queryFn: async () => {
-      if (!employee || !debounced) return [];
+      if (!employee || !debounced || !hotel) return [];
 
       const { data, error } = await supabase.rpc('search_recognitions', {
-        p_hotel:  employee.hotel,
+        p_hotel:  hotel,
         p_search: debounced,
         p_limit:  100,
       });

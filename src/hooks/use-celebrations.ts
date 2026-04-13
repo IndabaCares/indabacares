@@ -16,13 +16,13 @@ export interface CelebrationFeedItem {
   };
 }
 
-export function useCelebrations() {
+export function useCelebrations(hotel: string) {
   const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: ['celebrations', employee?.hotel],
+    queryKey: ['celebrations', hotel],
     queryFn: async (): Promise<CelebrationFeedItem[]> => {
-      if (!employee) return [];
+      if (!employee || !hotel) return [];
 
       const today = new Date().toISOString().split('T')[0];
 
@@ -37,6 +37,7 @@ export function useCelebrations() {
           employee:employees!employee_id ( id, full_name, hotel )
         `)
         .eq('celebrated_on', today)
+        .eq('hotel', hotel)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

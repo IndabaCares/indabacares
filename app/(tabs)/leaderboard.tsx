@@ -9,12 +9,14 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
+  SafeAreaView as RNSafeAreaView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 import { type PeriodType } from '@/api/leaderboard-service';
 import { LeaderboardRow } from '@/components/leaderboard/LeaderboardRow';
 import { TopThreePodium } from '@/components/leaderboard/TopThreePodium';
@@ -183,11 +185,68 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
   );
 }
 
+// ─── APA Hotel Picker ─────────────────────────────────────────────────────────
+
+const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  'Indaba Hotel':                 'business-outline',
+  'Indaba Lodge Richards Bay':    'water-outline',
+  'Indaba Lodge Gaborone':        'globe-outline',
+  'Chobe Safari Lodge':           'leaf-outline',
+  'Chobe Bush Lodge':             'leaf-outline',
+  'Nata Lodge':                   'sunny-outline',
+};
+
+function HotelPickerView({ onSelect }: { onSelect: (hotel: string) => void }) {
+  return (
+    <ScrollView contentContainerStyle={pickerStyles.body}>
+      <Text style={pickerStyles.hint}>Select a property to view its leaderboard</Text>
+      {HOTELS.filter((h) => h !== APA_HOTEL).map((hotel) => (
+        <TouchableOpacity
+          key={hotel}
+          activeOpacity={0.75}
+          style={pickerStyles.row}
+          onPress={() => onSelect(hotel)}
+        >
+          <View style={pickerStyles.iconWrap}>
+            <Ionicons name={HOTEL_ICON[hotel] ?? 'business-outline'} size={22} color={PURPLE} />
+          </View>
+          <Text style={pickerStyles.label}>{hotel}</Text>
+          <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40, gap: 12 },
+  hint: { fontSize: 13, color: '#94a3b8', textAlign: 'center', marginBottom: 4 },
+  row: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff',
+    borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  iconWrap: {
+    width: 44, height: 44, borderRadius: 12, backgroundColor: '#ede9fe',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  label: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1e293b' },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LeaderboardScreen() {
+  const { employee } = useEmployee();
+  const isAPA = employee?.hotel === APA_HOTEL;
+
+  const [selectedHotel, setSelectedHotel] = useState<string | null>(
+    isAPA ? null : (employee?.hotel ?? ''),
+  );
   const [period, setPeriod] = useState<PeriodType>('monthly');
-  const { data: liveEntries = [], isLoading, refetch, isRefetching } = useLeaderboard('monthly');
+
+  const hotel = selectedHotel ?? '';
+  const { data: liveEntries = [], isLoading, refetch, isRefetching } = useLeaderboard(hotel, 'monthly');
 
   const allEntries  = liveEntries;
 
@@ -202,9 +261,35 @@ export default function LeaderboardScreen() {
   const listEntries  = isManagement ? management : isLegends ? allEntries : employees.slice(3);
   const rest         = listEntries as LeaderboardEntry[];
 
+  // APA with no hotel — show picker
+  if (isAPA && !selectedHotel) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.screen}>
+          <View style={[styles.header, { justifyContent: 'center', alignItems: 'center', paddingVertical: 24 }]}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1e293b' }}>Leaderboard</Text>
+            <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>Choose a property</Text>
+          </View>
+          <HotelPickerView onSelect={setSelectedHotel} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
+
+      {/* APA hotel strip */}
+      {isAPA && selectedHotel && (
+        <View style={styles.hotelStrip}>
+          <Ionicons name="business-outline" size={14} color={PURPLE} />
+          <Text style={styles.hotelStripText}>{selectedHotel}</Text>
+          <TouchableOpacity onPress={() => setSelectedHotel(null)} hitSlop={8}>
+            <Ionicons name="swap-horizontal-outline" size={18} color={PURPLE} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Frozen purple header ─────────────────────────────── */}
       <View style={styles.header}>
@@ -349,6 +434,21 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
     marginHorizontal: 16,
+  },
+
+  hotelStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#ede9fe',
+  },
+  hotelStripText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: PURPLE,
   },
 
   dividerRow: {
