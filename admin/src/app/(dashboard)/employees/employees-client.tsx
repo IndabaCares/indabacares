@@ -53,6 +53,7 @@ interface Employee {
   email:          string | null;
   status:         string;
   points_balance: number;
+  is_manager:     boolean;
   created_at:     string;
 }
 
@@ -78,6 +79,7 @@ function EditEmployeeDialog({
   const [email,        setEmail]        = useState(employee.email        ?? '');
   const [dateOfBirth,  setDateOfBirth]  = useState((employee as any).date_of_birth ?? '');
   const [startDate,    setStartDate]    = useState((employee as any).start_date    ?? '');
+  const [isManager,    setIsManager]    = useState(employee.is_manager ?? false);
 
   function handleSave() {
     if (!fullName.trim()) {
@@ -93,6 +95,7 @@ function EditEmployeeDialog({
           email:         email         || null,
           date_of_birth: dateOfBirth   || null,
           start_date:    startDate     || null,
+          is_manager:    isManager,
         });
         toast.success('Employee updated');
         onClose();
@@ -137,6 +140,18 @@ function EditEmployeeDialog({
               <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
             </div>
           </div>
+          <label className="flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={isManager}
+              onChange={(e) => setIsManager(e.target.checked)}
+              className="h-4 w-4 accent-violet-600"
+            />
+            <div>
+              <p className="text-sm font-medium">Management</p>
+              <p className="text-xs text-muted-foreground">Appears under the Management tab on the leaderboard</p>
+            </div>
+          </label>
         </div>
 
         <DialogFooter>
@@ -162,6 +177,7 @@ function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
   const [email,        setEmail]        = useState('');
   const [dateOfBirth,  setDateOfBirth]  = useState('');
   const [startDate,    setStartDate]    = useState('');
+  const [isManager,    setIsManager]    = useState(false);
 
   function handleSave() {
     if (!fullName.trim())     { toast.error('Full name is required');     return; }
@@ -179,6 +195,7 @@ function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
           email:         email        || null,
           date_of_birth: dateOfBirth  || null,
           start_date:    startDate    || null,
+          is_manager:    isManager,
         });
         toast.success('Employee created');
         onClose();
@@ -241,6 +258,18 @@ function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
               <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
             </div>
           </div>
+          <label className="flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={isManager}
+              onChange={(e) => setIsManager(e.target.checked)}
+              className="h-4 w-4 accent-violet-600"
+            />
+            <div>
+              <p className="text-sm font-medium">Management</p>
+              <p className="text-xs text-muted-foreground">Appears under the Management tab on the leaderboard</p>
+            </div>
+          </label>
         </div>
 
         <DialogFooter>
@@ -354,6 +383,7 @@ export function EmployeesClient({
               <TableHead>Position</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="text-right">Points</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead />
             </TableRow>
@@ -361,7 +391,7 @@ export function EmployeesClient({
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                   No employees found.
                 </TableCell>
               </TableRow>
@@ -375,6 +405,15 @@ export function EmployeesClient({
                 <TableCell className="text-sm text-muted-foreground">{emp.position  ?? '—'}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{emp.email ?? '—'}</TableCell>
                 <TableCell className="text-right font-semibold">{emp.points_balance ?? 0}</TableCell>
+                <TableCell>
+                  {emp.is_manager ? (
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">
+                      Management
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Employee</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CHIP[emp.status] ?? 'bg-slate-100 text-slate-600'}`}>
                     {emp.status}

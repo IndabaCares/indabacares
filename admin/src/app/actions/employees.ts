@@ -27,6 +27,7 @@ export async function createEmployee(fields: {
   email:         string | null;
   date_of_birth: string | null;
   start_date:    string | null;
+  is_manager:    boolean;
 }) {
   const db = createAdminClient();
 
@@ -39,6 +40,7 @@ export async function createEmployee(fields: {
     email:         fields.email?.trim().toLowerCase() || null,
     date_of_birth: fields.date_of_birth || null,
     start_date:    fields.start_date    || null,
+    is_manager:    fields.is_manager,
     status:        'active',
   });
 
@@ -94,6 +96,7 @@ export async function updateEmployee(
     email:         string | null;
     date_of_birth: string | null;
     start_date:    string | null;
+    is_manager:    boolean;
   },
 ) {
   const db = createAdminClient();
@@ -107,6 +110,7 @@ export async function updateEmployee(
       email:         fields.email?.trim().toLowerCase() || null,
       date_of_birth: fields.date_of_birth || null,
       start_date:    fields.start_date    || null,
+      is_manager:    fields.is_manager,
     })
     .eq('id', id);
 
