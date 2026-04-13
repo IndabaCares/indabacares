@@ -270,16 +270,16 @@ export const RecognitionCard = memo(function RecognitionCard({
 const s = StyleSheet.create({
   card: {
     borderRadius: 20,
-    marginBottom: 14,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
     overflow: 'hidden',
     shadowColor: '#3b0764',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   // Logo
@@ -298,7 +298,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   receiverInfo: {
     flex: 1,
@@ -330,11 +330,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   badgeEmoji: { fontSize: 14 },
   badgeText: {
@@ -346,9 +346,9 @@ const s = StyleSheet.create({
   // Message
   message: {
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 21,
     color: '#fff',
-    marginBottom: 14,
+    marginBottom: 10,
   },
 
   // Given by
@@ -357,9 +357,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
     flexWrap: 'wrap',
   },
   givenByLabel: {
@@ -400,9 +400,9 @@ const s = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.35)',
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 8,
   },
   respondBtnDisabled: {
     opacity: 0.4,
@@ -422,7 +422,7 @@ const s = StyleSheet.create({
   },
   dropdownOption: {
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ede9fe',
   },
@@ -494,9 +494,9 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   emojiBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -507,7 +507,7 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
   },
   emojiText: {
-    fontSize: 30,
+    fontSize: 26,
   },
   activeDot: {
     position: 'absolute',

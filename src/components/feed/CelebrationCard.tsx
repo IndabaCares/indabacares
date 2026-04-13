@@ -92,7 +92,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
           <Text style={s.milestoneYear}>{milestone ?? ''}</Text>
           <View style={s.milestoneTitleWrap}>
             <Animated.Text style={[s.milestoneTitle, { transform: [{ scale: pulseAnim }] }]}>
-              MILESTONE
+              SERVICE MILESTONE
             </Animated.Text>
           </View>
           {/* Spacer balances the year number width */}
@@ -120,18 +120,22 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
       {/* ── Reactions ─────────────────────────────────────── */}
       <View style={s.heartRow}>
-        <TouchableOpacity
-          onPress={handleHeart}
-          disabled={toggleLike.isPending}
-          style={s.heartBtn}
-          activeOpacity={0.7}
-        >
-          <Text style={s.heartEmoji}>{liked ? '❤️' : '🤍'}</Text>
-          {likeCount > 0 && (
-            <Text style={s.heartCount}>{likeCount}</Text>
-          )}
-        </TouchableOpacity>
+        {/* Heart: birthday only */}
+        {isBirthday && (
+          <TouchableOpacity
+            onPress={handleHeart}
+            disabled={toggleLike.isPending}
+            style={s.heartBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={s.heartEmoji}>{liked ? '❤️' : '🤍'}</Text>
+            {likeCount > 0 && (
+              <Text style={s.heartCount}>{likeCount}</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
+        {/* Thumbs up: all celebration cards */}
         <TouchableOpacity
           onPress={handleThumb}
           disabled={toggleThumb.isPending}
@@ -154,15 +158,15 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 const s = StyleSheet.create({
   card: {
     borderRadius: 20,
-    marginBottom: 14,
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 20,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 14,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   // Logo
@@ -178,11 +182,11 @@ const s = StyleSheet.create({
 
   // Birthday header — centered, animated
   birthdayHeader: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: 12,
     letterSpacing: 0.5,
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
@@ -193,14 +197,14 @@ const s = StyleSheet.create({
   milestoneHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   milestoneYear: {
-    width: 72,
-    fontSize: 54,
+    width: 68,
+    fontSize: 50,
     fontWeight: '900',
     color: '#fff',
-    lineHeight: 60,
+    lineHeight: 54,
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
@@ -210,28 +214,28 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   milestoneTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '900',
     color: '#fff',
-    letterSpacing: 4,
+    letterSpacing: 1.5,
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
   milestoneYearSpacer: {
-    width: 72,
+    width: 68,
   },
 
   // Person row
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 10,
   },
   personInfo: {
     flex: 1,
@@ -253,10 +257,10 @@ const s = StyleSheet.create({
 
   // Body
   body: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
     color: '#fff',
-    marginBottom: 14,
+    marginBottom: 10,
   },
 
   // Heart
@@ -272,7 +276,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 2,
   },
   heartEmoji: {
-    fontSize: 26,
+    fontSize: 22,
   },
   heartCount: {
     fontSize: 15,
