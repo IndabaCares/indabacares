@@ -41,13 +41,20 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
       : `${employee.full_name} is celebrating ${milestone} year${(milestone ?? 1) !== 1 ? 's' : ''} with the team today.`;
 
   // Heart — uses likes (no balance deduction)
-  const { data: likes = [] } = useLikes(celebration.id);
-  const toggleLike           = useToggleLike(celebration.id);
-  const myLike               = likes.find((l) => l.employee_id === currentEmployee?.employee_id);
-  const liked                = !!myLike;
-  const likeCount            = likes.length;
+  const { data: likes = [] }       = useLikes(celebration.id);
+  const toggleLike                 = useToggleLike(celebration.id);
+  const myLike                     = likes.find((l) => l.employee_id === currentEmployee?.employee_id);
+  const liked                      = !!myLike;
+  const likeCount                  = likes.length;
+  const handleHeart                = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
 
-  const handleHeart = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
+  // Thumbs up — separate key, no balance deduction
+  const { data: thumbsLikes = [] } = useLikes(celebration.id + '_thumbs');
+  const toggleThumb                = useToggleLike(celebration.id + '_thumbs');
+  const myThumb                    = thumbsLikes.find((l) => l.employee_id === currentEmployee?.employee_id);
+  const thumbed                    = !!myThumb;
+  const thumbCount                 = thumbsLikes.length;
+  const handleThumb                = () => toggleThumb.mutate({ likeId: myThumb?.id ?? null });
 
   // ── Pulse animation ───────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -111,7 +118,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
       {/* ── Body text ─────────────────────────────────────── */}
       <Text style={s.body}>{bodyText}</Text>
 
-      {/* ── Heart reaction ────────────────────────────────── */}
+      {/* ── Reactions ─────────────────────────────────────── */}
       <View style={s.heartRow}>
         <TouchableOpacity
           onPress={handleHeart}
@@ -122,6 +129,18 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
           <Text style={s.heartEmoji}>{liked ? '❤️' : '🤍'}</Text>
           {likeCount > 0 && (
             <Text style={s.heartCount}>{likeCount}</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleThumb}
+          disabled={toggleThumb.isPending}
+          style={s.heartBtn}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.heartEmoji, !thumbed && { opacity: 0.5 }]}>👍</Text>
+          {thumbCount > 0 && (
+            <Text style={s.thumbCount}>{thumbCount}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -259,5 +278,10 @@ const s = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#ff6b6b',
+  },
+  thumbCount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
   },
 });
