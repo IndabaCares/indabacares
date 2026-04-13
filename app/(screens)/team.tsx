@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,14 +26,12 @@ const DEPT_ICONS: Record<string, { icon: keyof typeof import('@expo/vector-icons
 
 const DEFAULT_ICON = { icon: 'briefcase-outline' as const, color: PURPLE, bg: '#ede9fe' };
 
-const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'Indaba Hotel':                 'business-outline',
-  'Indaba Lodge Richards Bay':    'water-outline',
-  'Indaba Lodge Gaborone':        'globe-outline',
-  'Chobe Safari Lodge':           'leaf-outline',
-  'Chobe Bush Lodge':             'leaf-outline',
-  'Nata Lodge':                   'sunny-outline',
-  'African Procurement Agencies': 'briefcase-outline',
+const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
+  'Indaba Hotel':              require('../../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay': require('../../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':     require('../../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':        require('../../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                require('../../../assets/natalodge.png'),
 };
 
 // ─── Hotel picker (APA only) ──────────────────────────────────────────────────
@@ -54,11 +52,11 @@ function HotelPicker() {
           }
         >
           <View style={styles.iconWrap}>
-            <Ionicons
-              name={HOTEL_ICON[hotel] ?? 'business-outline'}
-              size={22}
-              color={PURPLE}
-            />
+            {HOTEL_LOGOS[hotel] ? (
+              <Image source={HOTEL_LOGOS[hotel]} style={styles.hotelLogo} resizeMode="contain" />
+            ) : (
+              <Ionicons name="business-outline" size={22} color={PURPLE} />
+            )}
           </View>
           <Text style={styles.rowLabel}>{hotel}</Text>
           <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
@@ -255,6 +253,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ede9fe',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  hotelLogo: {
+    width: 44,
+    height: 44,
   },
   rowLabel: {
     flex: 1,

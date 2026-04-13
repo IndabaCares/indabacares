@@ -187,13 +187,16 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
+const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
+  'Indaba Hotel':              require('../../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay': require('../../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':     require('../../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':        require('../../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                require('../../../assets/natalodge.png'),
+};
+
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'Indaba Hotel':                 'business-outline',
-  'Indaba Lodge Richards Bay':    'water-outline',
-  'Indaba Lodge Gaborone':        'globe-outline',
-  'Chobe Safari Lodge':           'leaf-outline',
-  'Chobe Bush Lodge':             'leaf-outline',
-  'Nata Lodge':                   'sunny-outline',
+  'Chobe Bush Lodge': 'leaf-outline',
 };
 
 function HotelPickerView({ onSelect }: { onSelect: (hotel: string) => void }) {
@@ -208,7 +211,11 @@ function HotelPickerView({ onSelect }: { onSelect: (hotel: string) => void }) {
           onPress={() => onSelect(hotel)}
         >
           <View style={pickerStyles.iconWrap}>
-            <Ionicons name={HOTEL_ICON[hotel] ?? 'business-outline'} size={22} color={PURPLE} />
+            {HOTEL_LOGOS[hotel] ? (
+              <Image source={HOTEL_LOGOS[hotel]} style={pickerStyles.hotelLogo} contentFit="contain" />
+            ) : (
+              <Ionicons name={HOTEL_ICON[hotel] ?? 'business-outline'} size={22} color={PURPLE} />
+            )}
           </View>
           <Text style={pickerStyles.label}>{hotel}</Text>
           <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
@@ -229,8 +236,9 @@ const pickerStyles = StyleSheet.create({
   },
   iconWrap: {
     width: 44, height: 44, borderRadius: 12, backgroundColor: '#ede9fe',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
+  hotelLogo: { width: 44, height: 44 },
   label: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1e293b' },
 });
 
