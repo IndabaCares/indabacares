@@ -8,16 +8,10 @@ import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
 
 const LOGO = require('../../../assets/usedlogo.png');
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
-}
+const MILESTONE_YEARS = [1, 5, 10, 15, 20, 25, 30, 35, 40];
 
 function isMajorMilestone(years: number): boolean {
-  return [1, 3, 5, 10, 15, 20, 25, 30].includes(years);
+  return MILESTONE_YEARS.includes(years);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -28,26 +22,22 @@ interface Props {
 
 export const CelebrationCard = memo(function CelebrationCard({ celebration }: Props) {
   const { employee: currentEmployee } = useEmployee();
-  const { type, milestone, employee } = celebration;
+  const { type, milestone, employee }  = celebration;
   const isBirthday = type === 'birthday';
+  const isMilestone = !isBirthday && milestone != null && isMajorMilestone(milestone);
 
   const gradientColors: [string, string, string] = isBirthday
     ? ['#4a0000', '#b71c1c', '#dc2626']
-    : ['#3b0764', '#6d28d9', '#7B1FA2'];
+    : ['#14532d', '#166534', '#16a34a'];
 
-  const major = !isBirthday && milestone != null && isMajorMilestone(milestone);
-
-  const header = isBirthday
-    ? '🎉 Happy Birthday! 🎉'
-    : `${ordinal(milestone ?? 1)} Work Anniversary 🏆`;
+  const shadowColor = isBirthday ? '#7f0000' : '#14532d';
 
   const dept = employee.department ?? employee.position ?? null;
-  const firstName = employee.full_name.split(' ')[0];
 
   const bodyText = isBirthday
     ? `Happy Birthday to ${employee.full_name}, we hope you have an awesome day full of fun, love and celebrations.`
-    : major
-      ? `${employee.full_name} is celebrating ${milestone} incredible year${(milestone ?? 1) !== 1 ? 's' : ''} with the team. What an achievement!`
+    : isMilestone
+      ? `Congratulations ${employee.full_name} on ${milestone} incredible year${(milestone ?? 1) !== 1 ? 's' : ''} of dedicated service. What an achievement!`
       : `${employee.full_name} is celebrating ${milestone} year${(milestone ?? 1) !== 1 ? 's' : ''} with the team today.`;
 
   // Heart — uses likes (no balance deduction)
@@ -59,22 +49,14 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
   const handleHeart = () => toggleLike.mutate({ likeId: myLike?.id ?? null });
 
-  // ── Pulse animation on header ──────────────────────────────────────────────
+  // ── Pulse animation ───────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue:         1.07,
-          duration:        700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue:         1,
-          duration:        700,
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1.07, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
       ]),
     );
     pulse.start();
@@ -86,17 +68,30 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
       colors={gradientColors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={s.card}
+      style={[s.card, { shadowColor }]}
     >
       {/* ── Logo watermark ────────────────────────────────── */}
       <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
-      {/* ── Animated header ───────────────────────────────── */}
-      <Animated.Text
-        style={[s.header, { transform: [{ scale: pulseAnim }] }]}
-      >
-        {header}
-      </Animated.Text>
+      {/* ── Header ────────────────────────────────────────── */}
+      {isBirthday ? (
+        /* Birthday — centered animated text */
+        <Animated.Text style={[s.birthdayHeader, { transform: [{ scale: pulseAnim }] }]}>
+          🎉 Happy Birthday! 🎉
+        </Animated.Text>
+      ) : (
+        /* Milestone — big year left + animated 'MILESTONE' centered */
+        <View style={s.milestoneHeaderRow}>
+          <Text style={s.milestoneYear}>{milestone ?? ''}</Text>
+          <View style={s.milestoneTitleWrap}>
+            <Animated.Text style={[s.milestoneTitle, { transform: [{ scale: pulseAnim }] }]}>
+              MILESTONE
+            </Animated.Text>
+          </View>
+          {/* Spacer balances the year number width */}
+          <View style={s.milestoneYearSpacer} />
+        </View>
+      )}
 
       {/* ── Person row: avatar · name · dept ──────────────── */}
       <View style={s.personRow}>
@@ -115,13 +110,6 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
       {/* ── Body text ─────────────────────────────────────── */}
       <Text style={s.body}>{bodyText}</Text>
-
-      {/* ── Milestone badge ───────────────────────────────── */}
-      {major && (
-        <View style={s.milestoneBadge}>
-          <Text style={s.milestoneText}>{milestone}-Year Milestone</Text>
-        </View>
-      )}
 
       {/* ── Heart reaction ────────────────────────────────── */}
       <View style={s.heartRow}>
@@ -152,7 +140,6 @@ const s = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 20,
     overflow: 'hidden',
-    shadowColor: '#7f0000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 14,
@@ -170,8 +157,8 @@ const s = StyleSheet.create({
     tintColor: '#ffffff',
   },
 
-  // Header
-  header: {
+  // Birthday header — centered, animated
+  birthdayHeader: {
     fontSize: 26,
     fontWeight: '900',
     color: '#fff',
@@ -181,6 +168,39 @@ const s = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+
+  // Milestone header row
+  milestoneHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  milestoneYear: {
+    width: 72,
+    fontSize: 54,
+    fontWeight: '900',
+    color: '#fff',
+    lineHeight: 60,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  milestoneTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  milestoneTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 4,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  milestoneYearSpacer: {
+    width: 72,
   },
 
   // Person row
@@ -218,24 +238,6 @@ const s = StyleSheet.create({
     lineHeight: 22,
     color: '#fff',
     marginBottom: 14,
-  },
-
-  // Milestone badge
-  milestoneBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    marginBottom: 14,
-  },
-  milestoneText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.3,
   },
 
   // Heart
