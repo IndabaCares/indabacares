@@ -302,7 +302,7 @@ export default function ProfileScreen() {
           <View style={styles.tabPill}>
             {(['balance', 'utilise', 'achieve'] as const).map((tab) => {
               const active = activeTab === tab;
-              const label = tab === 'balance' ? 'Balance' : tab === 'utilise' ? 'Utilise' : 'Achieve';
+              const label = tab === 'balance' ? 'Share' : tab === 'utilise' ? 'Engage' : 'Reward';
               return (
                 <TouchableOpacity
                   key={tab}
