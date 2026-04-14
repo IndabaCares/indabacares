@@ -293,7 +293,7 @@ export default function ProfileScreen() {
         {/* ── Pill tab selector — sits on the header's rounded bottom edge ── */}
         <View style={styles.tabContainer}>
           <View style={styles.tabPill}>
-            {(['gamification', 'announcements'] as const).map((tab) => {
+            {(['announcements', 'gamification'] as const).map((tab) => {
               const active = activeTab === tab;
               return (
                 <Pressable
