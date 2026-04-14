@@ -290,7 +290,27 @@ export default function ProfileScreen() {
 
         </ImageBackground>
 
-        {/* ── Stats / pills card — 50% overhanging the image border radius ── */}
+        {/* ── Pill tab selector — sits on the header's rounded bottom edge ── */}
+        <View style={styles.tabContainer}>
+          <View style={styles.tabPill}>
+            {(['gamification', 'announcements'] as const).map((tab) => {
+              const active = activeTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  style={[styles.tabButton, active && styles.tabButtonActive]}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                    {tab === 'gamification' ? 'Achievements' : 'Milestones'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Stats / pills card — in normal flow below header ────────────── */}
         <View style={styles.statsCard}>
 
           {/* Points + Status pills */}
@@ -356,26 +376,6 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-        </View>
-
-        {/* ── Pill tab selector ───────────────────────────────────────────── */}
-        <View style={styles.tabContainer}>
-          <View style={styles.tabPill}>
-            {(['gamification', 'announcements'] as const).map((tab) => {
-              const active = activeTab === tab;
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  style={[styles.tabButton, active && styles.tabButtonActive]}
-                >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab === 'gamification' ? 'Achievements' : 'Milestones'}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
         </View>
 
         {/* ── Content area ────────────────────────────────────────────────── */}
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(20,0,40,0.45)',
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 12 : 8,
-    paddingBottom: 72,
+    paddingBottom: 20,
   },
 
   topNav: {
@@ -687,10 +687,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // ── Stats card (white) — sits 50% below image border radius ─────────────────
+  // ── Stats card (white) — in normal flow below tabs ──────────────────────────
   statsCard: {
     marginHorizontal: 20,
-    marginTop: -56,
+    marginTop: 8,
     backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 14,
@@ -837,10 +837,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // ── Tab selector ─────────────────────────────────────────────────────────────
+  // ── Tab selector — overlaps the header's rounded bottom edge ────────────────
   tabContainer: {
     paddingHorizontal: 20,
-    marginTop: 8,
+    marginTop: -22,
+    zIndex: 10,
   },
 
   tabPill: {
