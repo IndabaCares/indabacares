@@ -515,141 +515,37 @@ export default function ProfileScreen() {
           {/* ── Utilise tab ─────────────────────────────────────────────── */}
           {activeTab === 'utilise' && (
             <>
-              {/* ── 5×2 feed-style cards ──────────────────────────────── */}
-              <View style={styles.balanceFeedGrid}>
-
-                {/* Mood Board */}
-                <LinearGradient colors={['#4a0000', '#b71c1c', '#dc2626']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>❤️</Text>
-                    <Text style={styles.balanceFeedTitle}>Mood Board</Text>
+              {([
+                { emoji: '❤️', title: 'Mood Board',          value: 0, desc: 'Your shared moments and interactions with colleagues.',               insight: 'No activity yet — start engaging to build your presence.',       colors: ['#4a0000', '#b71c1c', '#dc2626'] },
+                { emoji: '🏅', title: 'Recognition Received', value: 0, desc: 'The number of times you\'ve been recognised for your work.',         insight: 'You\'re yet to be recognised this month.',                       colors: ['#3b0764', '#6d28d9', '#7B1FA2'] },
+                { emoji: '🎓', title: 'Skills Shoutout',      value: 0, desc: 'Endorsements received for your skills and expertise.',               insight: 'Complete training or get recognised to grow this.',              colors: ['#1e3a5f', '#1d4ed8', '#2563eb'] },
+                { emoji: '💬', title: 'Responses Made',       value: 0, desc: 'Your engagement through comments and conversations.',                insight: 'Join discussions to increase your visibility.',                  colors: ['#134e4a', '#0d9488', '#14b8a6'] },
+                { emoji: '🎂', title: 'Birthday',             value: 0, desc: 'Celebrations and messages received on your birthday.',               insight: 'This will activate automatically on your special day.',          colors: ['#4a0000', '#7f1d1d', '#dc2626'] },
+                { emoji: '🎖', title: 'Service Milestone',    value: 0, desc: 'Recognition for your time and loyalty in the company.',              insight: 'Your next milestone is approaching.',                            colors: ['#14532d', '#166534', '#16a34a'] },
+                { emoji: '⭐', title: 'Status Unlock',        value: 0, desc: 'New levels achieved through consistent engagement.',                 insight: 'Stay active to unlock higher status tiers.',                     colors: ['#451a03', '#92400e', '#b45309'] },
+                { emoji: '🏆', title: 'Badges Achieved',      value: 0, desc: 'Awards earned through performance and participation.',               insight: 'You haven\'t unlocked any badges yet.',                          colors: ['#3d2c00', '#92630a', '#d97706'] },
+                { emoji: '👑', title: 'Legend of the Month',  value: 0, desc: 'Top performer recognition awarded monthly.',                         insight: 'Stand out to earn this prestigious title.',                      colors: ['#1a0a2e', '#3b0764', '#6b21a8'] },
+              ]).map((item) => (
+                <LinearGradient
+                  key={item.title}
+                  colors={item.colors as [string, string, string]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.utiliseFeedCard}
+                >
+                  <View style={styles.utiliseFeedIconWrap}>
+                    <Text style={styles.utiliseFeedIcon}>{item.emoji}</Text>
                   </View>
-                  <Text style={styles.balanceFeedSub}>Interactions</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Recognition Received */}
-                <LinearGradient colors={['#3b0764', '#6d28d9', '#7B1FA2']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🏅</Text>
-                    <Text style={styles.balanceFeedTitle}>Recognition</Text>
+                  <View style={styles.utiliseFeedContent}>
+                    <Text style={styles.utiliseFeedTitle}>
+                      {item.title}{' '}
+                      <Text style={styles.utiliseFeedCount}>({item.value})</Text>
+                    </Text>
+                    <Text style={styles.utiliseFeedDesc}>{item.desc}</Text>
+                    <Text style={styles.utiliseFeedInsight}>{item.insight}</Text>
                   </View>
-                  <Text style={styles.balanceFeedSub}>Received</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
                 </LinearGradient>
-
-                {/* Skills Shoutout */}
-                <LinearGradient colors={['#1e3a5f', '#1d4ed8', '#2563eb']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🎓</Text>
-                    <Text style={styles.balanceFeedTitle}>Skills Shoutout</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Endorsements received</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Responses */}
-                <LinearGradient colors={['#134e4a', '#0d9488', '#14b8a6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>💬</Text>
-                    <Text style={styles.balanceFeedTitle}>Responses</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Engagement made</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Status Unlock */}
-                <LinearGradient colors={['#451a03', '#92400e', '#b45309']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>⭐</Text>
-                    <Text style={styles.balanceFeedTitle}>Status Unlock</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Tiers achieved</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Badges Achieved */}
-                <LinearGradient colors={['#3d2c00', '#92630a', '#d97706']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🏆</Text>
-                    <Text style={styles.balanceFeedTitle}>Badges</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Achieved</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Legend of the Month */}
-                <LinearGradient colors={['#1a0a2e', '#3b0764', '#6b21a8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>👑</Text>
-                    <Text style={styles.balanceFeedTitle}>Legend of</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>the Month</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Emoji's Given */}
-                <LinearGradient colors={['#064e3b', '#065f46', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>😊</Text>
-                    <Text style={styles.balanceFeedTitle}>Emoji's Given</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Reactions sent</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Birthday Moments */}
-                <LinearGradient colors={['#4a0000', '#7f1d1d', '#dc2626']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🎂</Text>
-                    <Text style={styles.balanceFeedTitle}>Birthday</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Moments</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-                {/* Service Milestones */}
-                <LinearGradient colors={['#14532d', '#166534', '#16a34a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceFeedCard}>
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🎖</Text>
-                    <Text style={styles.balanceFeedTitle}>Service</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Milestones</Text>
-                  <Text style={styles.balanceFeedValue}>0</Text>
-                </LinearGradient>
-
-              </View>
-
-              {/* ── Descriptions ────────────────────────────────────── */}
-              <View style={styles.balanceSection}>
-                <Text style={styles.balanceSectionTitle}>Descriptions</Text>
-                <View style={styles.balanceInfoCard}>
-                  {([
-                    { emoji: '❤️', title: 'Mood Board Interactions',  body: 'You receive 5 points for showing your mood everyday.' },
-                    { emoji: '🏅', title: 'Recognition Received',     body: 'Total number of times colleagues or managers have given recognition to you.' },
-                    { emoji: '🎓', title: 'Skills Shoutout',          body: 'Endorsements received for your skills or expertise.' },
-                    { emoji: '💬', title: 'Responses Made',           body: 'Your participation in engagement to recognition you have received.' },
-                    { emoji: '🎂', title: 'Birthday Moments',         body: 'Celebrations and interactions received on your birthday.' },
-                    { emoji: '🎖', title: 'Service Milestones',       body: 'Recognition for tenure (e.g. 1 year, 5 years) within the organisation.' },
-                    { emoji: '⭐', title: 'Status Unlock',            body: 'New levels or tiers unlocked through activity and recognition.' },
-                    { emoji: '🏆', title: 'Badges Achieved',          body: 'Total badges earned through performance, behaviour, and milestones.' },
-                    { emoji: '👑', title: 'Legend of the Month',      body: 'Number of times you\'ve been recognized as a top performer or standout employee.' },
-                    { emoji: '😊', title: 'Emoji\'s Given',           body: 'The amount of emoji\'s you received on recognition / skills feed.' },
-                  ] as const).map((item, i, arr) => (
-                    <View key={i}>
-                      <View style={styles.balanceDescRow}>
-                        <Text style={styles.balanceDescEmoji}>{item.emoji}</Text>
-                        <View style={styles.balanceDescText}>
-                          <Text style={styles.balanceDescTitle}>{item.title}</Text>
-                          <Text style={styles.balanceDescBody}>{item.body}</Text>
-                        </View>
-                      </View>
-                      {i < arr.length - 1 && <View style={styles.achieveDivider} />}
-                    </View>
-                  ))}
-                </View>
-              </View>
-
+              ))}
             </>
           )}
 
@@ -1446,6 +1342,67 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontWeight: '600',
     textTransform: 'uppercase',
+  },
+
+  // ── Utilise vertical list cards ──────────────────────────────────────────────
+  utiliseFeedCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  utiliseFeedIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  utiliseFeedIcon: {
+    fontSize: 22,
+  },
+
+  utiliseFeedContent: {
+    flex: 1,
+  },
+
+  utiliseFeedTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 4,
+  },
+
+  utiliseFeedCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+  },
+
+  utiliseFeedDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 17,
+    marginBottom: 5,
+  },
+
+  utiliseFeedInsight: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    fontStyle: 'italic',
+    lineHeight: 15,
   },
 
   emojiValuesRow: {
