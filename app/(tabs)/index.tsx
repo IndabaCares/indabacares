@@ -5,19 +5,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFeed } from '@/hooks/use-feed';
 import { useFeedSearch } from '@/hooks/use-feed-search';
 import { useCelebrations } from '@/hooks/use-celebrations';
 import { RecognitionCard } from '@/components/feed/RecognitionCard';
 import { CelebrationCard } from '@/components/feed/CelebrationCard';
-import { SkillCard } from '@/components/feed/SkillCard';
+import { SkillCard, SKILL_BADGE_VALUES } from '@/components/feed/SkillCard';
+import { LegendCard } from '@/components/feed/LegendCard';
 import { FeedHeader, type FeedFilter } from '@/components/feed/FeedHeader';
 import { NewItemsBanner } from '@/components/feed/NewItemsBanner';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useUIStore } from '@/stores/ui-store';
 import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { useLegendOfMonth } from '@/hooks/use-legend-of-month';
 import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
 import type { RecognitionFeedItem } from '@/api/queries';
@@ -31,100 +32,6 @@ const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
   'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
   'Nata Lodge':                require('../../assets/natalodge.png'),
 };
-
-// ─── Mock cards (design preview) ─────────────────────────────────────────────
-
-const TODAY = new Date().toISOString().split('T')[0];
-const NOW   = new Date().toISOString();
-
-const MOCK_BIRTHDAY: CelebrationFeedItem = {
-  _type: 'celebration', id: 'mock-bday', type: 'birthday', milestone: null,
-  celebrated_on: TODAY, created_at: NOW,
-  employee: { id: 'mb1', full_name: 'Sarah Johnson', hotel: '', department: 'Front Office', position: 'Receptionist', photo_url: null },
-};
-
-const MOCK_MILESTONE: CelebrationFeedItem = {
-  _type: 'celebration', id: 'mock-ms', type: 'anniversary', milestone: 5,
-  celebrated_on: TODAY, created_at: NOW,
-  employee: { id: 'mb2', full_name: 'James Mokoena', hotel: '', department: 'Food & Beverage', position: 'Head Chef', photo_url: null },
-};
-
-const MOCK_SKILL: RecognitionFeedItem = {
-  id: 'mock-skill', badge: 'Customer Service', hotel: '',
-  message: 'Always goes above and beyond for every guest — exceptional service every single day!',
-  created_at: NOW, recipient_response: null, recipient_responded_at: null,
-  sender:   { id: 'ms1', full_name: 'Thabo Nkosi',  employee_code: 'TN001', position: 'Manager',         department: 'Management',   photo_url: null },
-  receiver: { id: 'ms2', full_name: 'Priya Patel',   employee_code: 'PP002', position: 'Guest Relations', department: 'Front Office', photo_url: null },
-  likes_count: [{ count: 5 }], comments_count: [{ count: 2 }],
-};
-
-function LegendCard() {
-  return (
-    <LinearGradient
-      colors={['#1a0a2e', '#3b0764', '#1a0a2e']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={legend.card}
-    >
-      <View style={legend.top}>
-        <Text style={legend.crown}>👑</Text>
-        <Text style={legend.title}>Legend of the Month</Text>
-        <Text style={legend.month}>April 2026</Text>
-      </View>
-
-      <View style={legend.divider} />
-
-      <View style={legend.stats}>
-        <View style={legend.stat}>
-          <Text style={legend.statValue}>24</Text>
-          <Text style={legend.statLabel}>{'Recognitions\nGiven'}</Text>
-        </View>
-        <View style={legend.statDivider} />
-        <View style={legend.stat}>
-          <Text style={legend.statValue}>18</Text>
-          <Text style={legend.statLabel}>{'Recognitions\nReceived'}</Text>
-        </View>
-        <View style={legend.statDivider} />
-        <View style={legend.stat}>
-          <Text style={[legend.statValue, { color: '#fbbf24' }]}>#1</Text>
-          <Text style={legend.statLabel}>{'Hotel\nRank'}</Text>
-        </View>
-      </View>
-
-      <View style={legend.badge}>
-        <Ionicons name="trophy" size={14} color="#fbbf24" />
-        <Text style={legend.badgeText}>Gold Status Achieved</Text>
-      </View>
-    </LinearGradient>
-  );
-}
-
-const legend = StyleSheet.create({
-  card: {
-    borderRadius: 20,
-    marginBottom: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(251,191,36,0.25)',
-    shadowColor: '#7B1FA2',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  top: { alignItems: 'center', marginBottom: 16 },
-  crown: { fontSize: 36, marginBottom: 6 },
-  title: { fontSize: 18, fontWeight: '800', color: '#fbbf24', letterSpacing: 0.5 },
-  month: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 3, fontWeight: '500' },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 16 },
-  stats: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
-  stat: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 26, fontWeight: '800', color: '#ffffff', marginBottom: 4 },
-  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 14, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', alignSelf: 'stretch' },
-  badge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)' },
-  badgeText: { fontSize: 12, fontWeight: '700', color: '#fbbf24', letterSpacing: 0.3 },
-});
 
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
@@ -231,6 +138,7 @@ export default function FeedScreen() {
 
   const { data: searchResults, isLoading: searchLoading } = useFeedSearch(searchTerm, hotel);
   const { data: celebrations = [] } = useCelebrations(hotel);
+  const { data: legend } = useLegendOfMonth();
 
   const resetNewFeedItems = useUIStore((s) => s.resetNewFeedItems);
   const liveRecognitions  = data?.pages.flatMap((page) => page) ?? [];
@@ -340,18 +248,17 @@ export default function FeedScreen() {
                 ? `cel-${item.id}`
                 : item.id
             }
-            renderItem={({ item }) =>
-              (item as CelebrationFeedItem)._type === 'celebration'
-                ? <CelebrationCard celebration={item as CelebrationFeedItem} />
-                : <RecognitionCard recognition={item as RecognitionFeedItem} />
-            }
+            renderItem={({ item }) => {
+              if ((item as CelebrationFeedItem)._type === 'celebration') {
+                return <CelebrationCard celebration={item as CelebrationFeedItem} />;
+              }
+              const rec = item as RecognitionFeedItem;
+              return SKILL_BADGE_VALUES.has(rec.badge)
+                ? <SkillCard recognition={rec} />
+                : <RecognitionCard recognition={rec} />;
+            }}
             ListHeaderComponent={
-              <View>
-                <LegendCard />
-                <CelebrationCard celebration={MOCK_BIRTHDAY} />
-                <CelebrationCard celebration={MOCK_MILESTONE} />
-                <SkillCard recognition={MOCK_SKILL} />
-              </View>
+              legend ? <LegendCard legend={legend} /> : null
             }
             ListEmptyComponent={
               !isLoading ? (

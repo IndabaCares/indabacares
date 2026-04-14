@@ -27,6 +27,8 @@ const SKILL_BADGES = [
   { value: 'Positivity',       emoji: '😊', color: '#84CC16' },
 ];
 
+export const SKILL_BADGE_VALUES = new Set(SKILL_BADGES.map((b) => b.value));
+
 function getSkillConfig(badge: string) {
   return (
     SKILL_BADGES.find((b) => b.value === badge) ?? {
@@ -130,7 +132,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           </View>
 
           {/* ── Message ───────────────────────────────────────── */}
-          <Text style={s.message}>{recognition.message}</Text>
+          <Text style={s.message} numberOfLines={4}>{recognition.message}</Text>
 
           {/* ── Recipient response ────────────────────────────── */}
           <ResponsePicker

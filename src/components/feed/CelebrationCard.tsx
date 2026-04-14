@@ -104,14 +104,12 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
       <View style={s.personRow}>
         <Avatar name={employee.full_name} uri={employee.photo_url ?? undefined} size="lg" />
         <View style={s.personInfo}>
-          <View style={s.nameRow}>
-            <Text style={s.personName} numberOfLines={1}>
-              {employee.full_name}
-            </Text>
-            {dept ? (
-              <Text style={s.personDept} numberOfLines={1}> · {dept}</Text>
-            ) : null}
-          </View>
+          <Text style={s.personName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {employee.full_name}
+          </Text>
+          {dept ? (
+            <Text style={s.personDept} numberOfLines={1}>{dept}</Text>
+          ) : null}
         </View>
       </View>
 
@@ -238,11 +236,6 @@ const s = StyleSheet.create({
   personInfo: {
     flex: 1,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-  },
   personName: {
     fontSize: 16,
     fontWeight: '800',
@@ -251,6 +244,7 @@ const s = StyleSheet.create({
   personDept: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.65)',
+    marginTop: 1,
   },
 
   // Body
