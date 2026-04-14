@@ -1,6 +1,6 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Animated,
+  View, Text, TouchableOpacity, StyleSheet, Image, Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
@@ -18,14 +18,14 @@ import type { RecognitionFeedItem } from '@/api/queries';
 const LOGO = require('../../../assets/IndabaCaresLogo.png');
 
 const SKILL_BADGES = [
-  { value: 'Leadership',       emoji: '👑', color: '#F59E0B' },
-  { value: 'Teamwork',         emoji: '🤝', color: '#3B82F6' },
-  { value: 'Communication',    emoji: '💬', color: '#10B981' },
-  { value: 'Problem Solving',  emoji: '🧩', color: '#8B5CF6' },
-  { value: 'Customer Service', emoji: '🌟', color: '#EC4899' },
-  { value: 'Creativity',       emoji: '💡', color: '#F97316' },
-  { value: 'Reliability',      emoji: '⏰', color: '#06B6D4' },
-  { value: 'Positivity',       emoji: '😊', color: '#84CC16' },
+  { value: 'Leadership',       emoji: '👑', color: '#fbbf24' },
+  { value: 'Teamwork',         emoji: '🤝', color: '#60a5fa' },
+  { value: 'Communication',    emoji: '💬', color: '#34d399' },
+  { value: 'Problem Solving',  emoji: '🧩', color: '#c084fc' },
+  { value: 'Customer Service', emoji: '🌟', color: '#f472b6' },
+  { value: 'Creativity',       emoji: '💡', color: '#fb923c' },
+  { value: 'Reliability',      emoji: '⏰', color: '#22d3ee' },
+  { value: 'Positivity',       emoji: '😊', color: '#a3e635' },
 ];
 
 export const SKILL_BADGE_VALUES = new Set(SKILL_BADGES.map((b) => b.value));
@@ -68,10 +68,11 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
   );
   const submitResponse = useSubmitResponse(recognition.id);
 
-  // Reactions
+  // Emoji picker overlay
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickerY, setPickerY]                 = useState(0);
   const [exhaustedType, setExhaustedType]     = useState<ReactionType | null>(null);
-  const pickerAnim                            = useRef(new Animated.Value(0)).current;
+  const reactBtnRef                           = useRef<TouchableOpacity>(null);
 
   const { data: reactions = [] } = useRecognitionReactions(recognition.id);
   const { data: balance }        = useReactionBalance();
@@ -89,14 +90,12 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
   );
   const hasReactions = Object.values(counts).some((c) => c > 0);
 
-  useEffect(() => {
-    Animated.spring(pickerAnim, {
-      toValue:         showEmojiPicker ? 1 : 0,
-      friction:        6,
-      tension:         140,
-      useNativeDriver: true,
-    }).start();
-  }, [showEmojiPicker]);
+  const handleOpenPicker = () => {
+    reactBtnRef.current?.measure((_fx, _fy, _w, _h, _px, py) => {
+      setPickerY(py);
+      setShowEmojiPicker(true);
+    });
+  };
 
   const handleResponse = (text: string) => {
     setLocalResponse(text);
@@ -117,7 +116,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
     <>
       <TouchableOpacity activeOpacity={0.97}>
         <LinearGradient
-          colors={['#f9f9f9', '#f0f0f0']}
+          colors={['#2d3748', '#374151', '#2d3748']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.card}
@@ -142,7 +141,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           </View>
 
           {/* ── Badge pill ────────────────────────────────────── */}
-          <View style={[s.badgePill, { backgroundColor: skillConfig.color + '20' }]}>
+          <View style={[s.badgePill, { borderColor: skillConfig.color + '50' }]}>
             <Text style={s.badgeEmoji}>{skillConfig.emoji}</Text>
             <Text style={[s.badgeText, { color: skillConfig.color }]} numberOfLines={1}>{recognition.badge}</Text>
           </View>
@@ -193,7 +192,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
             </>
           )}
 
-          {/* ── Reactions ─────────────────────────────────────── */}
+          {/* ── Reactions row ─────────────────────────────────── */}
           <View style={s.reactionsRow}>
             {hasReactions && (
               <View style={s.countsRow}>
@@ -211,47 +210,50 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
               </View>
             )}
             <TouchableOpacity
+              ref={reactBtnRef}
               style={s.reactBtn}
-              onPress={() => setShowEmojiPicker((v) => !v)}
+              onPress={handleOpenPicker}
               activeOpacity={0.7}
             >
               <Text style={s.reactBtnText}>{showEmojiPicker ? '✕' : '😊'}</Text>
             </TouchableOpacity>
           </View>
 
-          {/* ── Emoji picker row (animated) ───────────────────── */}
-          {showEmojiPicker && (
-            <Animated.View
-              style={[
-                s.emojiPickerRow,
-                {
-                  opacity:   pickerAnim,
-                  transform: [
-                    { scale: pickerAnim },
-                    { translateY: pickerAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
-                  ],
-                },
-              ]}
-            >
-              {REACTIONS.map(({ type, emoji }) => {
-                const isActive = myReaction?.reaction_type === type;
-                return (
-                  <TouchableOpacity
-                    key={type}
-                    style={[s.emojiBtn, isActive && s.emojiBtnActive]}
-                    onPress={() => handleReact(type)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.emojiText}>{emoji}</Text>
-                    {isActive && <View style={s.activeDot} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </Animated.View>
-          )}
-
         </LinearGradient>
       </TouchableOpacity>
+
+      {/* ── Emoji picker — floats over card as a modal ────────── */}
+      <Modal
+        transparent
+        visible={showEmojiPicker}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowEmojiPicker(false)}
+      >
+        {/* Backdrop — tap to close */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={() => setShowEmojiPicker(false)}
+        />
+        {/* Emoji tray — single container, floated above button */}
+        <View style={[s.emojiTray, { top: pickerY - 64 }]}>
+          {REACTIONS.map(({ type, emoji }) => {
+            const isActive = myReaction?.reaction_type === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[s.emojiBtn, isActive && s.emojiBtnActive]}
+                onPress={() => handleReact(type)}
+                activeOpacity={0.7}
+              >
+                <Text style={s.emojiText}>{emoji}</Text>
+                {isActive && <View style={s.activeDot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
 
       {exhaustedType && balance && (
         <ReactionExhaustedModal
@@ -274,14 +276,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    shadowColor: '#9ca3af',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   // Logo
@@ -291,7 +291,8 @@ const s = StyleSheet.create({
     right: 6,
     width: 70,
     height: 70,
-    opacity: 0.3,
+    opacity: 0.18,
+    tintColor: '#ffffff',
   },
 
   // Receiver row
@@ -312,15 +313,15 @@ const s = StyleSheet.create({
   receiverName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1e293b',
+    color: '#ffffff',
   },
   receiverDept: {
     fontSize: 13,
-    color: '#64748b',
+    color: 'rgba(255,255,255,0.55)',
   },
   timeAgo: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: 'rgba(255,255,255,0.45)',
     alignSelf: 'flex-start',
     paddingTop: 2,
   },
@@ -333,8 +334,8 @@ const s = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
     marginBottom: 10,
   },
   badgeEmoji: { fontSize: 14 },
@@ -348,7 +349,7 @@ const s = StyleSheet.create({
   message: {
     fontSize: 14,
     lineHeight: 21,
-    color: '#334155',
+    color: 'rgba(255,255,255,0.88)',
     marginBottom: 10,
   },
 
@@ -356,7 +357,7 @@ const s = StyleSheet.create({
   givenByRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -365,23 +366,23 @@ const s = StyleSheet.create({
   },
   givenByLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: 'rgba(255,255,255,0.5)',
     fontWeight: '600',
   },
   givenByName: {
     fontSize: 12,
-    color: '#1e293b',
+    color: '#ffffff',
     fontWeight: '700',
   },
   givenByDept: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: 'rgba(255,255,255,0.5)',
     flex: 1,
   },
 
   // Response display
   responseDisplay: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -389,7 +390,7 @@ const s = StyleSheet.create({
   },
   responseQuote: {
     fontSize: 13,
-    color: '#475569',
+    color: 'rgba(255,255,255,0.8)',
     fontStyle: 'italic',
     fontWeight: '600',
   },
@@ -397,37 +398,35 @@ const s = StyleSheet.create({
   // Respond button
   respondBtn: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
+    borderColor: 'rgba(255,255,255,0.3)',
     paddingHorizontal: 16,
     paddingVertical: 6,
     marginBottom: 8,
   },
   respondBtnDisabled: {
-    opacity: 0.35,
+    opacity: 0.4,
   },
   respondBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: '#ffffff',
   },
 
   // Dropdown
   dropdown: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 14,
     marginBottom: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   dropdownOption: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#e2e8f0',
   },
   dropdownOptionLast: {
     borderBottomWidth: 0,
@@ -438,7 +437,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Reactions
+  // Reactions row
   reactionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -453,48 +452,56 @@ const s = StyleSheet.create({
   countPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   countPillActive: {
-    backgroundColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
+    borderColor: 'rgba(255,255,255,0.45)',
   },
   countEmoji: { fontSize: 13 },
   countText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: 'rgba(255,255,255,0.75)',
     marginLeft: 3,
   },
-  countTextActive: { color: '#1e293b' },
+  countTextActive: { color: '#ffffff' },
 
   // React button
   reactBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
   },
-  reactBtnText: {
-    fontSize: 18,
-  },
+  reactBtnText: { fontSize: 18 },
 
-  // Emoji picker row
-  emojiPickerRow: {
+  // ── Emoji tray (modal overlay) ────────────────────────────────────────────
+  emojiTray: {
+    position: 'absolute',
+    right: 24,
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: 8,
-    marginTop: 10,
-    alignSelf: 'flex-start',
+    backgroundColor: '#1e2530',
+    borderRadius: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   emojiBtn: {
     width: 44,
@@ -502,22 +509,20 @@ const s = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   emojiBtnActive: {
-    backgroundColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
+    borderColor: 'rgba(255,255,255,0.4)',
   },
-  emojiText: {
-    fontSize: 26,
-  },
+  emojiText: { fontSize: 26 },
   activeDot: {
     position: 'absolute',
     bottom: 4,
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#475569',
+    backgroundColor: '#ffffff',
   },
 });
