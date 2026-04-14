@@ -8,8 +8,8 @@ import {
   StyleSheet,
   Platform,
   Alert,
-  ScrollView,
   ImageBackground,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -319,8 +319,60 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── Content area ────────────────────────────────────────────────── */}
-        <ScrollView style={styles.contentScroll} contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+        {/* ── Engage tab — hero frozen, breakdown scrollable ──────────────── */}
+        {activeTab === 'utilise' && (
+          <View style={styles.engageWrapper}>
+            {/* Frozen hero card */}
+            <View style={styles.engageHeroWrap}>
+              <LinearGradient
+                colors={['#3b0764', '#6d28d9', '#7B1FA2']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>🌟</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Recognition Points</Text>
+                  <Text style={styles.utiliseFeedDesc}>Points earned through all engagement activity this month.</Text>
+                </View>
+                <Text style={styles.utiliseFeedBigCount}>0</Text>
+              </LinearGradient>
+            </View>
+
+            {/* Scrollable breakdown */}
+            <ScrollView style={styles.contentScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.rewardBreakdownCard}>
+                {([
+                  { emoji: '🏅', title: 'Recognition Received', desc: 'The number of times you\'ve been recognised for your work.',     value: 0 },
+                  { emoji: '🎓', title: 'Skills Shoutout',      desc: 'Endorsements received for your skills and expertise.',           value: 0 },
+                  { emoji: '💬', title: 'Responses Made',       desc: 'Your engagement to recognition you have received.',              value: 0 },
+                  { emoji: '😊', title: 'Mood Board',           desc: 'Updating your mood everyday earns you points.',                  value: 0 },
+                  { emoji: '🎂', title: 'Birthday',             desc: 'Celebrations and messages received on your birthday.',           value: 0 },
+                  { emoji: '🎖', title: 'Service Milestone',    desc: 'Recognition for your time and loyalty in the company.',          value: 0 },
+                  { emoji: '⭐', title: 'Status Unlock',        desc: 'New levels achieved through consistent engagement.',             value: 0 },
+                  { emoji: '🏆', title: 'Badges Achieved',      desc: 'Awards earned through performance and participation.',           value: 0 },
+                  { emoji: '👑', title: 'Legend of the Month',  desc: 'Top performer recognition awarded monthly.',                    value: 0 },
+                ]).map((item, i, arr) => (
+                  <View key={item.title}>
+                    <View style={styles.engageBreakdownRow}>
+                      <Text style={styles.engageBreakdownEmoji}>{item.emoji}</Text>
+                      <View style={styles.engageBreakdownContent}>
+                        <Text style={styles.engageBreakdownTitle}>{item.title}</Text>
+                        <Text style={styles.engageBreakdownDesc}>{item.desc}</Text>
+                      </View>
+                      <Text style={styles.engageBreakdownValue}>{item.value}</Text>
+                    </View>
+                    {i < arr.length - 1 && <View style={styles.achieveDivider} />}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Content area (Balance + Reward tabs) ────────────────────────── */}
+        <ScrollView style={[styles.contentScroll, activeTab === 'utilise' && { display: 'none' }]} contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
 
           {/* ── Balance tab ─────────────────────────────────────────────── */}
           {activeTab === 'balance' && (
@@ -408,87 +460,6 @@ export default function ProfileScreen() {
                 </Text>
               </LinearGradient>
 
-              {/* ── Usage Breakdown ─────────────────────────────────── */}
-              <View style={styles.balanceSection}>
-                <Text style={styles.balanceSectionTitle}>Usage Breakdown</Text>
-                <View style={styles.balanceInfoCard}>
-                  {([
-                    { label: 'Recognition Badges Given', value: '2' },
-                    { label: 'Skills Badges Given',      value: '1' },
-                    { label: 'Emoji Sent',               value: '25' },
-                    { label: 'Total Colleagues Recognized', value: '6' },
-                    { label: 'Most Recognized Department',  value: 'Front Office' },
-                  ] as const).map((item, i, arr) => (
-                    <View key={i}>
-                      <View style={styles.balanceUsageRow}>
-                        <Text style={styles.balanceUsageLabel}>{item.label}</Text>
-                        <Text style={styles.balanceUsageValue}>{item.value}</Text>
-                      </View>
-                      {i < arr.length - 1 && <View style={styles.achieveDivider} />}
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* ── Activity Visual ─────────────────────────────────── */}
-              <View style={styles.balanceSection}>
-                <Text style={styles.balanceSectionTitle}>Activity Visual</Text>
-                <Text style={styles.balanceActivitySub}>Weekly recognition activity</Text>
-                <View style={styles.balanceInfoCard}>
-                  <View style={styles.balanceBarChart}>
-                    {([
-                      { day: 'Mon', v: 0.6 },
-                      { day: 'Tue', v: 0.4 },
-                      { day: 'Wed', v: 0.8 },
-                      { day: 'Thu', v: 0.2 },
-                      { day: 'Fri', v: 0.6 },
-                      { day: 'Sat', v: 0.1 },
-                      { day: 'Sun', v: 0.3 },
-                    ] as const).map((d) => (
-                      <View key={d.day} style={styles.balanceBarCol}>
-                        <View style={[styles.balanceBarFill, { height: Math.round(d.v * 60) }]} />
-                        <Text style={styles.balanceBarLabel}>{d.day}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-            </>
-          )}
-
-          {/* ── Utilise tab ─────────────────────────────────────────────── */}
-          {activeTab === 'utilise' && (
-            <>
-              {([
-                { emoji: '🏅', title: 'Recognition Received', value: 0, desc: 'The number of times you\'ve been recognised for your work.',    insight: 'You\'re yet to be recognised this month.',              colors: ['#3b0764', '#6d28d9', '#7B1FA2'] },
-                { emoji: '🎓', title: 'Skills Shoutout',      value: 0, desc: 'Endorsements received for your skills and expertise.',          insight: 'Complete training or get recognised to grow this.',     colors: ['#1e3a5f', '#1d4ed8', '#2563eb'] },
-                { emoji: '💬', title: 'Responses Made',       value: 0, desc: 'Your engagement to recognition you have received.',             insight: 'Join discussions to increase your visibility.',         colors: ['#134e4a', '#0d9488', '#14b8a6'] },
-                { emoji: '😊', title: 'Mood Board',           value: 0, desc: 'Updating your mood everyday earns you points.',                 insight: 'No activity yet — start engaging to build your presence.', colors: ['#4a0000', '#b71c1c', '#dc2626'] },
-                { emoji: '🎂', title: 'Birthday',             value: 0, desc: 'Celebrations and messages received on your birthday.',          insight: 'This will activate automatically on your special day.', colors: ['#4a0000', '#7f1d1d', '#dc2626'] },
-                { emoji: '🎖', title: 'Service Milestone',    value: 0, desc: 'Recognition for your time and loyalty in the company.',         insight: 'Your next milestone is approaching.',                   colors: ['#14532d', '#166534', '#16a34a'] },
-                { emoji: '⭐', title: 'Status Unlock',        value: 0, desc: 'New levels achieved through consistent engagement.',            insight: 'Stay active to unlock higher status tiers.',            colors: ['#451a03', '#92400e', '#b45309'] },
-                { emoji: '🏆', title: 'Badges Achieved',      value: 0, desc: 'Awards earned through performance and participation.',          insight: 'You haven\'t unlocked any badges yet.',                 colors: ['#3d2c00', '#92630a', '#d97706'] },
-                { emoji: '👑', title: 'Legend of the Month',  value: 0, desc: 'Top performer recognition awarded monthly.',                    insight: 'Stand out to earn this prestigious title.',             colors: ['#1a0a2e', '#3b0764', '#6b21a8'] },
-              ]).map((item) => (
-                <LinearGradient
-                  key={item.title}
-                  colors={item.colors as [string, string, string]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.utiliseFeedCard}
-                >
-                  <View style={styles.utiliseFeedIconWrap}>
-                    <Text style={styles.utiliseFeedIcon}>{item.emoji}</Text>
-                  </View>
-                  <View style={styles.utiliseFeedContent}>
-                    <Text style={styles.utiliseFeedTitle}>{item.title}</Text>
-                    <Text style={styles.utiliseFeedDesc}>{item.desc}</Text>
-                    <Text style={styles.utiliseFeedInsight}>{item.insight}</Text>
-                  </View>
-                  <Text style={styles.utiliseFeedBigCount}>{item.value}</Text>
-                </LinearGradient>
-              ))}
             </>
           )}
 
@@ -925,8 +896,9 @@ const styles = StyleSheet.create({
   // ── Tab selector — overlaps the header's rounded bottom edge ────────────────
   tabContainer: {
     paddingHorizontal: 20,
-    marginTop: -22,
+    marginTop: -18,
     zIndex: 10,
+    marginBottom: 2,
   },
 
   tabPill: {
@@ -967,7 +939,7 @@ const styles = StyleSheet.create({
   // ── Content area ─────────────────────────────────────────────────────────────
   content: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
   },
 
   // Skills card
@@ -1368,6 +1340,49 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: PURPLE,
+  },
+
+  // Engage tab layout
+  engageWrapper: {
+    flex: 1,
+  },
+  engageHeroWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+
+  // Engage tab breakdown
+  engageBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 10,
+  },
+  engageBreakdownEmoji: {
+    fontSize: 22,
+    width: 30,
+    textAlign: 'center',
+  },
+  engageBreakdownContent: {
+    flex: 1,
+  },
+  engageBreakdownTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e1b4b',
+    marginBottom: 2,
+  },
+  engageBreakdownDesc: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 16,
+  },
+  engageBreakdownValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: PURPLE,
+    minWidth: 28,
+    textAlign: 'right',
   },
 
   utiliseFeedBigCount: {

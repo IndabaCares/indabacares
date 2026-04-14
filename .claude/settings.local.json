@@ -65,7 +65,9 @@
       "Bash(echo \"exit: $?\")",
       "Bash(npm list:*)",
       "Bash(npx eas:*)",
-      "Bash(eas update:*)"
+      "Bash(eas update:*)",
+      "Bash(find:*)",
+      "Bash(timeout 60 tail -f \"C:\\\\Users\\\\Personel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Personel-Desktop-IndabaCares\\\\6c9d0bb6-2bfb-4c91-989b-cf9f696828a3\\\\tasks\\\\by3xdsasf.output\")"
     ]
   }
 }
