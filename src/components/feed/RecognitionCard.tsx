@@ -289,7 +289,7 @@ const s = StyleSheet.create({
     right: 6,
     width: 70,
     height: 70,
-    opacity: 0.28,
+    opacity: 0.5,
     tintColor: '#ffffff',
   },
 

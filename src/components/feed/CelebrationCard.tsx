@@ -1,5 +1,5 @@
-import React, { memo, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
@@ -56,20 +56,6 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
   const thumbCount                 = thumbsLikes.length;
   const handleThumb                = () => toggleThumb.mutate({ likeId: myThumb?.id ?? null });
 
-  // ── Pulse animation ───────────────────────────────────────────────────────
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.07, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, []);
-
   return (
     <LinearGradient
       colors={gradientColors}
@@ -82,20 +68,15 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
 
       {/* ── Header ────────────────────────────────────────── */}
       {isBirthday ? (
-        /* Birthday — centered animated text */
-        <Animated.Text style={[s.birthdayHeader, { transform: [{ scale: pulseAnim }] }]}>
+        <Text style={s.birthdayHeader}>
           🎉 Happy Birthday! 🎉
-        </Animated.Text>
+        </Text>
       ) : (
-        /* Milestone — big year left + animated 'MILESTONE' centered */
         <View style={s.milestoneHeaderRow}>
           <Text style={s.milestoneYear}>{milestone ?? ''}</Text>
           <View style={s.milestoneTitleWrap}>
-            <Animated.Text style={[s.milestoneTitle, { transform: [{ scale: pulseAnim }] }]}>
-              Service Milestone
-            </Animated.Text>
+            <Text style={s.milestoneTitle}>Service Milestone</Text>
           </View>
-          {/* Spacer balances the year number width */}
           <View style={s.milestoneYearSpacer} />
         </View>
       )}
@@ -174,7 +155,7 @@ const s = StyleSheet.create({
     right: 6,
     width: 70,
     height: 70,
-    opacity: 0.28,
+    opacity: 0.5,
     tintColor: '#ffffff',
   },
 

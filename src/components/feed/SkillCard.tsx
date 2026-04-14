@@ -222,7 +222,7 @@ const s = StyleSheet.create({
     right: 6,
     width: 34,
     height: 34,
-    opacity: 0.12,
+    opacity: 0.3,
   },
 
   // Time
