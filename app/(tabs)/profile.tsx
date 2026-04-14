@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Pressable,
+  TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
   Platform,
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
 
   const [photoUrl,   setPhotoUrl] = useState<string | null>(null);
   const [uploading,  setUploading] = useState(false);
-  const [activeTab,  setActiveTab] = useState<'gamification' | 'announcements'>('gamification');
+  const [activeTab,  setActiveTab] = useState<'balance' | 'utilise' | 'achieve'>('balance');
   const [menuOpen,   setMenuOpen]  = useState(false);
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -293,98 +294,120 @@ export default function ProfileScreen() {
         {/* ── Pill tab selector — sits on the header's rounded bottom edge ── */}
         <View style={styles.tabContainer}>
           <View style={styles.tabPill}>
-            {(['announcements', 'gamification'] as const).map((tab) => {
+            {(['balance', 'utilise', 'achieve'] as const).map((tab) => {
               const active = activeTab === tab;
+              const label = tab === 'balance' ? 'Balance' : tab === 'utilise' ? 'Utilise' : 'Achieve';
               return (
-                <Pressable
+                <TouchableOpacity
                   key={tab}
                   onPress={() => setActiveTab(tab)}
                   style={[styles.tabButton, active && styles.tabButtonActive]}
+                  activeOpacity={0.7}
                 >
                   <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab === 'gamification' ? 'Achievements' : 'Milestones'}
+                    {label}
                   </Text>
-                </Pressable>
+                </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* ── Stats / pills card — in normal flow below header ────────────── */}
-        <View style={styles.statsCard}>
-
-          {/* Points + Status pills */}
-          {(() => {
-            const status = recognitionsGiven !== null ? getStatus(recognitionsGiven) : null;
-            return (
-              <View style={styles.pillsRow}>
-                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>Recognition Rewards</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="star" size={16} color="#fbbf24" />
-                    {pointsLoading ? (
-                      <ActivityIndicator size="small" color={ACCENT} />
-                    ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0}</Text>
-                    )}
-                  </View>
-                </View>
-                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>Reward Wallet</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="cash-outline" size={16} color="#34d399" />
-                    {pointsLoading ? (
-                      <ActivityIndicator size="small" color={ACCENT} />
-                    ) : (
-                      <Text style={styles.pillTextDark}>{pointsBalance ?? 0}</Text>
-                    )}
-                  </View>
-                </View>
-                <View style={[styles.pill, { flexDirection: 'column', alignItems: 'center', gap: 4 }]}>
-                  <Text style={styles.pillHeader}>{'Status\nLevel'}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {status === null ? (
-                      <ActivityIndicator size="small" color={ACCENT} />
-                    ) : (
-                      <>
-                        <Ionicons name={status.icon} size={16} color={status.color} />
-                        <Text style={[styles.pillTextDark, { color: status.color }]}>{status.label}</Text>
-                      </>
-                    )}
-                  </View>
-                </View>
-              </View>
-            );
-          })()}
-
-          {/* Reaction + Recognition stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statsPill}>
-              <View style={styles.reactionMerged}>
-                {stats.map((stat, i) => (
-                  <Text key={i} style={styles.statIcon}>{stat.icon}</Text>
-                ))}
-                <Text style={[styles.reactionPtsDark, { fontSize: 16 }]}>{remainingReactionPts}</Text>
-              </View>
-            </View>
-            <View style={styles.statsPill}>
-              <View style={styles.reactionMerged}>
-                <Text style={styles.statIcon}>⭐</Text>
-                <Text style={styles.reactionPtsDark}>Recognition Badges </Text>
-                <Text style={[styles.reactionPtsDark, { fontSize: 16 }]}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
-              </View>
-            </View>
-          </View>
-
-        </View>
-
         {/* ── Content area ────────────────────────────────────────────────── */}
         <View style={[styles.content, { paddingBottom: 100 }]}>
 
-          {activeTab === 'gamification' && (
+          {/* ── Balance tab ─────────────────────────────────────────────── */}
+          {activeTab === 'balance' && (
             <View style={styles.achieveCard}>
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
+                  <Ionicons name="star-outline" size={20} color="#d97706" />
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Recognition / Skills Awards</Text>
+                  <Text style={styles.achieveSub}>Points earned from recognitions</Text>
+                </View>
+                {pointsLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <Text style={styles.achieveValue}>{pointsBalance ?? 0}</Text>
+                )}
+              </View>
+              <View style={styles.achieveDivider} />
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#d1fae5' }]}>
+                  <Ionicons name="cash-outline" size={20} color="#059669" />
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Rewards Wallet</Text>
+                  <Text style={styles.achieveSub}>Available for redemption</Text>
+                </View>
+                {pointsLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <Text style={styles.achieveValue}>{pointsBalance ?? 0}</Text>
+                )}
+              </View>
+            </View>
+          )}
 
-              {/* ── Badges ──────────────────────────────────────────────── */}
+          {/* ── Utilise tab ─────────────────────────────────────────────── */}
+          {activeTab === 'utilise' && (
+            <View style={styles.achieveCard}>
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
+                  <Text style={styles.statIcon}>⭐</Text>
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Recognition Badges</Text>
+                  <Text style={styles.achieveSub}>Remaining this month</Text>
+                </View>
+                {recognitionLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <Text style={styles.achieveValue}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
+                )}
+              </View>
+              <View style={styles.achieveDivider} />
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
+                  <Text style={styles.statIcon}>💡</Text>
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Skills Badges</Text>
+                  <Text style={styles.achieveSub}>Awarded for skill endorsements</Text>
+                </View>
+                {badgesLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
+                )}
+              </View>
+              <View style={styles.achieveDivider} />
+              <View style={styles.achieveRow}>
+                <View style={[styles.achieveIconWrap, { backgroundColor: '#fce7f3' }]}>
+                  <Text style={styles.statIcon}>😊</Text>
+                </View>
+                <View style={styles.achieveInfo}>
+                  <Text style={styles.achieveLabel}>Emoji</Text>
+                  <Text style={styles.achieveSub}>Reactions remaining</Text>
+                </View>
+                {reactionLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <View style={styles.emojiValuesRow}>
+                    <Text style={styles.emojiCountItem}>❤️ {reactionBalance?.hearts_remaining ?? REACTION_TOTALS.heart}</Text>
+                    <Text style={styles.emojiCountItem}>😊 {reactionBalance?.smiles_remaining ?? REACTION_TOTALS.smile}</Text>
+                    <Text style={styles.emojiCountItem}>👍 {reactionBalance?.thumbs_remaining ?? REACTION_TOTALS.thumbs_up}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* ── Achieve tab ─────────────────────────────────────────────── */}
+          {activeTab === 'achieve' && (
+            <View style={styles.achieveCard}>
               <View style={styles.achieveRow}>
                 <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
                   <Ionicons name="ribbon-outline" size={20} color="#d97706" />
@@ -399,24 +422,18 @@ export default function ProfileScreen() {
                   <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
                 )}
               </View>
-
               <View style={styles.achieveDivider} />
-
-              {/* ── Recognitions Received ───────────────────────────────── */}
               <View style={styles.achieveRow}>
                 <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
                   <Ionicons name="star-outline" size={20} color={PURPLE} />
                 </View>
                 <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Recognitions Received</Text>
+                  <Text style={styles.achieveLabel}>Recognition Received</Text>
                   <Text style={styles.achieveSub}>Total shout-outs from your team</Text>
                 </View>
                 <Text style={styles.achieveValue}>{pointsBalance !== null ? Math.floor((pointsBalance ?? 0) / 10) : '—'}</Text>
               </View>
-
               <View style={styles.achieveDivider} />
-
-              {/* ── Status & Progress ───────────────────────────────────── */}
               {recognitionsGiven === null ? (
                 <View style={[styles.achieveRow, { justifyContent: 'center' }]}>
                   <ActivityIndicator size="small" color={PURPLE} />
@@ -441,16 +458,6 @@ export default function ProfileScreen() {
                   </View>
                 );
               })()}
-
-
-            </View>
-          )}
-
-          {activeTab === 'announcements' && (
-            <View style={styles.skillsCard}>
-              <Ionicons name="flag-outline" size={32} color={PURPLE_MID} />
-              <Text style={styles.skillsCardTitle}>Milestones</Text>
-              <Text style={styles.skillsCardSub}>Your milestones will appear here</Text>
             </View>
           )}
 
@@ -1026,5 +1033,17 @@ const styles = StyleSheet.create({
 
   signOutLabel: {
     color: '#ef4444',
+  },
+
+  emojiValuesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  emojiCountItem: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: PURPLE,
   },
 });
