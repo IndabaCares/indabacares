@@ -28,7 +28,7 @@ export const LegendCard = memo(function LegendCard({ legend }: Props) {
       <View style={s.header}>
         <Text style={s.crown}>👑</Text>
         <View style={s.headerText}>
-          <Text style={s.title} numberOfLines={1}>Legend of the Month</Text>
+          <Text style={s.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>Legend of the Month</Text>
           <Text style={s.month} numberOfLines={1}>{monthLabel}</Text>
         </View>
         <View style={s.trophyWrap}>
@@ -57,7 +57,7 @@ export const LegendCard = memo(function LegendCard({ legend }: Props) {
       <View style={s.statsRow}>
         <View style={s.stat}>
           <Text style={s.statValue}>{legend.total_points}</Text>
-          <Text style={s.statLabel}>{'Points\nThis Month'}</Text>
+          <Text style={s.statLabel}>{'Recognition\nReceived'}</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.stat}>
@@ -67,7 +67,7 @@ export const LegendCard = memo(function LegendCard({ legend }: Props) {
         <View style={s.statDivider} />
         <View style={s.stat}>
           <Text style={s.statValue}>{legend.points_awarded}</Text>
-          <Text style={s.statLabel}>{'Bonus\nPoints'}</Text>
+          <Text style={s.statLabel}>{'Reward\nWallet'}</Text>
         </View>
       </View>
 
@@ -101,6 +101,7 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
     gap: 10,
   },
@@ -109,18 +110,21 @@ const s = StyleSheet.create({
   },
   headerText: {
     flex: 1,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '800',
     color: '#fbbf24',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   month: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
-    marginTop: 1,
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   trophyWrap: {
     width: 40,
