@@ -12,6 +12,7 @@ import {
   Megaphone,
   Zap,
   Heart,
+  SmilePlus,
   ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
@@ -50,6 +51,7 @@ const NAV: NavSection[] = [
     title: 'Reporting',
     items: [
       { label: 'Analytics',     href: '/analytics',      icon: BarChart3       },
+      { label: 'Mood Board',    href: '/mood',           icon: SmilePlus       },
     ],
   },
   {
