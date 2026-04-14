@@ -325,143 +325,88 @@ export default function ProfileScreen() {
           {/* ── Balance tab ─────────────────────────────────────────────── */}
           {activeTab === 'balance' && (
             <>
-              {/* ── 2×2 feed-style cards ──────────────────────────────── */}
-              <View style={styles.balanceFeedGrid}>
-
-                {/* Recognition Badges */}
-                <LinearGradient
-                  colors={['#3b0764', '#6d28d9', '#7B1FA2']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.balanceFeedCard}
-                >
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>⭐</Text>
-                    <Text style={styles.balanceFeedTitle}>Recognition</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Badges Left</Text>
-                  {recognitionLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.balanceFeedValue}>
-                      {recognitionRemaining ?? '—'} of {MONTHLY_RECOGNITION_LIMIT}
-                    </Text>
-                  )}
-                  <View style={styles.balanceFeedTrack}>
-                    <View style={[styles.balanceFeedFill, {
-                      width: `${((recognitionRemaining ?? 0) / MONTHLY_RECOGNITION_LIMIT) * 100}%`,
-                      backgroundColor: '#e879f9',
-                    }]} />
-                  </View>
-                </LinearGradient>
-
-                {/* Skills Badges */}
-                <LinearGradient
-                  colors={['#1e3a5f', '#1d4ed8', '#2563eb']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.balanceFeedCard}
-                >
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🎓</Text>
-                    <Text style={styles.balanceFeedTitle}>Skills</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Badges Left</Text>
-                  <Text style={styles.balanceFeedValue}>9 of 10</Text>
-                  <View style={styles.balanceFeedTrack}>
-                    <View style={[styles.balanceFeedFill, { width: '90%', backgroundColor: '#93c5fd' }]} />
-                  </View>
-                </LinearGradient>
-
-                {/* Emoji */}
-                <LinearGradient
-                  colors={['#064e3b', '#065f46', '#059669']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.balanceFeedCard}
-                >
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>😀</Text>
-                    <Text style={styles.balanceFeedTitle}>Emoji</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Reactions Left</Text>
-                  {reactionLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.balanceFeedValue}>
-                      {reactionBalance
-                        ? reactionBalance.hearts_remaining + reactionBalance.smiles_remaining + reactionBalance.thumbs_remaining
-                        : '—'} of 100
-                    </Text>
-                  )}
-                  <View style={styles.balanceFeedTrack}>
-                    <View style={[styles.balanceFeedFill, {
-                      width: reactionBalance
-                        ? `${((reactionBalance.hearts_remaining + reactionBalance.smiles_remaining + reactionBalance.thumbs_remaining) / 100) * 100}%`
-                        : '75%',
-                      backgroundColor: '#6ee7b7',
-                    }]} />
-                  </View>
-                </LinearGradient>
-
-                {/* Reset Timer */}
-                <LinearGradient
-                  colors={['#451a03', '#92400e', '#b45309']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.balanceFeedCard}
-                >
-                  <View style={styles.balanceFeedHeader}>
-                    <Text style={styles.balanceFeedEmoji}>🔄</Text>
-                    <Text style={styles.balanceFeedTitle}>Reset Timer</Text>
-                  </View>
-                  <Text style={styles.balanceFeedSub}>Refreshes in</Text>
-                  <Text style={styles.balanceFeedValue}>{daysUntilReset} days</Text>
-                  <View style={styles.balanceFeedTrack}>
-                    <View style={[styles.balanceFeedFill, {
-                      width: `${Math.min(100, (daysUntilReset / 31) * 100)}%`,
-                      backgroundColor: '#fcd34d',
-                    }]} />
-                  </View>
-                </LinearGradient>
-
-              </View>
-
-              {/* ── Descriptions ────────────────────────────────────── */}
-              <View style={styles.balanceSection}>
-                <Text style={styles.balanceSectionTitle}>Descriptions</Text>
-                <View style={styles.balanceInfoCard}>
-                  {([
-                    {
-                      emoji: '⭐',
-                      title: `Recognition Badges (${recognitionRemaining ?? '—'} of ${MONTHLY_RECOGNITION_LIMIT})`,
-                      body: 'You receive 10 recognition badges per month — to acknowledge great work or behaviour.',
-                    },
-                    {
-                      emoji: '🎓',
-                      title: 'Skills Badges (9 of 10)',
-                      body: 'You receive 10 skills badges per month — skill-based endorsements you can assign to colleagues for demonstrated competencies.',
-                    },
-                    {
-                      emoji: '😀',
-                      title: 'Emoji (75 / 100)',
-                      body: 'You receive 100 emoji as a monthly social currency used for quick recognition, reactions, and lightweight appreciation.',
-                    },
-                    {
-                      emoji: '🔄',
-                      title: 'Reset Timer',
-                      body: 'The number of days remaining until your monthly balance refreshes.',
-                    },
-                  ] as const).map((item, i, arr) => (
-                    <View key={i}>
-                      <View style={styles.balanceDescRow}>
-                        <Text style={styles.balanceDescEmoji}>{item.emoji}</Text>
-                        <View style={styles.balanceDescText}>
-                          <Text style={styles.balanceDescTitle}>{item.title}</Text>
-                          <Text style={styles.balanceDescBody}>{item.body}</Text>
-                        </View>
-                      </View>
-                      {i < arr.length - 1 && <View style={styles.achieveDivider} />}
-                    </View>
-                  ))}
+              {/* Recognition Badges */}
+              <LinearGradient
+                colors={['#3b0764', '#6d28d9', '#7B1FA2']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>🏅</Text>
                 </View>
-              </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Recognition Badges</Text>
+                  <Text style={styles.utiliseFeedDesc}>You can still recognize colleagues this month.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Use these to highlight great performance or behaviour.</Text>
+                </View>
+                {recognitionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
+                ) : (
+                  <Text style={styles.utiliseFeedBigCount}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
+                )}
+              </LinearGradient>
+
+              {/* Skills Badges */}
+              <LinearGradient
+                colors={['#1e3a5f', '#1d4ed8', '#2563eb']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>🎓</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Skills Badges</Text>
+                  <Text style={styles.utiliseFeedDesc}>You can still endorse skills of colleagues.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Assign these when you see strong capability in action.</Text>
+                </View>
+                <Text style={styles.utiliseFeedBigCount}>10</Text>
+              </LinearGradient>
+
+              {/* Emoji */}
+              <LinearGradient
+                colors={['#064e3b', '#065f46', '#059669']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>😀</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Emoji</Text>
+                  <Text style={styles.utiliseFeedDesc}>Your social recognition tokens for quick appreciation.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Send these throughout the month to engage your team.</Text>
+                </View>
+                {reactionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
+                ) : (
+                  <Text style={styles.utiliseFeedBigCount}>
+                    {reactionBalance
+                      ? reactionBalance.hearts_remaining + reactionBalance.smiles_remaining + reactionBalance.thumbs_remaining
+                      : 100}
+                  </Text>
+                )}
+              </LinearGradient>
+
+              {/* Reset Timer */}
+              <LinearGradient
+                colors={['#451a03', '#92400e', '#b45309']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>🔄</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Reset Timer</Text>
+                  <Text style={styles.utiliseFeedDesc}>Your balance will refresh soon.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Unused allocations do not roll over.</Text>
+                </View>
+                <Text style={[styles.utiliseFeedBigCount, { fontSize: 18, alignSelf: 'center' }]}>
+                  {daysUntilReset}{'\n'}
+                  <Text style={{ fontSize: 10, fontWeight: '600', opacity: 0.7 }}>days left</Text>
+                </Text>
+              </LinearGradient>
 
               {/* ── Usage Breakdown ─────────────────────────────────── */}
               <View style={styles.balanceSection}>
@@ -516,15 +461,15 @@ export default function ProfileScreen() {
           {activeTab === 'utilise' && (
             <>
               {([
-                { emoji: '❤️', title: 'Mood Board',          value: 0, desc: 'Your shared moments and interactions with colleagues.',               insight: 'No activity yet — start engaging to build your presence.',       colors: ['#4a0000', '#b71c1c', '#dc2626'] },
-                { emoji: '🏅', title: 'Recognition Received', value: 0, desc: 'The number of times you\'ve been recognised for your work.',         insight: 'You\'re yet to be recognised this month.',                       colors: ['#3b0764', '#6d28d9', '#7B1FA2'] },
-                { emoji: '🎓', title: 'Skills Shoutout',      value: 0, desc: 'Endorsements received for your skills and expertise.',               insight: 'Complete training or get recognised to grow this.',              colors: ['#1e3a5f', '#1d4ed8', '#2563eb'] },
-                { emoji: '💬', title: 'Responses Made',       value: 0, desc: 'Your engagement through comments and conversations.',                insight: 'Join discussions to increase your visibility.',                  colors: ['#134e4a', '#0d9488', '#14b8a6'] },
-                { emoji: '🎂', title: 'Birthday',             value: 0, desc: 'Celebrations and messages received on your birthday.',               insight: 'This will activate automatically on your special day.',          colors: ['#4a0000', '#7f1d1d', '#dc2626'] },
-                { emoji: '🎖', title: 'Service Milestone',    value: 0, desc: 'Recognition for your time and loyalty in the company.',              insight: 'Your next milestone is approaching.',                            colors: ['#14532d', '#166534', '#16a34a'] },
-                { emoji: '⭐', title: 'Status Unlock',        value: 0, desc: 'New levels achieved through consistent engagement.',                 insight: 'Stay active to unlock higher status tiers.',                     colors: ['#451a03', '#92400e', '#b45309'] },
-                { emoji: '🏆', title: 'Badges Achieved',      value: 0, desc: 'Awards earned through performance and participation.',               insight: 'You haven\'t unlocked any badges yet.',                          colors: ['#3d2c00', '#92630a', '#d97706'] },
-                { emoji: '👑', title: 'Legend of the Month',  value: 0, desc: 'Top performer recognition awarded monthly.',                         insight: 'Stand out to earn this prestigious title.',                      colors: ['#1a0a2e', '#3b0764', '#6b21a8'] },
+                { emoji: '🏅', title: 'Recognition Received', value: 0, desc: 'The number of times you\'ve been recognised for your work.',    insight: 'You\'re yet to be recognised this month.',              colors: ['#3b0764', '#6d28d9', '#7B1FA2'] },
+                { emoji: '🎓', title: 'Skills Shoutout',      value: 0, desc: 'Endorsements received for your skills and expertise.',          insight: 'Complete training or get recognised to grow this.',     colors: ['#1e3a5f', '#1d4ed8', '#2563eb'] },
+                { emoji: '💬', title: 'Responses Made',       value: 0, desc: 'Your engagement to recognition you have received.',             insight: 'Join discussions to increase your visibility.',         colors: ['#134e4a', '#0d9488', '#14b8a6'] },
+                { emoji: '😊', title: 'Mood Board',           value: 0, desc: 'Updating your mood everyday earns you points.',                 insight: 'No activity yet — start engaging to build your presence.', colors: ['#4a0000', '#b71c1c', '#dc2626'] },
+                { emoji: '🎂', title: 'Birthday',             value: 0, desc: 'Celebrations and messages received on your birthday.',          insight: 'This will activate automatically on your special day.', colors: ['#4a0000', '#7f1d1d', '#dc2626'] },
+                { emoji: '🎖', title: 'Service Milestone',    value: 0, desc: 'Recognition for your time and loyalty in the company.',         insight: 'Your next milestone is approaching.',                   colors: ['#14532d', '#166534', '#16a34a'] },
+                { emoji: '⭐', title: 'Status Unlock',        value: 0, desc: 'New levels achieved through consistent engagement.',            insight: 'Stay active to unlock higher status tiers.',            colors: ['#451a03', '#92400e', '#b45309'] },
+                { emoji: '🏆', title: 'Badges Achieved',      value: 0, desc: 'Awards earned through performance and participation.',          insight: 'You haven\'t unlocked any badges yet.',                 colors: ['#3d2c00', '#92630a', '#d97706'] },
+                { emoji: '👑', title: 'Legend of the Month',  value: 0, desc: 'Top performer recognition awarded monthly.',                    insight: 'Stand out to earn this prestigious title.',             colors: ['#1a0a2e', '#3b0764', '#6b21a8'] },
               ]).map((item) => (
                 <LinearGradient
                   key={item.title}
@@ -537,13 +482,11 @@ export default function ProfileScreen() {
                     <Text style={styles.utiliseFeedIcon}>{item.emoji}</Text>
                   </View>
                   <View style={styles.utiliseFeedContent}>
-                    <Text style={styles.utiliseFeedTitle}>
-                      {item.title}{' '}
-                      <Text style={styles.utiliseFeedCount}>({item.value})</Text>
-                    </Text>
+                    <Text style={styles.utiliseFeedTitle}>{item.title}</Text>
                     <Text style={styles.utiliseFeedDesc}>{item.desc}</Text>
                     <Text style={styles.utiliseFeedInsight}>{item.insight}</Text>
                   </View>
+                  <Text style={styles.utiliseFeedBigCount}>{item.value}</Text>
                 </LinearGradient>
               ))}
             </>
@@ -1385,10 +1328,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  utiliseFeedCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
+  utiliseFeedBigCount: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#fff',
+    alignSelf: 'center',
+    minWidth: 44,
+    textAlign: 'right',
+    opacity: 0.9,
+    flexShrink: 0,
   },
 
   utiliseFeedDesc: {
