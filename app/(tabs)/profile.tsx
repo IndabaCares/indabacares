@@ -344,13 +344,14 @@ export default function ProfileScreen() {
                 {stats.map((stat, i) => (
                   <Text key={i} style={styles.statIcon}>{stat.icon}</Text>
                 ))}
-                <Text style={styles.reactionPtsDark}>= {remainingReactionPts}</Text>
+                <Text style={[styles.reactionPtsDark, { fontSize: 16 }]}>{remainingReactionPts}</Text>
               </View>
             </View>
             <View style={styles.statsPill}>
               <View style={styles.reactionMerged}>
                 <Text style={styles.statIcon}>⭐</Text>
-                <Text style={styles.reactionPtsDark}>Recognition Badges = {recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
+                <Text style={styles.reactionPtsDark}>Recognition Badges </Text>
+                <Text style={[styles.reactionPtsDark, { fontSize: 16 }]}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
               </View>
             </View>
           </View>
@@ -378,71 +379,127 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Content area ────────────────────────────────────────────────── */}
-        <View style={[styles.content, { paddingBottom: 100 }]}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
 
           {activeTab === 'gamification' && (
-            <View style={styles.achieveCard}>
+            <>
+              {/* ── Achievements card ──────────────────────────────────── */}
+              <View style={styles.achieveCard}>
 
-              {/* ── Badges ──────────────────────────────────────────────── */}
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
-                  <Ionicons name="ribbon-outline" size={20} color="#d97706" />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Badges Earned</Text>
-                  <Text style={styles.achieveSub}>Keep recognising to unlock more</Text>
-                </View>
-                {badgesLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
-                ) : (
-                  <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
-                )}
-              </View>
-
-              <View style={styles.achieveDivider} />
-
-              {/* ── Recognitions Received ───────────────────────────────── */}
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
-                  <Ionicons name="star-outline" size={20} color={PURPLE} />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Recognitions Received</Text>
-                  <Text style={styles.achieveSub}>Total shout-outs from your team</Text>
-                </View>
-                <Text style={styles.achieveValue}>{pointsBalance !== null ? Math.floor((pointsBalance ?? 0) / 10) : '—'}</Text>
-              </View>
-
-              <View style={styles.achieveDivider} />
-
-              {/* ── Status & Progress ───────────────────────────────────── */}
-              {recognitionsGiven === null ? (
-                <View style={[styles.achieveRow, { justifyContent: 'center' }]}>
-                  <ActivityIndicator size="small" color={PURPLE} />
-                </View>
-              ) : (() => {
-                const status   = getStatus(recognitionsGiven);
-                const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > recognitionsGiven);
-                return (
-                  <View style={styles.achieveRow}>
-                    <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
-                      <Ionicons name={status.icon} size={20} color={status.color} />
-                    </View>
-                    <View style={styles.achieveInfo}>
-                      <Text style={styles.achieveLabel}>Status</Text>
-                      <Text style={styles.achieveSub}>
-                        {nextTier
-                          ? `${nextTier.min - recognitionsGiven} more recognitions to reach ${nextTier.label}`
-                          : 'You have reached the top tier!'}
-                      </Text>
-                    </View>
-                    <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
+                {/* ── Badges ──────────────────────────────────────────── */}
+                <View style={styles.achieveRow}>
+                  <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
+                    <Ionicons name="ribbon-outline" size={20} color="#d97706" />
                   </View>
-                );
-              })()}
+                  <View style={styles.achieveInfo}>
+                    <Text style={styles.achieveLabel}>Badges Earned</Text>
+                    <Text style={styles.achieveSub}>Keep recognising to unlock more</Text>
+                  </View>
+                  {badgesLoading ? (
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  ) : (
+                    <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
+                  )}
+                </View>
 
+                <View style={styles.achieveDivider} />
 
-            </View>
+                {/* ── Recognitions Received ───────────────────────────── */}
+                <View style={styles.achieveRow}>
+                  <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
+                    <Ionicons name="star-outline" size={20} color={PURPLE} />
+                  </View>
+                  <View style={styles.achieveInfo}>
+                    <Text style={styles.achieveLabel}>Recognitions Received</Text>
+                    <Text style={styles.achieveSub}>Total shout-outs from your team</Text>
+                  </View>
+                  <Text style={styles.achieveValue}>{pointsBalance !== null ? Math.floor((pointsBalance ?? 0) / 10) : '—'}</Text>
+                </View>
+
+                <View style={styles.achieveDivider} />
+
+                {/* ── Status & Progress ───────────────────────────────── */}
+                {recognitionsGiven === null ? (
+                  <View style={[styles.achieveRow, { justifyContent: 'center' }]}>
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  </View>
+                ) : (() => {
+                  const status   = getStatus(recognitionsGiven);
+                  const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > recognitionsGiven);
+                  return (
+                    <View style={styles.achieveRow}>
+                      <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
+                        <Ionicons name={status.icon} size={20} color={status.color} />
+                      </View>
+                      <View style={styles.achieveInfo}>
+                        <Text style={styles.achieveLabel}>Status</Text>
+                        <Text style={styles.achieveSub}>
+                          {nextTier
+                            ? `${nextTier.min - recognitionsGiven} more recognitions to reach ${nextTier.label}`
+                            : 'You have reached the top tier!'}
+                        </Text>
+                      </View>
+                      <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
+                    </View>
+                  );
+                })()}
+
+              </View>
+
+              {/* ── Skills card (mock) ─────────────────────────────────── */}
+              <View style={styles.skillsMockCard}>
+                <View style={styles.skillsMockHeader}>
+                  <View style={[styles.achieveIconWrap, { backgroundColor: '#e0f2fe' }]}>
+                    <Ionicons name="bulb-outline" size={20} color="#0284c7" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.achieveLabel}>Skills & Expertise</Text>
+                    <Text style={styles.achieveSub}>Your recognised strengths</Text>
+                  </View>
+                </View>
+                <View style={styles.skillChipsRow}>
+                  {['Customer Service', 'Team Leadership', 'Problem Solving', 'Communication', 'Hospitality'].map((skill) => (
+                    <View key={skill} style={styles.skillChip}>
+                      <Text style={styles.skillChipText}>{skill}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* ── Legend of the Month card ───────────────────────────── */}
+              <View style={styles.legendCard}>
+                <View style={styles.legendTop}>
+                  <Text style={styles.legendCrown}>👑</Text>
+                  <Text style={styles.legendTitle}>Legend of the Month</Text>
+                  <Text style={styles.legendMonth}>April 2026</Text>
+                </View>
+                <View style={styles.legendDivider} />
+                <View style={styles.legendStats}>
+                  <View style={styles.legendStat}>
+                    <Text style={styles.legendStatValue}>24</Text>
+                    <Text style={styles.legendStatLabel}>{'Recognitions\nGiven'}</Text>
+                  </View>
+                  <View style={styles.legendStatDivider} />
+                  <View style={styles.legendStat}>
+                    <Text style={styles.legendStatValue}>18</Text>
+                    <Text style={styles.legendStatLabel}>{'Recognitions\nReceived'}</Text>
+                  </View>
+                  <View style={styles.legendStatDivider} />
+                  <View style={styles.legendStat}>
+                    <Text style={[styles.legendStatValue, { color: '#fbbf24' }]}>#1</Text>
+                    <Text style={styles.legendStatLabel}>{'Hotel\nRank'}</Text>
+                  </View>
+                </View>
+                <View style={styles.legendBadge}>
+                  <Ionicons name="trophy" size={14} color="#fbbf24" />
+                  <Text style={styles.legendBadgeText}>Gold Status Achieved</Text>
+                </View>
+              </View>
+            </>
           )}
 
           {activeTab === 'announcements' && (
@@ -453,7 +510,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-        </View>
+        </ScrollView>
 
       </View>
 
@@ -1024,5 +1081,144 @@ const styles = StyleSheet.create({
 
   signOutLabel: {
     color: '#ef4444',
+  },
+
+  // ── Skills mock card ──────────────────────────────────────────────────────────
+  skillsMockCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  skillsMockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+
+  skillChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  skillChip: {
+    backgroundColor: '#ede9fe',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#ddd6fe',
+  },
+
+  skillChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: PURPLE,
+  },
+
+  // ── Legend of the Month card ──────────────────────────────────────────────────
+  legendCard: {
+    backgroundColor: '#1a0a2e',
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.25)',
+    shadowColor: '#7B1FA2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  legendTop: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  legendCrown: {
+    fontSize: 36,
+    marginBottom: 6,
+  },
+
+  legendTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fbbf24',
+    letterSpacing: 0.5,
+  },
+
+  legendMonth: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.45)',
+    marginTop: 3,
+    fontWeight: '500',
+  },
+
+  legendDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 16,
+  },
+
+  legendStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+
+  legendStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  legendStatValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+
+  legendStatLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    lineHeight: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  legendStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignSelf: 'stretch',
+  },
+
+  legendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(251,191,36,0.1)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.25)',
+  },
+
+  legendBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fbbf24',
+    letterSpacing: 0.3,
   },
 });
