@@ -33,6 +33,39 @@ const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
   'Nata Lodge':                require('../../assets/natalodge.png'),
 };
 
+// ─── Mock data (design preview — remove once real data is flowing) ────────────
+
+const _NOW = new Date().toISOString();
+const _TODAY = _NOW.split('T')[0];
+
+const MOCK_BIRTHDAY: CelebrationFeedItem = {
+  _type: 'celebration', id: 'mock-bday', type: 'birthday', milestone: null,
+  celebrated_on: _TODAY, created_at: _NOW,
+  employee: { id: 'mb1', full_name: 'Sarah Johnson', hotel: '', department: 'Front Office', position: 'Receptionist', photo_url: null },
+};
+
+const MOCK_MILESTONE: CelebrationFeedItem = {
+  _type: 'celebration', id: 'mock-ms', type: 'anniversary', milestone: 5,
+  celebrated_on: _TODAY, created_at: _NOW,
+  employee: { id: 'mb2', full_name: 'James Mokoena', hotel: '', department: 'Food & Beverage', position: 'Head Chef', photo_url: null },
+};
+
+const MOCK_SKILL: RecognitionFeedItem = {
+  id: 'mock-skill', badge: 'Customer Service', hotel: '',
+  message: 'Always goes above and beyond for every guest — exceptional service every single day!',
+  created_at: _NOW, recipient_response: null, recipient_responded_at: null,
+  sender:   { id: 'ms1', full_name: 'Thabo Nkosi',  employee_code: 'TN001', position: 'Manager',         department: 'Management',   photo_url: null },
+  receiver: { id: 'ms2', full_name: 'Priya Patel',   employee_code: 'PP002', position: 'Guest Relations', department: 'Front Office', photo_url: null },
+  likes_count: [{ count: 5 }], comments_count: [{ count: 2 }],
+};
+
+const MOCK_LEGEND = {
+  id: 'mock-legend', hotel: '', employee_id: 'ml1',
+  full_name: 'Kagiso Sithole', job_title: 'Guest Relations Manager',
+  avatar_url: null, month: 4, year: 2026,
+  total_points: 1240, points_awarded: 500, recognition_id: null,
+};
+
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
 function HotelPicker({ onSelect }: { onSelect: (hotel: string) => void }) {
@@ -258,7 +291,12 @@ export default function FeedScreen() {
                 : <RecognitionCard recognition={rec} />;
             }}
             ListHeaderComponent={
-              legend ? <LegendCard legend={legend} /> : null
+              <View>
+                <LegendCard legend={legend ?? MOCK_LEGEND} />
+                <CelebrationCard celebration={MOCK_BIRTHDAY} />
+                <CelebrationCard celebration={MOCK_MILESTONE} />
+                <SkillCard recognition={MOCK_SKILL} />
+              </View>
             }
             ListEmptyComponent={
               !isLoading ? (
