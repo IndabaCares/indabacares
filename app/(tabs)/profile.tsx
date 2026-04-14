@@ -492,43 +492,51 @@ export default function ProfileScreen() {
             </>
           )}
 
-          {/* ── Achieve tab ─────────────────────────────────────────────── */}
+          {/* ── Reward tab ──────────────────────────────────────────────────── */}
           {activeTab === 'achieve' && (
-            <View style={styles.balanceGrid}>
-
-              {/* Badges Earned */}
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceCardLabel}>Badges Earned</Text>
-                {badgesLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} style={{ marginTop: 8 }} />
+            <>
+              {/* Reward Wallet card */}
+              <LinearGradient
+                colors={['#3d2c00', '#92630a', '#d97706']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>💰</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Reward Wallet</Text>
+                  <Text style={styles.utiliseFeedDesc}>Your usable reward balance earned through engagement.</Text>
+                </View>
+                {pointsLoading ? (
+                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
                 ) : (
-                  <Text style={styles.balanceCardValue}>{badgeCount ?? 0}</Text>
+                  <Text style={styles.utiliseFeedBigCount}>{pointsBalance ?? 0}</Text>
                 )}
-                <Text style={styles.balanceTrendNeutral}>Keep recognising to earn more</Text>
-              </View>
+              </LinearGradient>
 
-              {/* Achievements */}
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceCardLabel}>Achievements</Text>
-                <Text style={styles.balanceCardValue}>—</Text>
-                <Text style={styles.balanceTrendNeutral}>Unlocked milestones</Text>
+              {/* Breakdown rows */}
+              <View style={styles.rewardBreakdownCard}>
+                <View style={styles.rewardBreakdownRow}>
+                  <Text style={styles.rewardBreakdownLabel}>Available</Text>
+                  {pointsLoading ? (
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  ) : (
+                    <Text style={styles.rewardBreakdownValue}>{pointsBalance ?? 0}</Text>
+                  )}
+                </View>
+                <View style={styles.achieveDivider} />
+                <View style={styles.rewardBreakdownRow}>
+                  <Text style={styles.rewardBreakdownLabel}>Redeemed</Text>
+                  <Text style={styles.rewardBreakdownValue}>0</Text>
+                </View>
+                <View style={styles.achieveDivider} />
+                <View style={styles.rewardBreakdownRow}>
+                  <Text style={styles.rewardBreakdownLabel}>Earned this month</Text>
+                  <Text style={styles.rewardBreakdownValue}>0</Text>
+                </View>
               </View>
-
-              {/* Leaderboard Rank */}
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceCardLabel}>Leaderboard Rank</Text>
-                <Text style={styles.balanceCardValue}>—</Text>
-                <Text style={styles.balanceTrendNeutral}>Hotel ranking</Text>
-              </View>
-
-              {/* Streak */}
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceCardLabel}>Streak</Text>
-                <Text style={styles.balanceCardValue}>— 🔥</Text>
-                <Text style={styles.balanceTrendNeutral}>Consecutive active days</Text>
-              </View>
-
-            </View>
+            </>
           )}
 
         </ScrollView>
@@ -1326,6 +1334,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
     marginBottom: 4,
+  },
+
+  rewardBreakdownCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+    marginTop: 10,
+  },
+
+  rewardBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+
+  rewardBreakdownLabel: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '500',
+  },
+
+  rewardBreakdownValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: PURPLE,
   },
 
   utiliseFeedBigCount: {
