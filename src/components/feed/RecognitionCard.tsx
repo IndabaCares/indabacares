@@ -205,6 +205,42 @@ export const RecognitionCard = memo(function RecognitionCard({
             </View>
           )}
 
+          {/* ── Emoji picker — inline, left of react button ── */}
+          {showEmojiPicker && (
+            <Animated.View
+              style={[
+                s.emojiPickerRow,
+                {
+                  opacity:   pickerAnim,
+                  transform: [
+                    { scale: pickerAnim },
+                    {
+                      translateX: pickerAnim.interpolate({
+                        inputRange:  [0, 1],
+                        outputRange: [8, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {REACTIONS.map(({ type, emoji }) => {
+                const isActive = myReaction?.reaction_type === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    style={[s.emojiBtn, isActive && s.emojiBtnActive]}
+                    onPress={() => handleReact(type)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={s.emojiText}>{emoji}</Text>
+                    {isActive && <View style={s.activeDot} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </Animated.View>
+          )}
+
           {/* React button */}
           <TouchableOpacity
             style={s.reactBtn}
@@ -214,42 +250,6 @@ export const RecognitionCard = memo(function RecognitionCard({
             <Text style={s.reactBtnText}>{showEmojiPicker ? '✕' : '😊'}</Text>
           </TouchableOpacity>
         </View>
-
-        {/* ── Emoji picker row (animated) ───────────────────── */}
-        {showEmojiPicker && (
-          <Animated.View
-            style={[
-              s.emojiPickerRow,
-              {
-                opacity:   pickerAnim,
-                transform: [
-                  { scale: pickerAnim },
-                  {
-                    translateY: pickerAnim.interpolate({
-                      inputRange:  [0, 1],
-                      outputRange: [8, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            {REACTIONS.map(({ type, emoji }) => {
-              const isActive = myReaction?.reaction_type === type;
-              return (
-                <TouchableOpacity
-                  key={type}
-                  style={[s.emojiBtn, isActive && s.emojiBtnActive]}
-                  onPress={() => handleReact(type)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.emojiText}>{emoji}</Text>
-                  {isActive && <View style={s.activeDot} />}
-                </TouchableOpacity>
-              );
-            })}
-          </Animated.View>
-        )}
 
       </LinearGradient>
 
@@ -485,13 +485,12 @@ const s = StyleSheet.create({
     fontSize: 18,
   },
 
-  // Emoji picker row
+  // Emoji picker — inline to the left of the react button
   emojiPickerRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 10,
-    alignSelf: 'flex-start',
+    alignItems: 'center',
+    gap: 6,
+    marginRight: 6,
   },
   emojiBtn: {
     width: 44,
