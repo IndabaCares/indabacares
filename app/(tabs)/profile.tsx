@@ -318,146 +318,132 @@ export default function ProfileScreen() {
 
           {/* ── Balance tab ─────────────────────────────────────────────── */}
           {activeTab === 'balance' && (
-            <View style={styles.achieveCard}>
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
-                  <Ionicons name="star-outline" size={20} color="#d97706" />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Recognition / Skills Awards</Text>
-                  <Text style={styles.achieveSub}>Points earned from recognitions</Text>
-                </View>
+            <View style={styles.balanceGrid}>
+
+              {/* Points Earned */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Points Earned</Text>
                 {pointsLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
+                  <ActivityIndicator size="small" color={PURPLE} style={{ marginTop: 8 }} />
                 ) : (
-                  <Text style={styles.achieveValue}>{pointsBalance ?? 0}</Text>
+                  <>
+                    <Text style={styles.balanceCardValue}>
+                      {(pointsBalance ?? 0).toLocaleString()}
+                    </Text>
+                    <View style={styles.balanceTrendRow}>
+                      <Text style={styles.balanceTrendUp}>↑ This month</Text>
+                    </View>
+                  </>
                 )}
               </View>
-              <View style={styles.achieveDivider} />
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#d1fae5' }]}>
-                  <Ionicons name="cash-outline" size={20} color="#059669" />
+
+              {/* Points Redeemed */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Points Redeemed</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <View style={styles.balanceTrendRow}>
+                  <Text style={styles.balanceTrendNeutral}>No redemptions yet</Text>
                 </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Rewards Wallet</Text>
-                  <Text style={styles.achieveSub}>Available for redemption</Text>
-                </View>
-                {pointsLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
-                ) : (
-                  <Text style={styles.achieveValue}>{pointsBalance ?? 0}</Text>
-                )}
               </View>
+
+              {/* Closing Balance */}
+              <View style={[styles.balanceCard, styles.balanceCardHighlight]}>
+                <Text style={[styles.balanceCardLabel, { color: PURPLE }]}>Closing Balance</Text>
+                {pointsLoading ? (
+                  <ActivityIndicator size="small" color={PURPLE} style={{ marginTop: 8 }} />
+                ) : (
+                  <Text style={[styles.balanceCardValue, { color: PURPLE }]}>
+                    {(pointsBalance ?? 0).toLocaleString()}
+                  </Text>
+                )}
+                <View style={styles.balanceTrendRow}>
+                  <Text style={styles.balanceTrendNeutral}>Available balance</Text>
+                </View>
+              </View>
+
+              {/* Expiring Soon */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Expiring Soon</Text>
+                <Text style={styles.balanceCardValue}>— <Text style={{ fontSize: 16 }}>⚠️</Text></Text>
+                <View style={styles.balanceTrendRow}>
+                  <Text style={styles.balanceTrendNeutral}>No expiry pending</Text>
+                </View>
+              </View>
+
             </View>
           )}
 
           {/* ── Utilise tab ─────────────────────────────────────────────── */}
           {activeTab === 'utilise' && (
-            <View style={styles.achieveCard}>
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
-                  <Text style={styles.statIcon}>⭐</Text>
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Recognition Badges</Text>
-                  <Text style={styles.achieveSub}>Remaining this month</Text>
-                </View>
-                {recognitionLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
-                ) : (
-                  <Text style={styles.achieveValue}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
-                )}
+            <View style={styles.balanceGrid}>
+
+              {/* Rewards Used */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Rewards Used</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>No rewards used yet</Text>
               </View>
-              <View style={styles.achieveDivider} />
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
-                  <Text style={styles.statIcon}>💡</Text>
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Skills Badges</Text>
-                  <Text style={styles.achieveSub}>Awarded for skill endorsements</Text>
-                </View>
-                {badgesLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
-                ) : (
-                  <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
-                )}
+
+              {/* Value Redeemed */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Value Redeemed</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>No redemptions yet</Text>
               </View>
-              <View style={styles.achieveDivider} />
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#fce7f3' }]}>
-                  <Text style={styles.statIcon}>😊</Text>
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Emoji</Text>
-                  <Text style={styles.achieveSub}>Reactions remaining</Text>
-                </View>
-                {reactionLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
-                ) : (
-                  <View style={styles.emojiValuesRow}>
-                    <Text style={styles.emojiCountItem}>❤️ {reactionBalance?.hearts_remaining ?? REACTION_TOTALS.heart}</Text>
-                    <Text style={styles.emojiCountItem}>😊 {reactionBalance?.smiles_remaining ?? REACTION_TOTALS.smile}</Text>
-                    <Text style={styles.emojiCountItem}>👍 {reactionBalance?.thumbs_remaining ?? REACTION_TOTALS.thumbs_up}</Text>
-                  </View>
-                )}
+
+              {/* Active Days */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Active Days</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>Days this month</Text>
               </View>
+
+              {/* Features Used */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Features Used</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>Modules engaged</Text>
+              </View>
+
             </View>
           )}
 
           {/* ── Achieve tab ─────────────────────────────────────────────── */}
           {activeTab === 'achieve' && (
-            <View style={styles.achieveCard}>
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#fef3c7' }]}>
-                  <Ionicons name="ribbon-outline" size={20} color="#d97706" />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Badges Earned</Text>
-                  <Text style={styles.achieveSub}>Keep recognising to unlock more</Text>
-                </View>
+            <View style={styles.balanceGrid}>
+
+              {/* Badges Earned */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Badges Earned</Text>
                 {badgesLoading ? (
-                  <ActivityIndicator size="small" color={PURPLE} />
+                  <ActivityIndicator size="small" color={PURPLE} style={{ marginTop: 8 }} />
                 ) : (
-                  <Text style={styles.achieveValue}>{badgeCount ?? 0}</Text>
+                  <Text style={styles.balanceCardValue}>{badgeCount ?? 0}</Text>
                 )}
+                <Text style={styles.balanceTrendNeutral}>Keep recognising to earn more</Text>
               </View>
-              <View style={styles.achieveDivider} />
-              <View style={styles.achieveRow}>
-                <View style={[styles.achieveIconWrap, { backgroundColor: '#ede9fe' }]}>
-                  <Ionicons name="star-outline" size={20} color={PURPLE} />
-                </View>
-                <View style={styles.achieveInfo}>
-                  <Text style={styles.achieveLabel}>Recognition Received</Text>
-                  <Text style={styles.achieveSub}>Total shout-outs from your team</Text>
-                </View>
-                <Text style={styles.achieveValue}>{pointsBalance !== null ? Math.floor((pointsBalance ?? 0) / 10) : '—'}</Text>
+
+              {/* Achievements */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Achievements</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>Unlocked milestones</Text>
               </View>
-              <View style={styles.achieveDivider} />
-              {recognitionsGiven === null ? (
-                <View style={[styles.achieveRow, { justifyContent: 'center' }]}>
-                  <ActivityIndicator size="small" color={PURPLE} />
-                </View>
-              ) : (() => {
-                const status   = getStatus(recognitionsGiven);
-                const nextTier = [...STATUS_TIERS].reverse().find((t) => t.min > recognitionsGiven);
-                return (
-                  <View style={styles.achieveRow}>
-                    <View style={[styles.achieveIconWrap, { backgroundColor: status.color + '22' }]}>
-                      <Ionicons name={status.icon} size={20} color={status.color} />
-                    </View>
-                    <View style={styles.achieveInfo}>
-                      <Text style={styles.achieveLabel}>Status</Text>
-                      <Text style={styles.achieveSub}>
-                        {nextTier
-                          ? `${nextTier.min - recognitionsGiven} more recognitions to reach ${nextTier.label}`
-                          : 'You have reached the top tier!'}
-                      </Text>
-                    </View>
-                    <Text style={[styles.achieveValue, { color: status.color }]}>{status.label}</Text>
-                  </View>
-                );
-              })()}
+
+              {/* Leaderboard Rank */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Leaderboard Rank</Text>
+                <Text style={styles.balanceCardValue}>—</Text>
+                <Text style={styles.balanceTrendNeutral}>Hotel ranking</Text>
+              </View>
+
+              {/* Streak */}
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceCardLabel}>Streak</Text>
+                <Text style={styles.balanceCardValue}>— 🔥</Text>
+                <Text style={styles.balanceTrendNeutral}>Consecutive active days</Text>
+              </View>
+
             </View>
           )}
 
@@ -879,6 +865,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.75)',
     letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 
   tabTextActive: {
@@ -1045,5 +1032,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: PURPLE,
+  },
+
+  // ── Balance grid ──────────────────────────────────────────────────────────────
+  balanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+
+  balanceCard: {
+    width: '47.5%',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  balanceCardHighlight: {
+    borderColor: '#D1C4E9',
+    backgroundColor: '#f5f3ff',
+  },
+
+  balanceCardLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+
+  balanceCardValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+
+  balanceTrendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  balanceTrendUp: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
+
+  balanceTrendDown: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ef4444',
+  },
+
+  balanceTrendNeutral: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#94a3b8',
   },
 });
