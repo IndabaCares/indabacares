@@ -1,6 +1,6 @@
 import React, { useRef, useState, memo } from 'react';
 import {
-  Animated, View, Text, FlatList, ScrollView, StyleSheet,
+  Animated, View, Text, Image, FlatList, ScrollView, StyleSheet,
   Modal, TouchableWithoutFeedback, TouchableOpacity, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,11 +8,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useRewards, useEmployeePoints } from '@/hooks/use-rewards';
+import { useEmployee } from '@/providers/EmployeeContext';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { Reward } from '@/api/reward-service';
 
 const PURPLE = '#7B1FA2';
+
+// ── Hotel logo map ────────────────────────────────────────────────────────────
+const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
+  'Indaba Hotel':                require('../../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay':   require('../../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':       require('../../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':          require('../../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                  require('../../../assets/natalodge.png'),
+};
 
 // ── Rewards skeleton (PERF-08) ────────────────────────────────────────────────
 function RewardsSkeleton() {
@@ -26,7 +36,7 @@ function RewardsSkeleton() {
 }
 
 // ── Flip card (PERF-07: memo prevents re-renders from parent state changes) ───
-const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
+const RewardCard = memo(function RewardCard({ item, myPoints, hotel }: { item: Reward; myPoints: number; hotel: string }) {
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -35,7 +45,8 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
   const canAfford  = myPoints >= item.points_required;
   const outOfStock = item.stock <= 0;
 
-  const imageUri = item.image_url ?? null;
+  const imageUri  = item.image_url ?? null;
+  const hotelLogo = HOTEL_LOGOS[hotel] ?? null;
 
   const handleFlip = () => {
     const toValue = flipped ? 0 : 1;
@@ -83,6 +94,11 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
             </View>
           </>
         )}
+        {/* Hotel logo — bottom-right watermark */}
+        {hotelLogo && (
+          <Image source={hotelLogo} style={s.hotelLogo} resizeMode="contain" />
+        )}
+
         {/* Points — bottom-left overlay on image */}
         <View style={s.pointsOverlay}>
           <Ionicons name="cash-outline" size={12} color="#16a34a" />
@@ -96,12 +112,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
         style={[s.cardFace, s.cardBack, { transform: [{ perspective: 1000 }, { rotateY: backRotate }], opacity: backOpacity }]}
       >
         <View style={s.backHeader}>
-          {isHotel && imageUri && (
-            <View style={s.backLogoWrap}>
-              <OptimizedImage uri={imageUri} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-            </View>
-          )}
-          <Text style={[s.backHeading, { flex: 1 }]} numberOfLines={2}>{item.title}</Text>
+          <Text style={s.backHeading} numberOfLines={2}>{item.title}</Text>
         </View>
         <View style={s.divider} />
         <View style={s.backBody}>
@@ -201,8 +212,11 @@ export default function RewardsScreen() {
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [activeTab, setActiveTab] = useState<'retail' | 'hotel'>('hotel');
 
+  const { employee }                        = useEmployee();
   const { data: allRewards = [], isLoading } = useRewards();
   const { data: myPoints = 0 }              = useEmployeePoints();
+
+  const hotel = employee?.hotel ?? '';
 
   const currentRewards = allRewards.filter(r => r.category === activeTab);
   // Pair rewards into rows of 2 for the grid layout
@@ -296,7 +310,7 @@ export default function RewardsScreen() {
           renderItem={({ item: row }) => (
             <View style={s.row}>
               {row.map((item) => (
-                <RewardCard key={item.id} item={item} myPoints={myPoints} />
+                <RewardCard key={item.id} item={item} myPoints={myPoints} hotel={hotel} />
               ))}
               {row.length === 1 && <View style={s.cardContainer} />}
             </View>
@@ -413,6 +427,9 @@ const s = StyleSheet.create({
   deficit:       { fontSize: 9, color: '#ef4444', textAlign: 'center', paddingBottom: 4 },
   deficitCross:  { color: '#ef4444', fontWeight: '700' },
 
+  // Hotel logo — bottom-right watermark on front face
+  hotelLogo: { position: 'absolute', bottom: 36, right: 6, width: 48, height: 30, opacity: 0.85 },
+
   // Points overlay
   pointsOverlay:    { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(22,163,74,0.25)' },
   pointsOverlayTxt: { fontSize: 13, fontWeight: '800', color: '#16a34a' },
@@ -440,8 +457,8 @@ const s = StyleSheet.create({
   btnConfirmTxt:        { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   // Back face
-  backHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, paddingBottom: 7 },
-  backHeading:{ fontSize: 10, fontWeight: '700', color: '#1e1b4b', lineHeight: 14 },
+  backHeader: { padding: 8, paddingBottom: 7, alignItems: 'center' },
+  backHeading:{ fontSize: 10, fontWeight: '700', color: '#1e1b4b', lineHeight: 14, textAlign: 'center' },
   backBody:   { flex: 1, padding: 10 },
   backDesc:   { fontSize: 11, color: '#374151', lineHeight: 16 },
 });
