@@ -108,18 +108,68 @@ export async function getRewardDetail(id: string): Promise<Reward> {
   return data as Reward;
 }
 
-// ─── Points ───────────────────────────────────────────────────────────────────
+// ─── Points / Wallet ─────────────────────────────────────────────────────────
 
-/** Get an employee's current points balance. */
+/** Get an employee's current Reward Wallet balance (spendable credits). */
 export async function getEmployeePoints(employeeId: string): Promise<number> {
   const { data, error } = await supabase
     .from('employees')
-    .select('points_balance')
+    .select('reward_wallet_balance')
     .eq('id', employeeId)
     .single();
 
   if (error) throw new Error(error.message);
-  return (data as { points_balance: number }).points_balance;
+  return (data as { reward_wallet_balance: number }).reward_wallet_balance;
+}
+
+// ─── Wallet types ─────────────────────────────────────────────────────────────
+
+export interface WalletStats {
+  wallet_balance:       number;
+  converted_points:     number;
+  points_balance:       number;
+  available_to_convert: number;
+  max_credits:          number;
+  redeemed_total:       number;
+  converted_this_month: number;
+}
+
+export interface ConvertResult {
+  ok:                  boolean;
+  rp_converted?:       number;
+  credits_earned?:     number;
+  new_wallet_balance?: number;
+  error?:              string;
+  available?:          number;
+  requested?:          number;
+}
+
+/** Fetch all wallet stats for the Reward tab in one RPC call. */
+export async function getWalletStats(employeeId: string): Promise<WalletStats> {
+  const { data, error } = await supabase.rpc('get_wallet_stats', {
+    p_employee_id: employeeId,
+  });
+
+  if (error) throw new Error(error.message);
+  return data as WalletStats;
+}
+
+/**
+ * Convert Recognition Points to Reward Wallet credits at 5:1.
+ * p_amount must be a positive multiple of 5.
+ * Use walletStats.max_credits * 5 to get the maximum convertible amount.
+ */
+export async function convertToWallet(
+  employeeId: string,
+  amount:     number,
+): Promise<ConvertResult> {
+  const { data, error } = await supabase.rpc('convert_points_to_wallet', {
+    p_employee_id: employeeId,
+    p_amount:      amount,
+  });
+
+  if (error) throw new Error(error.message);
+  return data as ConvertResult;
 }
 
 // ─── Redemption queries ───────────────────────────────────────────────────────

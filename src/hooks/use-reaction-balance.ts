@@ -9,18 +9,22 @@ export interface ReactionBalance {
   hearts_remaining: number;
   smiles_remaining: number;
   thumbs_remaining: number;
+  total_remaining:  number;
 }
 
+// Display totals reflect the proportional split of 100
 export const REACTION_TOTALS = {
   heart:     34,
   smile:     33,
   thumbs_up: 33,
+  total:     100,
 } as const;
 
 const DEFAULTS: ReactionBalance = {
   hearts_remaining: REACTION_TOTALS.heart,
   smiles_remaining: REACTION_TOTALS.smile,
   thumbs_remaining: REACTION_TOTALS.thumbs_up,
+  total_remaining:  REACTION_TOTALS.total,
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -38,7 +42,7 @@ export function useReactionBalance() {
 
       const { data, error } = await supabase
         .from('employee_reaction_allocations')
-        .select('hearts_remaining, smiles_remaining, thumbs_remaining')
+        .select('hearts_remaining, smiles_remaining, thumbs_remaining, total_remaining')
         .eq('employee_id', employee.employee_id)
         .eq('month', month)
         .eq('year', year)

@@ -69,9 +69,10 @@ export function postRecognition(
   message: string,
   badge: string,
   hotel: string,
+  cardType: 'recognition' | 'skills' = 'recognition',
 ) {
   return (supabase.from('recognitions') as any)
-    .insert({ sender_id: senderId, receiver_id: receiverId, message, badge, hotel })
+    .insert({ sender_id: senderId, receiver_id: receiverId, message, badge, hotel, card_type: cardType })
     .select(RECOGNITION_SELECT)
     .single();
 }

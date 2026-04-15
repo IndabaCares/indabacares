@@ -19,7 +19,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL            = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET             = Deno.env.get("CRON_SECRET") ?? "";
-const POINTS_AWARDED          = 500;
+const POINTS_AWARDED          = 250;
 const LEGEND_BADGE            = "Legend of the Month";
 
 const CORS = {
@@ -133,11 +133,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
         continue;
       }
 
-      // ── 3. Award 500 points via points_ledger ─────────────────────────────
+      // ── 3. Award 250 points via points_ledger ─────────────────────────────
       await adminClient.from("points_ledger").insert({
         employee_id: winner.employee_id,
         points:      POINTS_AWARDED,
-        source:      "admin_bonus",
+        source:      "legend_of_month",
         hotel,
       });
 

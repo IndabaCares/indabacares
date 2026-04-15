@@ -199,7 +199,7 @@ export default function GiveScreen() {
     if (!recBadge)    { setRecError('Please select a recognition badge.'); return; }
     if (recMessage.trim().length < 10) { setRecError('Message must be at least 10 characters.'); return; }
     postRecognition.mutate(
-      { receiverId: recReceiver.id, message: recMessage.trim(), badge: recBadge },
+      { receiverId: recReceiver.id, message: recMessage.trim(), badge: recBadge, cardType: 'recognition' },
       {
         onSuccess: () => { setRecReceiver(null); setRecBadge(null); setRecMessage(''); router.push('/(tabs)'); },
         onError:   (err: Error) => setRecError(err.message),
@@ -213,7 +213,7 @@ export default function GiveScreen() {
     if (!sklBadge)    { setSklError('Please select a skill.'); return; }
     if (sklMessage.trim().length < 10) { setSklError('Message must be at least 10 characters.'); return; }
     postRecognition.mutate(
-      { receiverId: sklReceiver.id, message: sklMessage.trim(), badge: sklBadge as any },
+      { receiverId: sklReceiver.id, message: sklMessage.trim(), badge: sklBadge, cardType: 'skills' },
       {
         onSuccess: () => { setSklReceiver(null); setSklBadge(null); setSklMessage(''); router.push('/(tabs)'); },
         onError:   (err: Error) => setSklError(err.message),

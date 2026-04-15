@@ -23,6 +23,9 @@ import { uploadImage } from '@/utils/image';
 import { useQuery } from '@tanstack/react-query';
 import { useReactionBalance, REACTION_TOTALS } from '@/hooks/use-reaction-balance';
 import { useRecognitionBalance, MONTHLY_RECOGNITION_LIMIT } from '@/hooks/use-recognition-balance';
+import { useSkillsBalance, MONTHLY_SKILLS_LIMIT } from '@/hooks/use-skills-balance';
+import { usePointsBreakdown } from '@/hooks/use-points-breakdown';
+import { useWalletStats, useConvertPoints } from '@/hooks/use-rewards';
 import { useUserBadges } from '@/hooks/use-user-badges';
 import { QUERY_KEYS } from '@/lib/constants';
 
@@ -100,6 +103,10 @@ export default function ProfileScreen() {
 
   const { data: reactionBalance,     isLoading: reactionLoading }       = useReactionBalance();
   const { data: recognitionRemaining, isLoading: recognitionLoading }   = useRecognitionBalance();
+  const { data: skillsRemaining,     isLoading: skillsLoading }         = useSkillsBalance();
+  const { data: pointsBreakdown,     isLoading: breakdownLoading }      = usePointsBreakdown();
+  const { data: walletStats,         isLoading: walletLoading }         = useWalletStats();
+  const convertPoints = useConvertPoints();
   const { data: badgeCount,           isLoading: badgesLoading }        = useUserBadges();
 
   // Number of recognitions given this month (used for status tier calculation).
@@ -130,10 +137,7 @@ export default function ProfileScreen() {
     { icon: '👍', value: reactionBalance?.thumbs_remaining ?? REACTION_TOTALS.thumbs_up },
   ];
 
-  const remainingReactionPts =
-    (reactionBalance?.hearts_remaining  ?? REACTION_TOTALS.heart)     +
-    (reactionBalance?.smiles_remaining  ?? REACTION_TOTALS.smile)     +
-    (reactionBalance?.thumbs_remaining  ?? REACTION_TOTALS.thumbs_up);
+  const remainingReactionPts = reactionBalance?.total_remaining ?? REACTION_TOTALS.total;
 
   // ── Photo upload ───────────────────────────────────────────────────────────
 
@@ -336,7 +340,11 @@ export default function ProfileScreen() {
                   <Text style={styles.utiliseFeedTitle}>Recognition Points</Text>
                   <Text style={styles.utiliseFeedDesc}>Points earned through all engagement activity this month.</Text>
                 </View>
-                <Text style={styles.utiliseFeedBigCount}>0</Text>
+                {breakdownLoading ? (
+                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
+                ) : (
+                  <Text style={styles.utiliseFeedBigCount}>{pointsBreakdown?.total ?? 0}</Text>
+                )}
               </LinearGradient>
             </View>
 
@@ -344,15 +352,15 @@ export default function ProfileScreen() {
             <ScrollView style={styles.contentScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
               <View style={styles.rewardBreakdownCard}>
                 {([
-                  { emoji: '🏅', title: 'Recognition Received', desc: 'The number of times you\'ve been recognised for your work.',     value: 0 },
-                  { emoji: '🎓', title: 'Skills Shoutout',      desc: 'Endorsements received for your skills and expertise.',           value: 0 },
-                  { emoji: '💬', title: 'Responses Made',       desc: 'Your engagement to recognition you have received.',              value: 0 },
-                  { emoji: '😊', title: 'Mood Board',           desc: 'Updating your mood everyday earns you points.',                  value: 0 },
-                  { emoji: '🎂', title: 'Birthday',             desc: 'Celebrations and messages received on your birthday.',           value: 0 },
-                  { emoji: '🎖', title: 'Service Milestone',    desc: 'Recognition for your time and loyalty in the company.',          value: 0 },
-                  { emoji: '⭐', title: 'Status Unlock',        desc: 'New levels achieved through consistent engagement.',             value: 0 },
-                  { emoji: '🏆', title: 'Badges Achieved',      desc: 'Awards earned through performance and participation.',           value: 0 },
-                  { emoji: '👑', title: 'Legend of the Month',  desc: 'Top performer recognition awarded monthly.',                    value: 0 },
+                  { emoji: '🏅', title: 'Recognition Received', desc: 'The number of times you\'ve been recognised for your work.',     value: pointsBreakdown?.recognition_received ?? 0 },
+                  { emoji: '🎓', title: 'Skills Shoutout',      desc: 'Endorsements received for your skills and expertise.',           value: pointsBreakdown?.skills_received ?? 0 },
+                  { emoji: '💬', title: 'Responses Made',       desc: 'Your engagement to recognition you have received.',              value: pointsBreakdown?.responses ?? 0 },
+                  { emoji: '😊', title: 'Mood Board',           desc: 'Updating your mood everyday earns you points.',                  value: pointsBreakdown?.mood_checkin ?? 0 },
+                  { emoji: '🎂', title: 'Birthday',             desc: 'Celebrations and messages received on your birthday.',           value: pointsBreakdown?.birthday ?? 0 },
+                  { emoji: '🎖', title: 'Service Milestone',    desc: 'Recognition for your time and loyalty in the company.',          value: pointsBreakdown?.anniversary ?? 0 },
+                  { emoji: '⭐', title: 'Status Unlock',        desc: 'New levels achieved through consistent engagement.',             value: pointsBreakdown?.status_unlock ?? 0 },
+                  { emoji: '🏆', title: 'Badges Achieved',      desc: 'Awards earned through performance and participation.',           value: pointsBreakdown?.badge_achieved ?? 0 },
+                  { emoji: '👑', title: 'Legend of the Month',  desc: 'Top performer recognition awarded monthly.',                    value: pointsBreakdown?.legend_of_month ?? 0 },
                 ]).map((item, i, arr) => (
                   <View key={item.title}>
                     <View style={styles.engageBreakdownRow}>
@@ -412,7 +420,11 @@ export default function ProfileScreen() {
                   <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
                   <Text style={styles.utiliseFeedInsight}>Use these to endorse skills and talent of a colleague.</Text>
                 </View>
-                <Text style={styles.utiliseFeedBigCount}>10</Text>
+                {skillsLoading ? (
+                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
+                ) : (
+                  <Text style={styles.utiliseFeedBigCount}>{skillsRemaining ?? MONTHLY_SKILLS_LIMIT}</Text>
+                )}
               </LinearGradient>
 
               {/* Emoji */}
@@ -433,9 +445,7 @@ export default function ProfileScreen() {
                   <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
                 ) : (
                   <Text style={styles.utiliseFeedBigCount}>
-                    {reactionBalance
-                      ? reactionBalance.hearts_remaining + reactionBalance.smiles_remaining + reactionBalance.thumbs_remaining
-                      : 100}
+                    {reactionBalance?.total_remaining ?? REACTION_TOTALS.total}
                   </Text>
                 )}
               </LinearGradient>
@@ -466,7 +476,7 @@ export default function ProfileScreen() {
           {/* ── Reward tab ──────────────────────────────────────────────────── */}
           {activeTab === 'achieve' && (
             <>
-              {/* Reward Wallet card */}
+              {/* Reward Wallet hero card */}
               <LinearGradient
                 colors={['#3d2c00', '#92630a', '#d97706']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -477,36 +487,103 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.utiliseFeedContent}>
                   <Text style={styles.utiliseFeedTitle}>Reward Wallet</Text>
-                  <Text style={styles.utiliseFeedDesc}>Your usable reward balance earned through engagement.</Text>
+                  <Text style={styles.utiliseFeedDesc}>Your spendable reward credits.</Text>
                 </View>
-                {pointsLoading ? (
+                {walletLoading ? (
                   <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
                 ) : (
-                  <Text style={styles.utiliseFeedBigCount}>{pointsBalance ?? 0}</Text>
+                  <Text style={styles.utiliseFeedBigCount}>{walletStats?.wallet_balance ?? 0}</Text>
                 )}
               </LinearGradient>
 
-              {/* Breakdown rows */}
+              {/* Wallet breakdown */}
               <View style={styles.rewardBreakdownCard}>
                 <View style={styles.rewardBreakdownRow}>
                   <Text style={styles.rewardBreakdownLabel}>Available</Text>
-                  {pointsLoading ? (
+                  {walletLoading ? (
                     <ActivityIndicator size="small" color={PURPLE} />
                   ) : (
-                    <Text style={styles.rewardBreakdownValue}>{pointsBalance ?? 0}</Text>
+                    <Text style={styles.rewardBreakdownValue}>{walletStats?.wallet_balance ?? 0}</Text>
                   )}
                 </View>
                 <View style={styles.achieveDivider} />
                 <View style={styles.rewardBreakdownRow}>
                   <Text style={styles.rewardBreakdownLabel}>Redeemed</Text>
-                  <Text style={styles.rewardBreakdownValue}>0</Text>
+                  {walletLoading ? (
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  ) : (
+                    <Text style={styles.rewardBreakdownValue}>{walletStats?.redeemed_total ?? 0}</Text>
+                  )}
                 </View>
                 <View style={styles.achieveDivider} />
                 <View style={styles.rewardBreakdownRow}>
                   <Text style={styles.rewardBreakdownLabel}>Earned this month</Text>
-                  <Text style={styles.rewardBreakdownValue}>0</Text>
+                  {walletLoading ? (
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  ) : (
+                    <Text style={styles.rewardBreakdownValue}>{walletStats?.converted_this_month ?? 0}</Text>
+                  )}
                 </View>
               </View>
+
+              {/* Convert Points card */}
+              <LinearGradient
+                colors={['#1e1b4b', '#3730a3', '#4338ca']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.utiliseFeedCard}
+              >
+                <View style={styles.utiliseFeedIconWrap}>
+                  <Text style={styles.utiliseFeedIcon}>🔄</Text>
+                </View>
+                <View style={styles.utiliseFeedContent}>
+                  <Text style={styles.utiliseFeedTitle}>Convert Points</Text>
+                  {walletLoading ? (
+                    <Text style={styles.utiliseFeedDesc}>Loading…</Text>
+                  ) : (walletStats?.available_to_convert ?? 0) < 5 ? (
+                    <Text style={styles.utiliseFeedDesc}>Earn more Recognition Points to unlock conversions.</Text>
+                  ) : (
+                    <>
+                      <Text style={styles.utiliseFeedDesc}>
+                        {walletStats!.available_to_convert} RP available
+                      </Text>
+                      <Text style={styles.utiliseFeedInsight}>
+                        = {walletStats!.max_credits} reward credit{walletStats!.max_credits !== 1 ? 's' : ''} at 5:1
+                      </Text>
+                    </>
+                  )}
+                </View>
+                {!walletLoading && (walletStats?.available_to_convert ?? 0) >= 5 && (
+                  <TouchableOpacity
+                    style={styles.convertBtn}
+                    activeOpacity={0.8}
+                    disabled={convertPoints.isPending}
+                    onPress={() => {
+                      const amount = Math.floor((walletStats!.available_to_convert) / 5) * 5;
+                      Alert.alert(
+                        'Convert Points',
+                        `Convert ${amount} Recognition Points into ${amount / 5} reward credit${amount / 5 !== 1 ? 's' : ''}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Convert',
+                            onPress: () =>
+                              convertPoints.mutate(amount, {
+                                onError: (err: Error) =>
+                                  Alert.alert('Conversion Failed', err.message),
+                              }),
+                          },
+                        ],
+                      );
+                    }}
+                  >
+                    {convertPoints.isPending ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.convertBtnTxt}>Convert</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </LinearGradient>
             </>
           )}
 
@@ -1408,6 +1485,21 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontStyle: 'italic',
     lineHeight: 15,
+  },
+
+  convertBtn: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignSelf: 'center',
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  convertBtnTxt: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   emojiValuesRow: {

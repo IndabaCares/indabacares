@@ -6,8 +6,9 @@ import type { RecognitionBadge } from '@/lib/constants';
 
 interface PostRecognitionInput {
   receiverId: string;
-  message: string;
-  badge: RecognitionBadge;
+  message:    string;
+  badge:      RecognitionBadge | string;
+  cardType?:  'recognition' | 'skills';
 }
 
 export function usePostRecognition() {
@@ -15,14 +16,15 @@ export function usePostRecognition() {
   const { employee } = useEmployee();
 
   return useMutation({
-    mutationFn: async ({ receiverId, message, badge }: PostRecognitionInput) => {
+    mutationFn: async ({ receiverId, message, badge, cardType = 'recognition' }: PostRecognitionInput) => {
       if (!employee) throw new Error('Not authenticated');
       const { data, error } = await postRecognition(
         employee.employee_id,
         receiverId,
         message,
-        badge,
+        badge as string,
         employee.hotel,
+        cardType,
       );
       if (error) throw error;
       return data;

@@ -3,8 +3,11 @@ import {
   getRewards,
   getRewardDetail,
   getEmployeePoints,
+  getWalletStats,
+  convertToWallet,
   submitRedemption,
   type RedeemResult,
+  type WalletStats,
 } from '@/api/reward-service';
 import { useEmployee } from '@/providers/EmployeeContext';
 
@@ -68,6 +71,37 @@ export function useRedeemReward() {
       queryClient.invalidateQueries({ queryKey: RK.points(employee.employee_id) });
       queryClient.invalidateQueries({ queryKey: RK.rewards(employee.hotel) });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
+    },
+  });
+}
+
+/** All wallet stats for the Reward tab (single RPC). */
+export function useWalletStats() {
+  const { employee } = useEmployee();
+
+  return useQuery({
+    queryKey: RK.points(employee?.employee_id ?? ''),
+    queryFn:  () => getWalletStats(employee!.employee_id),
+    enabled:  !!employee,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Mutation to convert Recognition Points → Reward Wallet credits (5:1). */
+export function useConvertPoints() {
+  const queryClient = useQueryClient();
+  const { employee } = useEmployee();
+
+  return useMutation({
+    mutationFn: async (amount: number) => {
+      if (!employee) throw new Error('Not authenticated');
+      const result = await convertToWallet(employee.employee_id, amount);
+      if (!result.ok) throw new Error(result.error ?? 'Conversion failed.');
+      return result;
+    },
+    onSuccess: () => {
+      if (!employee) return;
+      queryClient.invalidateQueries({ queryKey: RK.points(employee.employee_id) });
     },
   });
 }
