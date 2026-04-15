@@ -14,9 +14,10 @@ import { useEmployee } from '@/providers/EmployeeContext';
 // ─── Local query key factory ──────────────────────────────────────────────────
 
 const RK = {
-  rewards:     (hotel: string)      => ['rewards', hotel]     as const,
-  rewardDetail:(id: string)         => ['reward', id]         as const,
-  points:      (employeeId: string) => ['points', employeeId] as const,
+  rewards:     (hotel: string)      => ['rewards', hotel]          as const,
+  rewardDetail:(id: string)         => ['reward', id]              as const,
+  points:      (employeeId: string) => ['points', employeeId]      as const,
+  walletStats: (employeeId: string) => ['wallet-stats', employeeId] as const,
 };
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ export function useWalletStats() {
   const { employee } = useEmployee();
 
   return useQuery({
-    queryKey: RK.points(employee?.employee_id ?? ''),
+    queryKey: RK.walletStats(employee?.employee_id ?? ''),
     queryFn:  () => getWalletStats(employee!.employee_id),
     enabled:  !!employee,
     staleTime: 30 * 1000,
@@ -102,6 +103,7 @@ export function useConvertPoints() {
     onSuccess: () => {
       if (!employee) return;
       queryClient.invalidateQueries({ queryKey: RK.points(employee.employee_id) });
+      queryClient.invalidateQueries({ queryKey: RK.walletStats(employee.employee_id) });
     },
   });
 }

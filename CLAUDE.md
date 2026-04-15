@@ -89,6 +89,20 @@ All data is scoped to a `hotel` (string slug), not a `company_id`. Migration 017
 
 **Do not add direct `company_id` checks to new RLS policies** — use `hotel` via these helpers.
 
+The canonical hotel list lives in **three places** that must be kept in sync:
+- `src/lib/hotels.ts` (mobile)
+- `admin/src/lib/hotels.ts` (admin dashboard)
+- `is_valid_hotel()` function in migration 017
+
+---
+
+## Mobile Screen Layout
+
+Expo Router route groups:
+- `app/(auth)/` — unauthenticated screens (employee login)
+- `app/(tabs)/` — bottom-tab navigator (home feed, give recognition, leaderboard, rewards, profile)
+- `app/(screens)/` — full-screen push routes (recognition detail, reward detail, user profile, chat, notifications, etc.)
+
 ---
 
 ## Data Layer
@@ -100,13 +114,15 @@ All data is scoped to a `hotel` (string slug), not a `company_id`. Migration 017
 - Auth/session → `EmployeeContext` (React Context)
 - UI-only state → Zustand (`src/stores/ui-store.ts`)
 
-**Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`, `leaderboard_cache`.
+**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (employees, rewards, redemptions, campaigns, initiatives, notifications). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+
+**Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat via `use-realtime.ts` and `use-presence.ts`. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`.
 
 ---
 
 ## Edge Functions
 
-All 18 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
+All 23 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
 
 - `auth-middleware.ts` — `withEmployeeAuth()` wrapper (validates `x-session-token`)
 - `supabase-client.ts` — `createAdminClient()` (service_role)
@@ -114,13 +130,13 @@ All 18 functions live in `supabase/functions/`. Shared utilities are in `supabas
 
 Every new Edge Function should use `withEmployeeAuth` for authenticated routes or handle CORS OPTIONS manually for public routes. All DB writes use `adminClient` (service_role) — RLS is enforced at the DB layer, not the application layer.
 
-Additional functions beyond the original 14: `claim-employee-code` (employee onboarding), `daily-celebrations` (cron — birthday/work-anniversary push notifications), `award-monthly-legend` (cron — monthly top-performer award), `remove-background` (image processing for reward cards).
+Cron functions: `daily-celebrations` (birthday/work-anniversary push notifications), `award-monthly-legend` (monthly top-performer), `reset-budgets`, `refresh-leaderboard`.
 
 ---
 
 ## Database Migrations
 
-79 sequential migrations in `supabase/migrations/`. Notable architectural migrations:
+80 sequential migrations in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -131,12 +147,13 @@ Additional functions beyond the original 14: `claim-employee-code` (employee onb
 | 033 | Dynamic leaderboard (no more static cache) |
 | 078 | Points system overhaul |
 | 079 | Reward wallet |
+| 080 | Sponsor ad campaigns |
 
 **Immutable tables** — `star_transactions`, `point_transactions`, and `audit_logs` have triggers preventing UPDATE/DELETE. Never attempt to modify these rows.
 
 To add a migration: `supabase migration new <description>`, edit the generated file, then `supabase db push --linked`.
 
-`src/types/database.ts` is **manually maintained** — it does not use Supabase-generated types. Update it by hand when adding new tables or columns (or regenerate with `npx supabase gen types typescript --linked > src/types/database.ts` and merge carefully).
+`src/types/database.ts` is **manually maintained** — it does not use Supabase-generated types. Update it by hand when adding new tables or columns (or regenerate with `npx supabase gen types typescript --linked > src/types/database.ts` and merge carefully). Database enum mirrors for client-side use are in `src/types/enums.ts` — keep them in sync with `001_foundation.sql`.
 
 ---
 
@@ -173,7 +190,7 @@ Edge Functions receive `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVIC
 
 ## Scheduled Jobs (pg_cron)
 
-Three cron jobs must be configured manually after migrations (see README §1):
+Three cron jobs must be configured manually after migrations:
 
 - `refresh-leaderboard` — daily at 02:00 UTC
 - `reset-budgets` — 1st of month at 00:05 UTC

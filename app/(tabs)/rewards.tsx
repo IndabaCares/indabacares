@@ -1,6 +1,6 @@
 import React, { useRef, useState, memo } from 'react';
 import {
-  Animated, View, Text, Image, FlatList, ScrollView, StyleSheet,
+  Animated, View, Text, FlatList, StyleSheet,
   Modal, TouchableWithoutFeedback, TouchableOpacity, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,15 +15,6 @@ import type { Reward } from '@/api/reward-service';
 
 const PURPLE = '#7B1FA2';
 
-// ── Hotel logo map ────────────────────────────────────────────────────────────
-const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':                require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay':   require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':       require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':          require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                  require('../../assets/natalodge.png'),
-};
-
 // ── Rewards skeleton (PERF-08) ────────────────────────────────────────────────
 function RewardsSkeleton() {
   return (
@@ -36,7 +27,7 @@ function RewardsSkeleton() {
 }
 
 // ── Flip card (PERF-07: memo prevents re-renders from parent state changes) ───
-const RewardCard = memo(function RewardCard({ item, myPoints, hotel }: { item: Reward; myPoints: number; hotel: string }) {
+const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; myPoints: number }) {
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -46,84 +37,84 @@ const RewardCard = memo(function RewardCard({ item, myPoints, hotel }: { item: R
   const outOfStock = item.stock <= 0;
 
   const imageUri  = item.image_url ?? null;
-  const hotelLogo = HOTEL_LOGOS[hotel] ?? null;
 
   const handleFlip = () => {
     const toValue = flipped ? 0 : 1;
-    Animated.spring(flipAnim, { toValue, friction: 7, tension: 40, useNativeDriver: true }).start();
+    // scaleX + opacity: no rotateY (3D transforms cause Android Fabric crashes).
+    // scaleX and opacity are safe with useNativeDriver: true on all platforms.
+    Animated.spring(flipAnim, { toValue, friction: 8, tension: 50, useNativeDriver: true }).start();
     setFlipped(v => !v);
   };
 
-  const frontRotate  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg',   '180deg'] });
-  const backRotate   = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
-  const frontOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 0.5, 1], outputRange: [1, 1, 0, 0] });
-  const backOpacity  = flipAnim.interpolate({ inputRange: [0, 0.5, 0.5, 1], outputRange: [0, 0, 1, 1] });
+  // Card "folds" to scaleX=0 at midpoint then unfolds — looks like a flip
+  const scaleX       = flipAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.02, 1] });
+  const frontOpacity = flipAnim.interpolate({ inputRange: [0, 0.45, 0.55, 1], outputRange: [1, 1, 0, 0] });
+  const backOpacity  = flipAnim.interpolate({ inputRange: [0, 0.45, 0.55, 1], outputRange: [0, 0, 1, 1] });
 
   return (
     <View style={[s.cardContainer, outOfStock && s.cardDisabled]}>
 
-      {/* ── FRONT — purely visual, no touch handling ── */}
+      {/* ── Animated wrapper: scaleX drives the fold, opacity switches faces ── */}
       <Animated.View
         pointerEvents="none"
-        style={[s.cardFace, { transform: [{ perspective: 1000 }, { rotateY: frontRotate }], opacity: frontOpacity }]}
+        style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX }] }]}
       >
-        {isHotel ? (
-          <>
-            <View style={s.cardTop}>
-              <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-            </View>
-            <View style={s.divider} />
-            {imageUri ? (
-              <OptimizedImage uri={imageUri} style={s.photoImg} contentFit="cover" />
-            ) : (
-              <View style={[s.photoImg, s.imagePlaceholder]} />
-            )}
-          </>
-        ) : (
-          <>
-            <View style={s.cardTop}>
-              <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-            </View>
-            <View style={s.divider} />
-            <View style={s.logoWrap}>
+
+        {/* ── FRONT ── */}
+        <Animated.View style={[s.cardFace, { opacity: frontOpacity }]}>
+          {isHotel ? (
+            <>
+              <View style={s.cardTop}>
+                <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+              </View>
+              <View style={s.divider} />
               {imageUri ? (
-                <OptimizedImage uri={imageUri} style={s.brandLogo} contentFit="contain" />
+                <OptimizedImage uri={imageUri} style={s.photoImg} contentFit="cover" />
               ) : (
-                <View style={s.imagePlaceholder} />
+                <View style={[s.photoImg, s.imagePlaceholder]} />
               )}
-            </View>
-          </>
-        )}
-        {/* Hotel logo — bottom-right watermark */}
-        {hotelLogo && (
-          <Image source={hotelLogo} style={s.hotelLogo} resizeMode="contain" />
-        )}
+            </>
+          ) : (
+            <>
+              <View style={s.cardTop}>
+                <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+              </View>
+              <View style={s.divider} />
+              <View style={s.logoWrap}>
+                {imageUri ? (
+                  <OptimizedImage uri={imageUri} style={s.brandLogo} contentFit="contain" />
+                ) : (
+                  <View style={s.imagePlaceholder} />
+                )}
+              </View>
+            </>
+          )}
+          {/* Points — bottom-left overlay on image */}
+          <View style={s.pointsOverlay}>
+            <Ionicons name="cash-outline" size={12} color="#16a34a" />
+            <Text style={s.pointsOverlayTxt}> {item.points_required}</Text>
+          </View>
+        </Animated.View>
 
-        {/* Points — bottom-left overlay on image */}
-        <View style={s.pointsOverlay}>
-          <Ionicons name="cash-outline" size={12} color="#16a34a" />
-          <Text style={s.pointsOverlayTxt}> {item.points_required}</Text>
-        </View>
-      </Animated.View>
+        {/* ── BACK ── */}
+        <Animated.View
+          style={[s.cardFace, s.cardBack, { opacity: backOpacity }]}
+        >
+          <View style={s.backHeader}>
+            <Text style={s.backHeading} numberOfLines={2}>{item.title}</Text>
+          </View>
+          <View style={s.divider} />
+          <View style={s.backBody}>
+            <Text style={s.backDesc}>{item.description ?? ''}</Text>
+          </View>
+          {!outOfStock && (
+            canAfford
+              ? <Text style={s.canAfford}>✓ Can redeem</Text>
+              : <Text style={s.deficit}><Text style={s.deficitCross}>✗ </Text>Need {item.points_required - myPoints} more pts</Text>
+          )}
+        </Animated.View>
 
-      {/* ── BACK — purely visual, no touch handling ── */}
-      <Animated.View
-        pointerEvents="none"
-        style={[s.cardFace, s.cardBack, { transform: [{ perspective: 1000 }, { rotateY: backRotate }], opacity: backOpacity }]}
-      >
-        <View style={s.backHeader}>
-          <Text style={s.backHeading} numberOfLines={2}>{item.title}</Text>
-        </View>
-        <View style={s.divider} />
-        <View style={s.backBody}>
-          <Text style={s.backDesc}>{item.description ?? ''}</Text>
-        </View>
-        {!outOfStock && (
-          canAfford
-            ? <Text style={s.canAfford}>✓ Can redeem</Text>
-            : <Text style={s.deficit}><Text style={s.deficitCross}>✗ </Text>Need {item.points_required - myPoints} more pts</Text>
-        )}
-      </Animated.View>
+      </Animated.View>{/* end scaleX wrapper */}
 
       {/* ── TOUCH LAYER — flat siblings, no nesting ── */}
 
@@ -215,8 +206,6 @@ export default function RewardsScreen() {
   const { employee }                        = useEmployee();
   const { data: allRewards = [], isLoading } = useRewards();
   const { data: myPoints = 0 }              = useEmployeePoints();
-
-  const hotel = employee?.hotel ?? '';
 
   const currentRewards = allRewards.filter(r => r.category === activeTab);
   // Pair rewards into rows of 2 for the grid layout
@@ -310,7 +299,7 @@ export default function RewardsScreen() {
           renderItem={({ item: row }) => (
             <View style={s.row}>
               {row.map((item) => (
-                <RewardCard key={item.id} item={item} myPoints={myPoints} hotel={hotel} />
+                <RewardCard key={item.id} item={item} myPoints={myPoints} />
               ))}
               {row.length === 1 && <View style={s.cardContainer} />}
             </View>
@@ -410,7 +399,6 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1.5,
     borderColor: '#000',
-    overflow: 'hidden',
   },
   cardBack: { backgroundColor: '#faf5ff' },
 
@@ -426,9 +414,6 @@ const s = StyleSheet.create({
   canAfford:     { fontSize: 9, fontWeight: '700', color: '#16a34a', textAlign: 'center', paddingBottom: 4 },
   deficit:       { fontSize: 9, color: '#ef4444', textAlign: 'center', paddingBottom: 4 },
   deficitCross:  { color: '#ef4444', fontWeight: '700' },
-
-  // Hotel logo — bottom-right watermark on front face
-  hotelLogo: { position: 'absolute', bottom: 36, right: 6, width: 48, height: 30, opacity: 0.85 },
 
   // Points overlay
   pointsOverlay:    { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(22,163,74,0.25)' },
