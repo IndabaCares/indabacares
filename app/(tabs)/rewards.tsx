@@ -58,24 +58,22 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
       >
         {isHotel ? (
           <>
+            <View style={s.cardTop}>
+              <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+            </View>
+            <View style={s.divider} />
             {imageUri ? (
               <OptimizedImage uri={imageUri} style={s.photoImg} contentFit="cover" />
             ) : (
               <View style={[s.photoImg, s.imagePlaceholder]} />
             )}
-            <View style={s.divider} />
-            <View style={s.cardBottom}>
-              <View style={s.cardTitleRow}>
-                <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={s.pill}>
-                  <Ionicons name="cash-outline" size={9} color="#16a34a" />
-                  <Text style={[s.pillTxt, { color: '#16a34a' }]}> {item.points_required}</Text>
-                </View>
-              </View>
-            </View>
           </>
         ) : (
           <>
+            <View style={s.cardTop}>
+              <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+            </View>
+            <View style={s.divider} />
             <View style={s.logoWrap}>
               {imageUri ? (
                 <OptimizedImage uri={imageUri} style={s.brandLogo} contentFit="contain" />
@@ -83,30 +81,13 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
                 <View style={s.imagePlaceholder} />
               )}
             </View>
-            <View style={s.divider} />
-            <View style={s.cardBottom}>
-              {item.title.includes('\n') ? (
-                <>
-                  <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-                  <View style={s.cardPillRow}>
-                    <View style={s.pill}>
-                      <Ionicons name="cash-outline" size={9} color="#16a34a" />
-                      <Text style={[s.pillTxt, { color: '#16a34a' }]}> {item.points_required}</Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <View style={s.cardTitleRow}>
-                  <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-                  <View style={s.pill}>
-                    <Ionicons name="cash-outline" size={9} color="#16a34a" />
-                    <Text style={[s.pillTxt, { color: '#16a34a' }]}> {item.points_required}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
           </>
         )}
+        {/* Points — bottom-left overlay on image */}
+        <View style={s.pointsOverlay}>
+          <Ionicons name="cash-outline" size={12} color="#16a34a" />
+          <Text style={s.pointsOverlayTxt}> {item.points_required}</Text>
+        </View>
       </Animated.View>
 
       {/* ── BACK — purely visual, no touch handling ── */}
@@ -159,7 +140,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
           activeOpacity={0.7}
           hitSlop={8}
         >
-          <Ionicons name="checkmark" size={13} color="#fff" />
+          <Ionicons name="checkmark" size={20} color="#fff" />
         </TouchableOpacity>
       )}
 
@@ -424,20 +405,18 @@ const s = StyleSheet.create({
   imagePlaceholder: { backgroundColor: '#e5e7eb', flex: 1 },
   hotelLogoText: { fontSize: 9, fontWeight: '800', color: '#7B1FA2', letterSpacing: 1, marginRight: 4 },
   divider:       { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 8 },
-  cardBottom:    { paddingLeft: 8, paddingRight: 38, paddingTop: 4, paddingBottom: 8 },
-  cardTitleRow:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, marginBottom: 3 },
-  cardPillRow:   { flexDirection: 'row', justifyContent: 'flex-end' },
+  cardTop:       { paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 4 },
   cardTitle:     { fontSize: 11, fontWeight: '700', color: '#1e1b4b', lineHeight: 15, flex: 1 },
   canAfford:     { fontSize: 9, fontWeight: '700', color: '#16a34a', textAlign: 'center', paddingBottom: 4 },
   deficit:       { fontSize: 9, color: '#ef4444', textAlign: 'center', paddingBottom: 4 },
   deficitCross:  { color: '#ef4444', fontWeight: '700' },
 
-  // Pills
-  pill:    { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 4, paddingVertical: 2 },
-  pillTxt: { fontSize: 10, fontWeight: '700' },
+  // Points overlay
+  pointsOverlay:    { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(22,163,74,0.25)' },
+  pointsOverlayTxt: { fontSize: 13, fontWeight: '800', color: '#16a34a' },
 
   // Redeem button
-  redeemBtn:    { position: 'absolute', bottom: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
+  redeemBtn:    { position: 'absolute', bottom: 6, right: 6, width: 34, height: 34, borderRadius: 17, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
   redeemBtnDim: { backgroundColor: '#c4b5fd' },
 
   // Confirmation modal

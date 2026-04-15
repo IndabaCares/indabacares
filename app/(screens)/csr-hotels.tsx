@@ -39,7 +39,7 @@ export default function CSRHotelsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Indaba Cares</Text>
+          <Text style={styles.title}>Events</Text>
           <View style={{ width: 38 }} />
         </View>
         <Text style={styles.subtitle}>Choose a property to explore their CSR projects</Text>
