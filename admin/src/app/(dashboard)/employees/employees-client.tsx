@@ -44,17 +44,18 @@ import { toggleEmployeeStatus, updateEmployee, deleteEmployee, createEmployee, r
 import { CsvImportDialog } from './csv-import-dialog';
 
 interface Employee {
-  id:             string;
-  employee_code:  string;
-  full_name:      string;
-  hotel:          string;
-  department:     string | null;
-  position:       string | null;
-  email:          string | null;
-  status:         string;
-  points_balance: number;
-  is_manager:     boolean;
-  created_at:     string;
+  id:                    string;
+  employee_code:         string;
+  full_name:             string;
+  hotel:                 string;
+  department:            string | null;
+  position:              string | null;
+  email:                 string | null;
+  status:                string;
+  points_balance:        number;
+  reward_wallet_balance: number | null;
+  is_manager:            boolean;
+  created_at:            string;
 }
 
 const STATUS_CHIP: Record<string, string> = {
@@ -80,7 +81,8 @@ function EditEmployeeDialog({
   const [dateOfBirth,    setDateOfBirth]  = useState((employee as any).date_of_birth ?? '');
   const [startDate,      setStartDate]    = useState((employee as any).start_date    ?? '');
   const [isManager,      setIsManager]    = useState(employee.is_manager ?? false);
-  const [pointsBalance,  setPointsBalance] = useState(String(employee.points_balance ?? 0));
+  const [pointsBalance,       setPointsBalance]       = useState(String(employee.points_balance        ?? 0));
+  const [walletBalance,       setWalletBalance]       = useState(String(employee.reward_wallet_balance ?? 0));
 
   function handleSave() {
     if (!fullName.trim()) {
@@ -97,7 +99,8 @@ function EditEmployeeDialog({
           date_of_birth:  dateOfBirth   || null,
           start_date:     startDate     || null,
           is_manager:     isManager,
-          points_balance: parseInt(pointsBalance, 10) || 0,
+          points_balance:        parseInt(pointsBalance, 10)  || 0,
+          reward_wallet_balance: parseInt(walletBalance, 10)  || 0,
         });
         toast.success('Employee updated');
         onClose();
@@ -142,15 +145,27 @@ function EditEmployeeDialog({
               <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Points Balance</Label>
-            <Input
-              type="number"
-              min="0"
-              value={pointsBalance}
-              onChange={(e) => setPointsBalance(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Manually adjust the employee's points balance (e.g. for demos or corrections).</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Points Balance</Label>
+              <Input
+                type="number"
+                min="0"
+                value={pointsBalance}
+                onChange={(e) => setPointsBalance(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Recognition points (earned by being recognised).</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reward Wallet (RP)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={walletBalance}
+                onChange={(e) => setWalletBalance(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Points used to redeem rewards.</p>
+            </div>
           </div>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5">
             <input

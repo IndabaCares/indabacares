@@ -96,8 +96,9 @@ export async function updateEmployee(
     email:          string | null;
     date_of_birth:  string | null;
     start_date:     string | null;
-    is_manager:     boolean;
-    points_balance?: number;
+    is_manager:            boolean;
+    points_balance?:       number;
+    reward_wallet_balance?: number;
   },
 ) {
   const db = createAdminClient();
@@ -105,15 +106,18 @@ export async function updateEmployee(
   const { error } = await db
     .from('employees')
     .update({
-      full_name:      fields.full_name.trim(),
-      department:     fields.department?.trim() || null,
-      position:       fields.position?.trim()   || null,
-      email:          fields.email?.trim().toLowerCase() || null,
-      date_of_birth:  fields.date_of_birth || null,
-      start_date:     fields.start_date    || null,
-      is_manager:     fields.is_manager,
-      points_balance: fields.points_balance !== undefined
+      full_name:             fields.full_name.trim(),
+      department:            fields.department?.trim() || null,
+      position:              fields.position?.trim()   || null,
+      email:                 fields.email?.trim().toLowerCase() || null,
+      date_of_birth:         fields.date_of_birth || null,
+      start_date:            fields.start_date    || null,
+      is_manager:            fields.is_manager,
+      points_balance:        fields.points_balance !== undefined
         ? Math.max(0, Math.round(fields.points_balance))
+        : undefined,
+      reward_wallet_balance: fields.reward_wallet_balance !== undefined
+        ? Math.max(0, Math.round(fields.reward_wallet_balance))
         : undefined,
     })
     .eq('id', id);
