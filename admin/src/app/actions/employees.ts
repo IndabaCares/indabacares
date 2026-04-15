@@ -102,22 +102,20 @@ export async function updateEmployee(
 ) {
   const db = createAdminClient();
 
-  const update: Record<string, unknown> = {
-    full_name:     fields.full_name.trim(),
-    department:    fields.department?.trim() || null,
-    position:      fields.position?.trim()   || null,
-    email:         fields.email?.trim().toLowerCase() || null,
-    date_of_birth: fields.date_of_birth || null,
-    start_date:    fields.start_date    || null,
-    is_manager:    fields.is_manager,
-  };
-  if (fields.points_balance !== undefined) {
-    update.points_balance = Math.max(0, Math.round(fields.points_balance));
-  }
-
   const { error } = await db
     .from('employees')
-    .update(update)
+    .update({
+      full_name:      fields.full_name.trim(),
+      department:     fields.department?.trim() || null,
+      position:       fields.position?.trim()   || null,
+      email:          fields.email?.trim().toLowerCase() || null,
+      date_of_birth:  fields.date_of_birth || null,
+      start_date:     fields.start_date    || null,
+      is_manager:     fields.is_manager,
+      points_balance: fields.points_balance !== undefined
+        ? Math.max(0, Math.round(fields.points_balance))
+        : undefined,
+    })
     .eq('id', id);
 
   if (error) throw new Error(error.message);
