@@ -90,28 +90,34 @@ export async function resetEmployeePassword(id: string) {
 export async function updateEmployee(
   id: string,
   fields: {
-    full_name:     string;
-    department:    string | null;
-    position:      string | null;
-    email:         string | null;
-    date_of_birth: string | null;
-    start_date:    string | null;
-    is_manager:    boolean;
+    full_name:      string;
+    department:     string | null;
+    position:       string | null;
+    email:          string | null;
+    date_of_birth:  string | null;
+    start_date:     string | null;
+    is_manager:     boolean;
+    points_balance?: number;
   },
 ) {
   const db = createAdminClient();
 
+  const update: Record<string, unknown> = {
+    full_name:     fields.full_name.trim(),
+    department:    fields.department?.trim() || null,
+    position:      fields.position?.trim()   || null,
+    email:         fields.email?.trim().toLowerCase() || null,
+    date_of_birth: fields.date_of_birth || null,
+    start_date:    fields.start_date    || null,
+    is_manager:    fields.is_manager,
+  };
+  if (fields.points_balance !== undefined) {
+    update.points_balance = Math.max(0, Math.round(fields.points_balance));
+  }
+
   const { error } = await db
     .from('employees')
-    .update({
-      full_name:     fields.full_name.trim(),
-      department:    fields.department?.trim() || null,
-      position:      fields.position?.trim()   || null,
-      email:         fields.email?.trim().toLowerCase() || null,
-      date_of_birth: fields.date_of_birth || null,
-      start_date:    fields.start_date    || null,
-      is_manager:    fields.is_manager,
-    })
+    .update(update)
     .eq('id', id);
 
   if (error) throw new Error(error.message);

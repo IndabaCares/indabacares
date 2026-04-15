@@ -72,14 +72,15 @@ function EditEmployeeDialog({
   employee: Employee;
   onClose:  () => void;
 }) {
-  const [isPending,    startTransition] = useTransition();
-  const [fullName,     setFullName]     = useState(employee.full_name);
-  const [department,   setDepartment]   = useState(employee.department   ?? '');
-  const [position,     setPosition]     = useState(employee.position     ?? '');
-  const [email,        setEmail]        = useState(employee.email        ?? '');
-  const [dateOfBirth,  setDateOfBirth]  = useState((employee as any).date_of_birth ?? '');
-  const [startDate,    setStartDate]    = useState((employee as any).start_date    ?? '');
-  const [isManager,    setIsManager]    = useState(employee.is_manager ?? false);
+  const [isPending,      startTransition] = useTransition();
+  const [fullName,       setFullName]     = useState(employee.full_name);
+  const [department,     setDepartment]   = useState(employee.department   ?? '');
+  const [position,       setPosition]     = useState(employee.position     ?? '');
+  const [email,          setEmail]        = useState(employee.email        ?? '');
+  const [dateOfBirth,    setDateOfBirth]  = useState((employee as any).date_of_birth ?? '');
+  const [startDate,      setStartDate]    = useState((employee as any).start_date    ?? '');
+  const [isManager,      setIsManager]    = useState(employee.is_manager ?? false);
+  const [pointsBalance,  setPointsBalance] = useState(String(employee.points_balance ?? 0));
 
   function handleSave() {
     if (!fullName.trim()) {
@@ -89,13 +90,14 @@ function EditEmployeeDialog({
     startTransition(async () => {
       try {
         await updateEmployee(employee.id, {
-          full_name:     fullName,
-          department:    department    || null,
-          position:      position      || null,
-          email:         email         || null,
-          date_of_birth: dateOfBirth   || null,
-          start_date:    startDate     || null,
-          is_manager:    isManager,
+          full_name:      fullName,
+          department:     department    || null,
+          position:       position      || null,
+          email:          email         || null,
+          date_of_birth:  dateOfBirth   || null,
+          start_date:     startDate     || null,
+          is_manager:     isManager,
+          points_balance: parseInt(pointsBalance, 10) || 0,
         });
         toast.success('Employee updated');
         onClose();
@@ -139,6 +141,16 @@ function EditEmployeeDialog({
               <Label>Start Date</Label>
               <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Points Balance</Label>
+            <Input
+              type="number"
+              min="0"
+              value={pointsBalance}
+              onChange={(e) => setPointsBalance(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Manually adjust the employee's points balance (e.g. for demos or corrections).</p>
           </div>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5">
             <input
