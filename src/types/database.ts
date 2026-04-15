@@ -797,6 +797,30 @@ export interface Database {
         Args: { p_photo_url: string };
         Returns: void;
       };
+      // ── Campaigns ─────────────────────────────────────────────────────────
+      get_active_campaigns: {
+        Args: { p_hotel?: string };
+        Returns: unknown[];
+      };
+      get_campaigns_for_hotel: {
+        Args: { p_hotel: string };
+        Returns: {
+          id:                   string;
+          title:                string;
+          description:          string | null;
+          type:                 string;
+          points_multiplier:    number;
+          hotel:                string;
+          start_date:           string;
+          end_date:             string;
+          days_remaining:       number;
+          is_active:            boolean;
+          sponsor_name:         string | null;
+          banner_url:           string | null;
+          banner_link_url:      string | null;
+          voucher_description:  string | null;
+        }[];
+      };
     };
     Enums: {
       app_role: AppRole;
