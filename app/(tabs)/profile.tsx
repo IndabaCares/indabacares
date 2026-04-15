@@ -388,8 +388,8 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.utiliseFeedContent}>
                   <Text style={styles.utiliseFeedTitle}>Recognition Badges</Text>
-                  <Text style={styles.utiliseFeedDesc}>You can still recognize colleagues this month.</Text>
-                  <Text style={styles.utiliseFeedInsight}>Use these to highlight great performance or behaviour.</Text>
+                  <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Use these to highlight great performance or behaviour towards Guest or in general.</Text>
                 </View>
                 {recognitionLoading ? (
                   <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
@@ -409,8 +409,8 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.utiliseFeedContent}>
                   <Text style={styles.utiliseFeedTitle}>Skills Badges</Text>
-                  <Text style={styles.utiliseFeedDesc}>You can still endorse skills of colleagues.</Text>
-                  <Text style={styles.utiliseFeedInsight}>Assign these when you see strong capability in action.</Text>
+                  <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Use these to endorse skills and talent of a colleague.</Text>
                 </View>
                 <Text style={styles.utiliseFeedBigCount}>10</Text>
               </LinearGradient>
@@ -426,8 +426,8 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.utiliseFeedContent}>
                   <Text style={styles.utiliseFeedTitle}>Emoji</Text>
-                  <Text style={styles.utiliseFeedDesc}>Your social recognition tokens for quick appreciation.</Text>
-                  <Text style={styles.utiliseFeedInsight}>Send these throughout the month to engage your team.</Text>
+                  <Text style={styles.utiliseFeedDesc}>You receive a hundred emoji's a month to give to colleagues.</Text>
+                  <Text style={styles.utiliseFeedInsight}>Use these to engage recognitions given to colleagues.</Text>
                 </View>
                 {reactionLoading ? (
                   <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />

@@ -96,10 +96,12 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
         style={[s.cardFace, s.cardBack, { transform: [{ perspective: 1000 }, { rotateY: backRotate }], opacity: backOpacity }]}
       >
         <View style={s.backHeader}>
-          <Text style={[s.backHeading, { flex: 1 }]} numberOfLines={1}>{item.title}</Text>
-          {isHotel && (
-            <Text style={s.hotelLogoText}>INDABA</Text>
+          {isHotel && imageUri && (
+            <View style={s.backLogoWrap}>
+              <OptimizedImage uri={imageUri} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            </View>
           )}
+          <Text style={[s.backHeading, { flex: 1 }]} numberOfLines={2}>{item.title}</Text>
         </View>
         <View style={s.divider} />
         <View style={s.backBody}>
@@ -197,7 +199,7 @@ const RewardCard = memo(function RewardCard({ item, myPoints }: { item: Reward; 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function RewardsScreen() {
   const [menuOpen,  setMenuOpen]  = useState(false);
-  const [activeTab, setActiveTab] = useState<'retail' | 'hotel'>('retail');
+  const [activeTab, setActiveTab] = useState<'retail' | 'hotel'>('hotel');
 
   const { data: allRewards = [], isLoading } = useRewards();
   const { data: myPoints = 0 }              = useEmployeePoints();
@@ -264,18 +266,18 @@ export default function RewardsScreen() {
       {/* ── Pill tab selector ── */}
       <View style={s.tabPill}>
         <TouchableOpacity
-          style={[s.tabBtn, activeTab === 'retail' && s.tabBtnActive]}
-          onPress={() => setActiveTab('retail')}
-          activeOpacity={0.8}
-        >
-          <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>Marketplace</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[s.tabBtn, activeTab === 'hotel' && s.tabBtnActive]}
           onPress={() => setActiveTab('hotel')}
           activeOpacity={0.8}
         >
           <Text style={[s.tabTxt, activeTab === 'hotel' && s.tabTxtActive]}>Hotel Rewards</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.tabBtn, activeTab === 'retail' && s.tabBtnActive]}
+          onPress={() => setActiveTab('retail')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'retail' && s.tabTxtActive]}>Marketplace</Text>
         </TouchableOpacity>
       </View>
 
@@ -403,10 +405,10 @@ const s = StyleSheet.create({
   brandLogo:     { width: '100%', height: '100%' },
   photoImg:      { flex: 1, width: '100%' },
   imagePlaceholder: { backgroundColor: '#e5e7eb', flex: 1 },
-  hotelLogoText: { fontSize: 9, fontWeight: '800', color: '#7B1FA2', letterSpacing: 1, marginRight: 4 },
+  backLogoWrap:  { width: 48, height: 36, borderRadius: 6, overflow: 'hidden', marginRight: 6, flexShrink: 0 },
   divider:       { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 8 },
-  cardTop:       { paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 4 },
-  cardTitle:     { fontSize: 11, fontWeight: '700', color: '#1e1b4b', lineHeight: 15, flex: 1 },
+  cardTop:       { paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 4, alignItems: 'center' },
+  cardTitle:     { fontSize: 11, fontWeight: '700', color: '#1e1b4b', lineHeight: 15, textAlign: 'center' },
   canAfford:     { fontSize: 9, fontWeight: '700', color: '#16a34a', textAlign: 'center', paddingBottom: 4 },
   deficit:       { fontSize: 9, color: '#ef4444', textAlign: 'center', paddingBottom: 4 },
   deficitCross:  { color: '#ef4444', fontWeight: '700' },
@@ -438,8 +440,8 @@ const s = StyleSheet.create({
   btnConfirmTxt:        { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   // Back face
-  backHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 8, paddingBottom: 7 },
-  backHeading:{ fontSize: 10, fontWeight: '700', color: '#1e1b4b' },
+  backHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, paddingBottom: 7 },
+  backHeading:{ fontSize: 10, fontWeight: '700', color: '#1e1b4b', lineHeight: 14 },
   backBody:   { flex: 1, padding: 10 },
   backDesc:   { fontSize: 11, color: '#374151', lineHeight: 16 },
 });
