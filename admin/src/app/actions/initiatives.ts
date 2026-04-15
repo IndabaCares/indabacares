@@ -46,6 +46,41 @@ function storagePath(hotel: string, tab: string, filename: string) {
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
+// ─── Storage browser ──────────────────────────────────────────────────────────
+
+/**
+ * Lists files and folders at a given prefix inside the initiative-media bucket.
+ * Folders are items whose `metadata` field is null (Supabase storage convention).
+ */
+export async function listStorageFiles(prefix: string): Promise<
+  { name: string; path: string; url: string; isFolder: boolean }[]
+> {
+  try {
+    const db = createAdminClient();
+    const { data, error } = await db.storage
+      .from('initiative-media')
+      .list(prefix || undefined, {
+        limit: 300,
+        sortBy: { column: 'name', order: 'asc' },
+      });
+
+    if (error || !data) return [];
+
+    return data.map((item) => {
+      const isFolder = item.metadata === null;
+      const path     = prefix ? `${prefix}/${item.name}` : item.name;
+      const url      = isFolder
+        ? ''
+        : db.storage.from('initiative-media').getPublicUrl(path).data.publicUrl;
+      return { name: item.name, path, url, isFolder };
+    });
+  } catch {
+    return [];
+  }
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+
 export async function createInitiative(formData: FormData): Promise<{ error?: string }> {
   try {
     const hotel      = formData.get('hotel')      as string;
@@ -55,21 +90,26 @@ export async function createInitiative(formData: FormData): Promise<{ error?: st
     const videoFile  = formData.get('video')      as File | null;
     const galleryFiles = formData.getAll('gallery') as File[];
 
+    // Storage-picker selections (URLs already in the bucket)
+    const mascotStorageUrl   = (formData.get('mascot_storage_url')    as string) || null;
+    const galleryStorageJson = (formData.get('gallery_storage_urls')  as string) || '[]';
+    const galleryStorageUrls: string[] = JSON.parse(galleryStorageJson);
+
     if (!hotel || !tab) return { error: 'Hotel and initiative name are required.' };
 
     const db = createAdminClient();
     const ts = Date.now();
 
-    // Upload mascot
-    let mascot_url: string | null = null;
-    if (mascotFile && mascotFile.size > 0) {
+    // Mascot: storage pick takes priority, then file upload
+    let mascot_url: string | null = mascotStorageUrl;
+    if (!mascot_url && mascotFile && mascotFile.size > 0) {
       mascot_url = await uploadFile(
         mascotFile,
         storagePath(hotel, tab, `mascot-${ts}.${mascotFile.name.split('.').pop()}`),
       );
     }
 
-    // Upload video
+    // Video: file upload only
     let video_url: string | null = null;
     if (videoFile && videoFile.size > 0) {
       video_url = await uploadFile(
@@ -78,8 +118,8 @@ export async function createInitiative(formData: FormData): Promise<{ error?: st
       );
     }
 
-    // Upload gallery images
-    const image_urls: string[] = [];
+    // Gallery: storage picks first, then any newly uploaded files appended
+    const image_urls: string[] = [...galleryStorageUrls];
     for (let i = 0; i < galleryFiles.length; i++) {
       const f = galleryFiles[i];
       if (f && f.size > 0) {
@@ -118,6 +158,11 @@ export async function updateInitiative(id: string, formData: FormData): Promise<
     const videoFile  = formData.get('video')      as File | null;
     const galleryFiles = formData.getAll('gallery') as File[];
 
+    // Storage-picker selections
+    const mascotStorageUrl   = (formData.get('mascot_storage_url')   as string) || null;
+    const galleryStorageJson = (formData.get('gallery_storage_urls') as string) || '[]';
+    const galleryStorageUrls: string[] = JSON.parse(galleryStorageJson);
+
     if (!hotel || !tab) return { error: 'Hotel and initiative name are required.' };
 
     const db = createAdminClient();
@@ -130,8 +175,9 @@ export async function updateInitiative(id: string, formData: FormData): Promise<
       .eq('id', id)
       .single();
 
-    let mascot_url = current?.mascot_url ?? null;
-    if (mascotFile && mascotFile.size > 0) {
+    // Mascot: storage pick > new upload > keep existing
+    let mascot_url = mascotStorageUrl ?? current?.mascot_url ?? null;
+    if (!mascotStorageUrl && mascotFile && mascotFile.size > 0) {
       mascot_url = await uploadFile(
         mascotFile,
         storagePath(hotel, tab, `mascot-${ts}.${mascotFile.name.split('.').pop()}`),
@@ -146,8 +192,11 @@ export async function updateInitiative(id: string, formData: FormData): Promise<
       );
     }
 
-    // New gallery images append to existing
-    const image_urls: string[] = [...(current?.image_urls ?? [])];
+    // Gallery: existing + storage picks + new uploads
+    const image_urls: string[] = [
+      ...(current?.image_urls ?? []),
+      ...galleryStorageUrls,
+    ];
     for (let i = 0; i < galleryFiles.length; i++) {
       const f = galleryFiles[i];
       if (f && f.size > 0) {

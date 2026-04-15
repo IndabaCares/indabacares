@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import {
   Plus, Pencil, Trash2, X, ImageIcon, Video, Upload,
 } from 'lucide-react';
+import { StorageImagePicker } from '@/components/storage-image-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,6 +70,8 @@ function FileInputRow({
   multiple = false,
   currentUrl,
   hint,
+  storagePreviewUrls,
+  onStoragePick,
 }: {
   label:      string;
   name:       string;
@@ -76,10 +79,40 @@ function FileInputRow({
   multiple?:  boolean;
   currentUrl?: string | null;
   hint?:      string;
+  /** URLs already selected from the storage picker (shown as previews). */
+  storagePreviewUrls?: string[];
+  /** Called when the user picks image(s) from the storage browser. */
+  onStoragePick?: (urls: string[]) => void;
 }) {
+  const isImage = accept.startsWith('image/');
+
   return (
     <div className="space-y-1">
-      <Label>{label}</Label>
+      <div className="flex items-center justify-between">
+        <Label>{label}</Label>
+        {isImage && onStoragePick && (
+          <StorageImagePicker
+            onSelect={onStoragePick}
+            multiple={multiple}
+            label="Browse library"
+          />
+        )}
+      </div>
+
+      {/* Storage-picked previews */}
+      {storagePreviewUrls && storagePreviewUrls.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {storagePreviewUrls.map((url) => (
+            <div key={url} className="relative h-14 w-14 overflow-hidden rounded border">
+              <img src={url} alt="" className="h-full w-full object-cover" />
+            </div>
+          ))}
+          <p className="w-full text-xs text-violet-600">
+            {storagePreviewUrls.length} image{storagePreviewUrls.length !== 1 ? 's' : ''} selected from library
+          </p>
+        </div>
+      )}
+
       {currentUrl && (
         <p className="text-xs text-muted-foreground truncate">
           Current: <a href={currentUrl} target="_blank" rel="noopener noreferrer" className="underline">{currentUrl.split('/').pop()}</a>
@@ -103,6 +136,10 @@ export function InitiativesClient({ initiatives, selectedHotel }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<Initiative | null>(null);
   const [filterHotel, setFilterHotel] = useState(selectedHotel ?? '');
   const [formError,   setFormError]   = useState('');
+
+  // Storage-picker selections (images already in the bucket)
+  const [mascotStorageUrl,   setMascotStorageUrl]   = useState<string | null>(null);
+  const [galleryStorageUrls, setGalleryStorageUrls] = useState<string[]>([]);
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -129,12 +166,16 @@ export function InitiativesClient({ initiatives, selectedHotel }: Props) {
   function openCreate() {
     setEditing(null);
     setFormError('');
+    setMascotStorageUrl(null);
+    setGalleryStorageUrls([]);
     setDialogOpen(true);
   }
 
   function openEdit(item: Initiative) {
     setEditing(item);
     setFormError('');
+    setMascotStorageUrl(null);
+    setGalleryStorageUrls([]);
     setDialogOpen(true);
   }
 
@@ -147,6 +188,14 @@ export function InitiativesClient({ initiatives, selectedHotel }: Props) {
     e.preventDefault();
     setFormError('');
     const formData = new FormData(e.currentTarget);
+
+    // Append storage-picker selections as hidden fields
+    if (mascotStorageUrl) {
+      formData.set('mascot_storage_url', mascotStorageUrl);
+    }
+    if (galleryStorageUrls.length > 0) {
+      formData.set('gallery_storage_urls', JSON.stringify(galleryStorageUrls));
+    }
 
     startTransition(async () => {
       const result = editing
@@ -366,8 +415,10 @@ export function InitiativesClient({ initiatives, selectedHotel }: Props) {
               label="Mascot / hero image"
               name="mascot"
               accept="image/jpeg,image/jpg,image/png,image/webp"
-              currentUrl={editing?.mascot_url}
+              currentUrl={mascotStorageUrl ?? editing?.mascot_url}
               hint="Shown at the top of the initiative. Leave blank to keep existing."
+              storagePreviewUrls={mascotStorageUrl ? [mascotStorageUrl] : []}
+              onStoragePick={(urls) => setMascotStorageUrl(urls[0] ?? null)}
             />
 
             {/* Gallery images */}
@@ -381,6 +432,8 @@ export function InitiativesClient({ initiatives, selectedHotel }: Props) {
                   ? `${editing.image_urls.length} existing photo(s). New uploads will be appended.`
                   : 'Select one or more photos for the gallery grid.'
               }
+              storagePreviewUrls={galleryStorageUrls}
+              onStoragePick={(urls) => setGalleryStorageUrls(prev => [...prev, ...urls])}
             />
 
             {/* Video */}
