@@ -32,8 +32,8 @@
 IndabaCares is a mobile employee engagement platform built specifically for the hospitality industry. It enables peer-to-peer recognition, gamified point earning, reward redemption, mood tracking, real-time team chat, and skills development — all scoped to the employee's hotel property.
 
 **Core principles:**
-- Every positive action earns points
-- Points accumulate into a visible status level and can be redeemed for real rewards
+- Every positive action earns Recognition Points
+- Recognition Points accumulate into a visible status level and can be converted into Reward Wallet credits for redeeming real rewards
 - Recognition is public within the hotel — visible to all colleagues on the feed
 - Celebrations (birthdays, service milestones) are surfaced automatically
 - Data is isolated per hotel — employees only see content from their own property
@@ -150,7 +150,7 @@ Tap **Send Recognition**. Points are awarded immediately.
 
 When a colleague recognises you:
 - The recognition appears on the hotel feed
-- You receive **10 base points** (more during campaign periods — see Section 5)
+- You receive **10 base Recognition Points** (more during campaign periods — see Section 5)
 - A notification is sent to your device
 - You may respond to the recognition once (see below)
 
@@ -169,19 +169,32 @@ Responding earns you an additional **5 points** and your response is displayed o
 
 ## 5. Points System
 
-Points are the currency of IndabaCares. Every positive action earns points, which accumulate in your balance and determine your status tier and reward eligibility.
+### Two Separate Balances
 
-### How Points Are Earned
+IndabaCares tracks two separate balances for each employee:
+
+**Recognition Points (RP)**
+Your all-time engagement score. Points are added for every positive action and are **never deducted**. Your Recognition Points balance determines your status tier and leaderboard ranking.
+
+**Reward Wallet**
+Your spendable credits for redeeming rewards. Reward Wallet credits are obtained by converting Recognition Points at a **5:1 rate** (5 RP = 1 credit). Credits are deducted when you redeem a reward.
+
+### How Recognition Points Are Earned
 
 | Action | Points Awarded | Notes |
 |--------|---------------|-------|
 | Receiving a recognition | **10 pts** | Awarded to each recipient |
+| Receiving a skills card | **10 pts** | Awarded to the recipient |
 | Responding to a recognition | **5 pts** | One response per recognition |
+| Responding to a skills card | **5 pts** | One response per skills card |
 | Daily mood check-in | **5 pts** | Once per calendar day |
-| Receiving a ❤️ Heart reaction | **50 pts** | Awarded to the recognition receiver |
-| Receiving a 😊 Smile reaction | **20 pts** | Awarded to the recognition receiver |
-| Receiving a 👍 Thumbs Up reaction | **10 pts** | Awarded to the recognition receiver |
+| Receiving an emoji reaction | **1 pt** | Awarded to the recognition receiver, per reaction |
+| Birthday celebration | **100 pts** | Awarded automatically on your birthday |
+| Service milestone | **100 pts** | Awarded on eligible work anniversaries |
+| Reaching a new status tier | **50 pts** | One-time bonus per tier (see Section 6) |
+| Legend of the Month | **250 pts** | Awarded to the monthly top performer |
 | Campaign bonus | **Variable** | Multiplier applied during campaign periods |
+| Admin bonus | **Variable** | Manually granted by an administrator |
 
 ### Campaign Multipliers (Boost Events)
 
@@ -198,19 +211,36 @@ Campaign periods are communicated by the administrator and visible in the app.
 
 Every point transaction is recorded with a source label for transparency:
 - `recognition_received` — from being recognised
+- `skills_received` — from receiving a skills card
 - `recognition_response` — from responding to a recognition
-- `reaction_received` — from a colleague's emoji reaction
+- `skills_response` — from responding to a skills card
+- `reaction_received` — from a colleague's emoji reaction (1 pt each)
 - `mood_checkin` — from daily mood submission
-- `campaign_reward` — bonus during a campaign event
+- `birthday` — birthday celebration
+- `anniversary` — service milestone / work anniversary
+- `status_unlock` — unlocking a new status tier
+- `badge_achieved` — earning a system badge
+- `legend_of_month` — Legend of the Month award
 - `admin_bonus` — manually granted by an administrator
+- `campaign_reward` — bonus during a campaign event
 
-Points never go below zero. Your **points balance** is used both for reward redemption and for determining your status tier.
+Recognition Points never go below zero.
+
+### Converting Recognition Points to Reward Wallet
+
+To redeem rewards, you first convert Recognition Points into Reward Wallet credits:
+
+- **Conversion rate:** 5 Recognition Points = 1 Reward Wallet credit
+- Conversion amounts must be a multiple of 5
+- Only **unconverted** points can be converted — once converted, points cannot be converted again
+- There is no limit to how many times you can convert, provided you have unconverted points available
+- Access the Convert button from the **Reward** tab on your Profile
 
 ---
 
 ## 6. Status Levels & Badge Tiers
 
-Your status level is calculated from your **all-time points balance** and is displayed on your profile, the leaderboard, and on colleague profiles when you view the team.
+Your status level is calculated from your **all-time Recognition Points balance** and is displayed on your profile, the leaderboard, and on colleague profiles when you view the team.
 
 | Tier | Badge | Emoji | Points Required |
 |------|-------|-------|----------------|
@@ -221,8 +251,9 @@ Your status level is calculated from your **all-time points balance** and is dis
 | 5 | Newcomer | 🌱 | 0 – 49 points |
 
 **Key rules:**
-- Status is based on all-time accumulated points, not the spendable balance
-- Status cannot decrease — once earned, a tier is held
+- Status is based on all-time accumulated Recognition Points, not the Reward Wallet balance
+- Status cannot decrease — once earned, a tier is held permanently
+- Crossing into a new tier awards a **50-point bonus**
 - Status updates in real time as points are earned
 
 ---
@@ -233,32 +264,34 @@ Reactions allow colleagues to show appreciation for recognitions already on the 
 
 ### Reaction Types & Points Awarded
 
-The recipient of the original recognition earns points when their recognition is reacted to:
+The recipient of the original recognition earns **1 Recognition Point** for each reaction they receive, regardless of reaction type:
 
 | Reaction | Emoji | Points to Receiver |
 |----------|-------|-------------------|
-| Heart | ❤️ | 50 pts |
-| Smile | 😊 | 20 pts |
-| Thumbs Up | 👍 | 10 pts |
+| Heart | ❤️ | 1 pt |
+| Smile | 😊 | 1 pt |
+| Thumbs Up | 👍 | 1 pt |
 
 > Note: The person giving the reaction does **not** earn or spend points.
 
 ### Monthly Reaction Budget
 
-Each employee receives a fresh allocation at the start of every calendar month:
+Each employee receives a fresh unified allocation of **100 reactions** at the start of every calendar month. This budget is shared across all reaction types:
 
-| Reaction | Monthly Allowance |
-|----------|------------------|
-| Hearts ❤️ | 10 per month |
-| Smiles 😊 | 15 per month |
-| Thumbs Ups 👍 | 20 per month |
-| **Total** | **45 per month** |
+| Reaction | Approximate Monthly Share |
+|----------|--------------------------|
+| Hearts ❤️ | ~34 |
+| Smiles 😊 | ~33 |
+| Thumbs Ups 👍 | ~33 |
+| **Total** | **100 per month** |
+
+> The 100-reaction budget is enforced as a total — you can mix and match reaction types as you like within the monthly allowance.
 
 ### Rules
 - You may only place **one reaction per recognition** (one emoji at a time)
-- Removing a reaction restores your allocation for that type
+- Removing a reaction restores one unit to your monthly budget
 - You cannot react to your own recognition
-- Once a monthly budget is exhausted, a notification explains why you cannot react further
+- Once your 100-reaction monthly budget is exhausted, a notification explains why you cannot react further
 - Budgets reset automatically on the 1st of each month
 
 ### How to React
@@ -305,25 +338,27 @@ A dedicated section records the top performer for each past month. Browse by yea
 
 ## 9. Rewards Marketplace
 
-The rewards marketplace allows employees to redeem their accumulated points for real-world rewards. Access it from the **Rewards** tab.
+The rewards marketplace allows employees to redeem their accumulated **Reward Wallet credits** for real-world rewards. Access it from the **Rewards** tab.
+
+> **Important:** Rewards are redeemed using **Reward Wallet credits**, not Recognition Points directly. You must first convert Recognition Points into wallet credits from the Reward tab on your Profile (5 RP = 1 credit). See Section 5 for details.
 
 ### Browsing Rewards
 - Rewards are displayed in a grid of cards
-- Each card shows: reward image (or coloured placeholder), reward name, and points required
-- A **green badge** indicates you have enough points to redeem
-- A **pink badge** indicates how many more points you need
+- Each card shows: reward image (or coloured placeholder), reward name, and credits required
+- A **green badge** indicates you have enough wallet credits to redeem
+- A **pink badge** indicates how many more credits you need
 - An **amber "X left" badge** indicates low stock (5 or fewer remaining)
 - A greyed-out card with "OUT OF STOCK" means the reward is unavailable
 
 ### Redeeming a Reward
 
 1. Tap a reward card to view full details
-2. Review the description, points required, and available stock
+2. Review the description, credits required, and available stock
 3. Tap **Redeem** to confirm
-4. Points are **immediately deducted** from your balance
+4. Reward Wallet credits are **immediately deducted** from your balance
 5. A redemption record is created with status **Pending**
 
-> You must have sufficient points at the time of redemption. Your balance cannot go negative.
+> You must have sufficient Reward Wallet credits at the time of redemption. Your wallet balance cannot go negative.
 
 ### Redemption Statuses
 
@@ -332,11 +367,11 @@ The rewards marketplace allows employees to redeem their accumulated points for 
 | Pending ⏳ | Amber | Submitted — awaiting admin review |
 | Approved ✅ | Blue | Approved by admin — fulfilment in progress |
 | Fulfilled 🎁 | Green | Reward has been delivered |
-| Rejected ❌ | Red | Declined — points automatically refunded |
+| Rejected ❌ | Red | Declined — wallet credits automatically refunded |
 
 ### Cancelling a Redemption
 You may cancel a **Pending** redemption from the My Orders screen. Cancellation:
-- Refunds your points in full
+- Refunds your Reward Wallet credits in full
 - Restores one unit of stock to the reward
 
 View your redemption history at any time via the **My Orders** screen (accessible from the profile menu).
@@ -442,28 +477,42 @@ This section is informational and celebrates the positive impact the group has i
 
 ## 15. Profile & Wallet
 
-Your profile is your personal hub within the app.
+Your profile is your personal hub within the app. It has three tabs: **Share**, **Engage**, and **Reward**.
 
-### What You Can See
-- Profile photo (tap to update)
-- Your name, job title, and department
-- Current status badge and emoji
-- All-time points balance
-- This month's reaction budget remaining (Hearts / Smiles / Thumbs Ups)
-- Your recognition history (sent and received)
-- Your earned system badges
+### Share Tab
+Shows your monthly giving allocations — how many badges and reactions you have left to give this month:
+- **Recognition Badges** — 10 per month to give to colleagues for great performance
+- **Skills Badges** — 10 per month to endorse a colleague's skills and talent
+- **Emoji Reactions** — 100 per month to engage with recognitions on the feed
+- **Reset Timer** — days remaining until allocations refresh
 
-### Wallet
-The wallet shows:
-- Your current **spendable points balance**
-- A full transaction history with date, source, and points earned/spent
+### Engage Tab
+Shows your Recognition Points earned this month, broken down by source:
+- Recognition Received
+- Skills Shoutout
+- Responses Made
+- Mood Board check-ins
+- Birthday celebration
+- Service Milestone
+- Status Unlock bonuses
+- Badges Achieved
+- Legend of the Month
 
-Access the wallet via **Profile → Wallet**.
+### Reward Tab
+Shows your Reward Wallet and allows you to convert Recognition Points into spendable credits:
 
-### Uploading a Profile Photo
-1. Tap your avatar circle on the profile screen
-2. Choose a photo from your camera roll or take a new one
-3. The photo is uploaded and immediately visible on your recognition cards, leaderboard row, and colleague profiles
+**Wallet card** — your current spendable Reward Wallet balance
+**Wallet breakdown:**
+- Available — current wallet credit balance
+- Redeemed — lifetime credits spent on rewards
+- Converted This Month — credits earned from RP conversions this calendar month
+
+**Convert Points card** — displays your available (unconverted) Recognition Points and the maximum wallet credits you could earn. Tap **Convert** to exchange points at the 5:1 rate.
+
+### Profile Photo
+Tap your avatar circle to update your photo:
+1. Choose **Take Photo** or **Choose from Library**
+2. The photo is uploaded and immediately visible on your recognition cards, leaderboard row, and colleague profiles
 
 ---
 
@@ -519,7 +568,7 @@ The admin dashboard is accessible via web browser and is separate from the mobil
 - Track who is sending and receiving recognition
 
 ### Rewards Management
-- Create and edit reward items (title, description, image, points required, stock level)
+- Create and edit reward items (title, description, image, credits required, stock level)
 - Organise rewards into categories
 - Review, approve, reject, and fulfil redemption requests
 - Track redemption history
@@ -541,7 +590,7 @@ The admin dashboard is accessible via web browser and is separate from the mobil
 ### Gamification Settings
 - Define recognition types and their star values
 - Manage system badges (thresholds, icons, descriptions)
-- Set monthly reaction budgets (Hearts / Smiles / Thumbs Ups)
+- Set monthly reaction budgets
 - Manage skill categories and indicators
 
 ### CSR / Initiatives
@@ -564,28 +613,39 @@ Each hotel can independently enable or disable features:
 
 ## 19. Quick Reference — Points & Limits
 
-### Points Earned Per Action
+### Recognition Points Earned Per Action
 
 | Action | Points |
 |--------|--------|
 | Receiving a recognition | 10 pts |
-| Responding to a recognition | 5 pts |
+| Receiving a skills card | 10 pts |
+| Responding to a recognition or skills card | 5 pts |
 | Daily mood check-in | 5 pts |
-| Someone reacts ❤️ to your recognition | 50 pts |
-| Someone reacts 😊 to your recognition | 20 pts |
-| Someone reacts 👍 to your recognition | 10 pts |
+| Receiving any emoji reaction | 1 pt |
+| Birthday celebration (automatic) | 100 pts |
+| Service milestone (automatic) | 100 pts |
+| Reaching a new status tier | 50 pts (one-time per tier) |
+| Legend of the Month | 250 pts |
 | Admin bonus grant | Variable |
 | Campaign period recognition (2×) | 20 pts |
 | Campaign period recognition (3×) | 30 pts |
+
+### Reward Wallet
+
+| Action | Effect |
+|--------|--------|
+| Convert 5 Recognition Points | +1 Reward Wallet credit |
+| Redeem a reward | Wallet credits deducted |
+| Redemption rejected | Wallet credits refunded |
 
 ### Monthly Reaction Budget
 
 | Type | Monthly Allowance |
 |------|-----------------|
-| ❤️ Hearts | 10 |
-| 😊 Smiles | 15 |
-| 👍 Thumbs Ups | 20 |
-| **Total** | **45** |
+| ❤️ Hearts | ~34 |
+| 😊 Smiles | ~33 |
+| 👍 Thumbs Ups | ~33 |
+| **Total (enforced)** | **100 per month** |
 
 ### Status Badge Tiers
 
@@ -597,11 +657,12 @@ Each hotel can independently enable or disable features:
 | Rising Star | 50 – 99 | ⭐ |
 | Newcomer | 0 – 49 | 🌱 |
 
-### Recognition Limits
+### Recognition & Skills Limits
 
 | Limit | Value |
 |-------|-------|
 | Recognitions you can send per month | 10 |
+| Skills cards you can send per month | 10 |
 | Maximum recipients per recognition | 10 |
 | Maximum hashtags per recognition | 5 |
 | Minimum message length | 10 characters |
@@ -611,7 +672,7 @@ Each hotel can independently enable or disable features:
 
 ```
 Pending → Approved → Fulfilled
-       ↘ Rejected (points refunded)
+       ↘ Rejected (wallet credits refunded)
 ```
 
 ---
