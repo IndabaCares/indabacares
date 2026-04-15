@@ -33,12 +33,17 @@ const isoDate = z
 
 export const campaignSchema = z
   .object({
-    title:             trimmedText(3, 120, 'Title'),
-    description:       z.string().transform((s) => s.trim()).optional(),
-    points_multiplier: z.number().int().min(1).max(10),
+    title:                trimmedText(3, 120, 'Title'),
+    description:          z.string().transform((s) => s.trim()).optional(),
+    type:                 z.enum(['recognition', 'sponsor', 'both']).default('recognition'),
+    points_multiplier:    z.number().int().min(1).max(10),
     hotel,
-    start_date:        isoDate,
-    end_date:          isoDate,
+    start_date:           isoDate,
+    end_date:             isoDate,
+    sponsor_name:         z.string().transform((s) => s.trim()).optional(),
+    banner_url:           z.string().url('Banner URL must be a valid URL.').optional().or(z.literal('')),
+    banner_link_url:      z.string().url('Banner link must be a valid URL.').optional().or(z.literal('')),
+    voucher_description:  z.string().transform((s) => s.trim()).optional(),
   })
   .refine(
     (d) => d.end_date >= d.start_date,

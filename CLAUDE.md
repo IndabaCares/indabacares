@@ -23,10 +23,11 @@ npm run typecheck       # tsc --noEmit
 npm run lint            # eslint
 npm test                # jest
 npm run test:watch      # jest --watch
+npm test -- --testPathPattern=session-manager   # run a single test file
 npx expo start -c       # clear Metro cache
 ```
 
-Tests live in `src/__tests__/` and use `jest-expo`. Path alias `@/` maps to `src/`.
+Tests live in `src/__tests__/` (auth and features subdirs) and use `jest-expo`. Path alias `@/` maps to `src/`.
 
 ### Admin (`cd admin`)
 
@@ -92,7 +93,7 @@ All data is scoped to a `hotel` (string slug), not a `company_id`. Migration 017
 
 ## Data Layer
 
-**Mobile:** React Query hooks in `src/hooks/` wrap Supabase queries. Mutations that need business logic (balance checks, atomic updates) call Edge Functions. Direct PostgREST calls are used for reads and simple writes.
+**Mobile:** React Query hooks in `src/hooks/` are the consumption layer. The query/mutation logic lives one level below in `src/api/` — PostgREST wrappers in `queries.ts` and typed service files (e.g. `edge-functions.ts`, `reward-service.ts`, `chat-service.ts`). Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
 
 **State split:**
 - Server state → React Query (`@tanstack/react-query`)
@@ -105,7 +106,7 @@ All data is scoped to a `hotel` (string slug), not a `company_id`. Migration 017
 
 ## Edge Functions
 
-All 17 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
+All 18 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
 
 - `auth-middleware.ts` — `withEmployeeAuth()` wrapper (validates `x-session-token`)
 - `supabase-client.ts` — `createAdminClient()` (service_role)
@@ -113,11 +114,13 @@ All 17 functions live in `supabase/functions/`. Shared utilities are in `supabas
 
 Every new Edge Function should use `withEmployeeAuth` for authenticated routes or handle CORS OPTIONS manually for public routes. All DB writes use `adminClient` (service_role) — RLS is enforced at the DB layer, not the application layer.
 
+Additional functions beyond the original 14: `claim-employee-code` (employee onboarding), `daily-celebrations` (cron — birthday/work-anniversary push notifications), `award-monthly-legend` (cron — monthly top-performer award), `remove-background` (image processing for reward cards).
+
 ---
 
 ## Database Migrations
 
-77 sequential migrations in `supabase/migrations/`. Notable architectural migrations:
+79 sequential migrations in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -126,10 +129,14 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | 017 | Hotel-level RLS isolation (replaces company_id-based isolation) |
 | 032 | Rebuilt session architecture (`employee_active_sessions`) |
 | 033 | Dynamic leaderboard (no more static cache) |
+| 078 | Points system overhaul |
+| 079 | Reward wallet |
 
 **Immutable tables** — `star_transactions`, `point_transactions`, and `audit_logs` have triggers preventing UPDATE/DELETE. Never attempt to modify these rows.
 
 To add a migration: `supabase migration new <description>`, edit the generated file, then `supabase db push --linked`.
+
+`src/types/database.ts` is **manually maintained** — it does not use Supabase-generated types. Update it by hand when adding new tables or columns (or regenerate with `npx supabase gen types typescript --linked > src/types/database.ts` and merge carefully).
 
 ---
 

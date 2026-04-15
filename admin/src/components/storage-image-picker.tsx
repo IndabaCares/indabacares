@@ -27,14 +27,20 @@ interface Props {
   multiple?: boolean;
   /** Button label. */
   label?:    string;
+  /** Override the default bucket title shown in the dialog header. */
+  bucketLabel?: string;
+  /** Override the default listStorageFiles action (e.g. for a different bucket). */
+  listFn?: (prefix: string) => Promise<StorageEntry[]>;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StorageImagePicker({
   onSelect,
-  multiple = false,
-  label    = 'Browse library',
+  multiple    = false,
+  label       = 'Browse library',
+  bucketLabel = 'initiative-media bucket',
+  listFn      = listStorageFiles,
 }: Props) {
   const [open,     setOpen]     = useState(false);
   const [prefix,   setPrefix]   = useState('');
@@ -47,10 +53,10 @@ export function StorageImagePicker({
   const loadFolder = useCallback(async (p: string) => {
     setLoading(true);
     setPrefix(p);
-    const files = await listStorageFiles(p);
+    const files = await listFn(p);
     setEntries(files);
     setLoading(false);
-  }, []);
+  }, [listFn]);
 
   // ── Open ───────────────────────────────────────────────────────────────────
 
@@ -102,7 +108,7 @@ export function StorageImagePicker({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col gap-0 p-0">
           <DialogHeader className="border-b px-4 py-3">
-            <DialogTitle className="text-base">initiative-media bucket</DialogTitle>
+            <DialogTitle className="text-base">{bucketLabel}</DialogTitle>
           </DialogHeader>
 
           {/* Breadcrumb */}

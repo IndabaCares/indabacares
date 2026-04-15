@@ -5,14 +5,19 @@ import { CampaignsClient } from './campaigns-client';
 export const dynamic = 'force-dynamic';
 
 export type Campaign = {
-  id:                string;
-  title:             string;
-  description:       string | null;
-  points_multiplier: number;
-  hotel:             string;
-  start_date:        string;
-  end_date:          string;
-  created_at:        string;
+  id:                   string;
+  title:                string;
+  description:          string | null;
+  type:                 'recognition' | 'sponsor' | 'both';
+  points_multiplier:    number;
+  hotel:                string;
+  start_date:           string;
+  end_date:             string;
+  created_at:           string;
+  sponsor_name:         string | null;
+  banner_url:           string | null;
+  banner_link_url:      string | null;
+  voucher_description:  string | null;
 };
 
 async function getCampaigns(hotel?: string): Promise<Campaign[]> {
@@ -20,7 +25,7 @@ async function getCampaigns(hotel?: string): Promise<Campaign[]> {
 
   let q = db
     .from('campaigns')
-    .select('id, title, description, points_multiplier, hotel, start_date, end_date, created_at')
+    .select('id, title, description, type, points_multiplier, hotel, start_date, end_date, created_at, sponsor_name, banner_url, banner_link_url, voucher_description')
     .order('start_date', { ascending: false });
 
   if (hotel) q = q.eq('hotel', hotel);

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Zap, Filter } from 'lucide-react';
+import { Plus, Pencil, Trash2, Zap, Filter, Megaphone, ImageIcon, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input }  from '@/components/ui/input';
+import { Label }  from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -30,11 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { StorageImagePicker } from '@/components/storage-image-picker';
 import { HOTELS } from '@/lib/hotels';
 import {
   createCampaign,
   updateCampaign,
   deleteCampaign,
+  listCampaignMediaFiles,
 } from '@/app/actions/campaigns';
 import type { Campaign } from './page';
 
@@ -61,92 +65,151 @@ const STATUS_LABEL: Record<CampaignStatus, string> = {
   ended:    'Ended',
 };
 
+const TYPE_LABEL: Record<string, string> = {
+  recognition: 'Recognition',
+  sponsor:     'Sponsor Ad',
+  both:        'Both',
+};
+
+const TYPE_STYLES: Record<string, string> = {
+  recognition: 'bg-fuchsia-50  text-fuchsia-700',
+  sponsor:     'bg-amber-50    text-amber-700',
+  both:        'bg-violet-50   text-violet-700',
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric',
   });
 }
 
-// ── Blank form ─────────────────────────────────────────────────────────────────
-
-const BLANK = {
-  title:             '',
-  description:       '',
-  points_multiplier: 2,
-  hotel:             '' as string,
-  start_date:        '',
-  end_date:          '',
-};
-
-type FormState = typeof BLANK;
-
 // ── Campaign form dialog ───────────────────────────────────────────────────────
 
 function CampaignDialog({
   open,
-  initial,
+  editing,
+  defaultHotel,
   onClose,
-  onSave,
+  onDone,
   saving,
+  setSaving,
 }: {
-  open:    boolean;
-  initial: FormState;
-  onClose: () => void;
-  onSave:  (form: FormState) => void;
-  saving:  boolean;
+  open:         boolean;
+  editing:      Campaign | null;
+  defaultHotel: string;
+  onClose:      () => void;
+  onDone:       () => void;
+  saving:       boolean;
+  setSaving:    (v: boolean) => void;
 }) {
-  const [form, setForm] = useState<FormState>(initial);
+  const formRef  = useRef<HTMLFormElement>(null);
+  const [type,          setType]          = useState<string>(editing?.type ?? 'recognition');
+  const [multiplier,    setMultiplier]    = useState<string>(String(editing?.points_multiplier ?? 2));
+  const [hotel,         setHotel]         = useState<string>(editing?.hotel ?? defaultHotel);
+  const [bannerUrl,     setBannerUrl]     = useState<string>(editing?.banner_url ?? '');
+  const [formError,     setFormError]     = useState('');
 
-  // Sync when dialog reopens with different data
-  const handleOpenChange = (open: boolean) => {
-    if (open) setForm(initial);
-    else      onClose();
-  };
-
-  function set(key: keyof FormState, value: string | number) {
-    setForm((f) => ({ ...f, [key]: value }));
+  // Reset when dialog opens for a new/different campaign
+  const prevEditingId = useRef<string | null>(null);
+  if (open && (editing?.id ?? null) !== prevEditingId.current) {
+    prevEditingId.current = editing?.id ?? null;
+    // Use setTimeout 0 to avoid setting state during render
   }
 
-  const valid =
-    form.title.trim().length >= 3 &&
-    form.hotel !== '' &&
-    form.start_date !== '' &&
-    form.end_date   !== '' &&
-    form.end_date   >= form.start_date &&
-    form.points_multiplier >= 1;
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onClose();
+  }
+
+  const showSponsorFields = type === 'sponsor' || type === 'both';
+  const showMultiplier    = type === 'recognition' || type === 'both';
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setFormError('');
+
+    const formData = new FormData(e.currentTarget);
+    // Inject controlled values that aren't plain inputs
+    formData.set('type',              type);
+    formData.set('points_multiplier', multiplier);
+    formData.set('hotel',             hotel);
+    if (bannerUrl) {
+      formData.set('banner_storage_url', bannerUrl);
+    }
+
+    setSaving(true);
+    const result = editing
+      ? await updateCampaign(editing.id, formData)
+      : await createCampaign(formData);
+    setSaving(false);
+
+    if (result.error) {
+      setFormError(result.error);
+    } else {
+      toast.success(editing ? 'Campaign updated.' : 'Campaign created.');
+      onDone();
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{initial.title ? 'Edit Campaign' : 'New Campaign'}</DialogTitle>
+          <DialogTitle>{editing ? 'Edit Campaign' : 'New Campaign'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 py-2">
+
+          {/* Campaign type */}
+          <div className="space-y-1">
+            <Label>Campaign Type *</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recognition">
+                  Recognition — points multiplier only
+                </SelectItem>
+                <SelectItem value="sponsor">
+                  Sponsor Ad — banner advertisement only
+                </SelectItem>
+                <SelectItem value="both">
+                  Both — multiplier + sponsor banner
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {type === 'recognition' && 'Boosts points earned during this period.'}
+              {type === 'sponsor'     && 'Displays a sponsor banner in the mobile app. No points multiplier.'}
+              {type === 'both'        && 'Combines a points multiplier with a sponsor banner.'}
+            </p>
+          </div>
+
           {/* Title */}
           <div className="space-y-1">
-            <label className="text-sm font-medium">Title</label>
+            <Label>Title *</Label>
             <Input
+              name="title"
               placeholder="e.g. Customer Service Week"
-              value={form.title}
-              onChange={(e) => set('title', e.target.value)}
+              defaultValue={editing?.title ?? ''}
+              required
             />
           </div>
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-sm font-medium">Description <span className="text-muted-foreground">(optional)</span></label>
+            <Label>Description <span className="text-muted-foreground">(optional)</span></Label>
             <Input
+              name="description"
               placeholder="Brief description shown to employees"
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
+              defaultValue={editing?.description ?? ''}
             />
           </div>
 
           {/* Hotel */}
           <div className="space-y-1">
-            <label className="text-sm font-medium">Hotel</label>
-            <Select value={form.hotel} onValueChange={(v) => set('hotel', v)}>
+            <Label>Hotel *</Label>
+            <Select value={hotel} onValueChange={setHotel}>
               <SelectTrigger>
                 <SelectValue placeholder="Select hotel" />
               </SelectTrigger>
@@ -158,61 +221,150 @@ function CampaignDialog({
             </Select>
           </div>
 
-          {/* Multiplier */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Points Multiplier</label>
-            <Select
-              value={String(form.points_multiplier)}
-              onValueChange={(v) => set('points_multiplier', Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 3, 4, 5].map((m) => (
-                  <SelectItem key={m} value={String(m)}>
-                    {m}× — {10 * m} pts per recognition (base: 10)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Employees earn {form.points_multiplier * 10} pts per recognition during this campaign
-              ({form.points_multiplier - 1 > 0 ? `+${(form.points_multiplier - 1) * 10} bonus` : 'no bonus'}).
-            </p>
-          </div>
+          {/* Multiplier (recognition / both only) */}
+          {showMultiplier && (
+            <div className="space-y-1">
+              <Label>Points Multiplier</Label>
+              <Select value={multiplier} onValueChange={setMultiplier}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5].map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {m}× — {10 * m} pts per recognition (base: 10)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Employees earn {Number(multiplier) * 10} pts per recognition during this campaign.
+              </p>
+            </div>
+          )}
+
+          {/* ── Sponsor fields ──────────────────────────────────────────────── */}
+          {showSponsorFields && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 space-y-4">
+              <p className="text-sm font-semibold text-amber-700 flex items-center gap-1.5">
+                <Megaphone className="h-4 w-4" />
+                Sponsor Details
+              </p>
+
+              {/* Sponsor name */}
+              <div className="space-y-1">
+                <Label>Sponsor Name *</Label>
+                <Input
+                  name="sponsor_name"
+                  placeholder="e.g. Coca-Cola"
+                  defaultValue={editing?.sponsor_name ?? ''}
+                  required={showSponsorFields}
+                />
+                <p className="text-xs text-muted-foreground">Displayed below the banner in the app.</p>
+              </div>
+
+              {/* Banner image */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label>Banner Image</Label>
+                  <StorageImagePicker
+                    onSelect={(urls) => setBannerUrl(urls[0] ?? '')}
+                    multiple={false}
+                    label="Browse campaign-media"
+                    bucketLabel="campaign-media bucket"
+                    listFn={listCampaignMediaFiles}
+                  />
+                </div>
+
+                {/* Current / picked banner preview */}
+                {bannerUrl ? (
+                  <div className="relative w-full overflow-hidden rounded-md border">
+                    <img src={bannerUrl} alt="banner preview" className="w-full object-cover max-h-32" />
+                    <button
+                      type="button"
+                      onClick={() => setBannerUrl('')}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white hover:bg-black/80"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : editing?.banner_url ? (
+                  <p className="text-xs text-muted-foreground truncate">
+                    Current: <a href={editing.banner_url} target="_blank" rel="noopener noreferrer" className="underline">{editing.banner_url.split('/').pop()}</a>
+                  </p>
+                ) : null}
+
+                <Input
+                  type="file"
+                  name="banner_file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                />
+                <p className="text-xs text-muted-foreground">Upload a new file or browse the bucket above. Max 10 MB.</p>
+              </div>
+
+              {/* Banner link URL */}
+              <div className="space-y-1">
+                <Label>Banner Link URL <span className="text-muted-foreground">(optional)</span></Label>
+                <Input
+                  name="banner_link_url"
+                  type="url"
+                  placeholder="https://sponsor.com/offer"
+                  defaultValue={editing?.banner_link_url ?? ''}
+                />
+                <p className="text-xs text-muted-foreground">Opened when an employee taps the banner.</p>
+              </div>
+
+              {/* Voucher description */}
+              <div className="space-y-1">
+                <Label>Voucher / Reward Description</Label>
+                <Textarea
+                  name="voucher_description"
+                  placeholder="Describe the voucher or reward the sponsor is providing…"
+                  defaultValue={editing?.voucher_description ?? ''}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Start Date</label>
+              <Label>Start Date *</Label>
               <Input
+                name="start_date"
                 type="date"
-                value={form.start_date}
-                onChange={(e) => set('start_date', e.target.value)}
+                defaultValue={editing?.start_date ?? ''}
+                required
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">End Date</label>
+              <Label>End Date *</Label>
               <Input
+                name="end_date"
                 type="date"
-                value={form.end_date}
-                min={form.start_date}
-                onChange={(e) => set('end_date', e.target.value)}
+                defaultValue={editing?.end_date ?? ''}
+                required
               />
             </div>
           </div>
-          {form.start_date && form.end_date && form.end_date < form.start_date && (
-            <p className="text-xs text-red-600">End date must be on or after start date.</p>
-          )}
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={() => onSave(form)} disabled={!valid || saving}>
-            {saving ? 'Saving…' : 'Save Campaign'}
-          </Button>
-        </DialogFooter>
+          {formError && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {formError}
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="gap-1">
+              <Upload className="h-4 w-4" />
+              {saving ? 'Saving…' : editing ? 'Save Campaign' : 'Create Campaign'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -229,9 +381,10 @@ export function CampaignsClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [saving,    setSaving]       = useState(false);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Campaign | null>(null);
+  const [dialogOpen,   setDialogOpen]   = useState(false);
+  const [editTarget,   setEditTarget]   = useState<Campaign | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null);
 
   // ── Filters ──────────────────────────────────────────────────────────────────
@@ -244,37 +397,6 @@ export function CampaignsClient({
 
   // ── CRUD ─────────────────────────────────────────────────────────────────────
 
-  function handleSave(form: FormState) {
-    startTransition(async () => {
-      try {
-        if (editTarget) {
-          await updateCampaign(editTarget.id, form);
-          toast.success('Campaign updated.');
-        } else {
-          await createCampaign(form);
-          toast.success('Campaign created.');
-        }
-        setDialogOpen(false);
-        setEditTarget(null);
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    });
-  }
-
-  function handleDelete() {
-    if (!deleteTarget) return;
-    startTransition(async () => {
-      try {
-        await deleteCampaign(deleteTarget.id);
-        toast.success('Campaign deleted.');
-        setDeleteTarget(null);
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    });
-  }
-
   function openCreate() {
     setEditTarget(null);
     setDialogOpen(true);
@@ -285,17 +407,29 @@ export function CampaignsClient({
     setDialogOpen(true);
   }
 
-  // Build initial form state from existing campaign or blank
-  const dialogInitial: FormState = editTarget
-    ? {
-        title:             editTarget.title,
-        description:       editTarget.description ?? '',
-        points_multiplier: editTarget.points_multiplier,
-        hotel:             editTarget.hotel,
-        start_date:        editTarget.start_date,
-        end_date:          editTarget.end_date,
+  function handleDialogDone() {
+    setDialogOpen(false);
+    setEditTarget(null);
+    router.refresh();
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    startTransition(async () => {
+      try {
+        const result = await deleteCampaign(deleteTarget.id);
+        if (result.error) {
+          toast.error(result.error);
+        } else {
+          toast.success('Campaign deleted.');
+          setDeleteTarget(null);
+          router.refresh();
+        }
+      } catch (err: any) {
+        toast.error(err.message);
       }
-    : { ...BLANK, hotel: selectedHotel ?? '' };
+    });
+  }
 
   // ── Group by status ───────────────────────────────────────────────────────────
 
@@ -331,7 +465,7 @@ export function CampaignsClient({
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center text-muted-foreground">
           <Zap className="mb-3 h-8 w-8 opacity-40" />
           <p className="font-medium">No campaigns yet</p>
-          <p className="text-sm">Create a campaign to boost recognition points during special events.</p>
+          <p className="text-sm">Create a recognition campaign to boost points, or a sponsor ad campaign.</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -351,65 +485,95 @@ export function CampaignsClient({
                     return (
                       <div
                         key={c.id}
-                        className="relative flex flex-col gap-3 rounded-lg border bg-card p-4"
+                        className="relative flex flex-col gap-3 rounded-lg border bg-card overflow-hidden"
                       >
-                        {/* Status badge */}
-                        <div className="flex items-start justify-between gap-2">
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}
-                          >
-                            {STATUS_LABEL[status]}
-                          </span>
-
-                          <div className="flex shrink-0 gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => openEdit(c)}
-                              disabled={isPending}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-500 hover:text-red-600"
-                              onClick={() => setDeleteTarget(c)}
-                              disabled={isPending}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                        {/* Banner image */}
+                        {c.banner_url && (
+                          <div className="relative h-28 w-full overflow-hidden bg-muted">
+                            <img
+                              src={c.banner_url}
+                              alt={c.sponsor_name ?? 'sponsor banner'}
+                              className="h-full w-full object-cover"
+                            />
+                            {c.sponsor_name && (
+                              <span className="absolute bottom-1 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] text-white">
+                                {c.sponsor_name}
+                              </span>
+                            )}
                           </div>
-                        </div>
+                        )}
 
-                        {/* Title + description */}
-                        <div>
-                          <h3 className="font-semibold leading-tight">{c.title}</h3>
-                          {c.description && (
-                            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
-                              {c.description}
+                        <div className="p-4 pt-2 flex flex-col gap-3">
+                          {/* Badges row */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex gap-1.5 flex-wrap">
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}>
+                                {STATUS_LABEL[status]}
+                              </span>
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_STYLES[c.type ?? 'recognition']}`}>
+                                {TYPE_LABEL[c.type ?? 'recognition']}
+                              </span>
+                            </div>
+
+                            <div className="flex shrink-0 gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => openEdit(c)}
+                                disabled={isPending}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600"
+                                onClick={() => setDeleteTarget(c)}
+                                disabled={isPending}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Title + description */}
+                          <div>
+                            <h3 className="font-semibold leading-tight">{c.title}</h3>
+                            {c.description && (
+                              <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
+                                {c.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Multiplier pill (recognition / both) */}
+                          {(c.type === 'recognition' || c.type === 'both') && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1 rounded-md bg-fuchsia-50 px-2 py-1 text-sm font-bold text-fuchsia-700">
+                                <Zap className="h-3.5 w-3.5" />
+                                {c.points_multiplier}× points
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                = {c.points_multiplier * 10} pts per recognition
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Voucher description (sponsor) */}
+                          {c.voucher_description && (
+                            <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 line-clamp-2">
+                              {c.voucher_description}
                             </p>
                           )}
-                        </div>
 
-                        {/* Multiplier pill */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="flex items-center gap-1 rounded-md bg-fuchsia-50 px-2 py-1 text-sm font-bold text-fuchsia-700">
-                            <Zap className="h-3.5 w-3.5" />
-                            {c.points_multiplier}× points
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            = {c.points_multiplier * 10} pts per recognition
-                          </span>
-                        </div>
-
-                        {/* Hotel + dates */}
-                        <div className="space-y-0.5 text-xs text-muted-foreground">
-                          <p className="font-medium text-foreground">{c.hotel}</p>
-                          <p>
-                            {formatDate(c.start_date)} — {formatDate(c.end_date)}
-                          </p>
+                          {/* Hotel + dates */}
+                          <div className="space-y-0.5 text-xs text-muted-foreground">
+                            <p className="font-medium text-foreground">{c.hotel}</p>
+                            <p>
+                              {formatDate(c.start_date)} — {formatDate(c.end_date)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     );
@@ -424,10 +588,12 @@ export function CampaignsClient({
       {/* Create / Edit dialog */}
       <CampaignDialog
         open={dialogOpen}
-        initial={dialogInitial}
+        editing={editTarget}
+        defaultHotel={selectedHotel ?? ''}
         onClose={() => { setDialogOpen(false); setEditTarget(null); }}
-        onSave={handleSave}
-        saving={isPending}
+        onDone={handleDialogDone}
+        saving={saving}
+        setSaving={setSaving}
       />
 
       {/* Delete confirmation */}
