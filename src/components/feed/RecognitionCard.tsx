@@ -1,7 +1,6 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
+import React, { memo, useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image,
-  Animated, GestureResponderEvent,
+  View, Text, TouchableOpacity, StyleSheet, Image, Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
@@ -63,9 +62,10 @@ export const RecognitionCard = memo(function RecognitionCard({
   const submitResponse = useSubmitResponse(recognition.id);
 
   // Reaction state
-  const [showEmojiPicker, setShowEmojiPicker]   = useState(false);
-  const [exhaustedType, setExhaustedType]       = useState<ReactionType | null>(null);
-  const pickerAnim                              = useRef(new Animated.Value(0)).current;
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickerY, setPickerY]                 = useState(0);
+  const [exhaustedType, setExhaustedType]     = useState<ReactionType | null>(null);
+  const reactBtnRef                           = useRef<TouchableOpacity>(null);
 
   const { data: reactions = [] } = useRecognitionReactions(recognition.id);
   const { data: balance }        = useReactionBalance();
@@ -83,14 +83,12 @@ export const RecognitionCard = memo(function RecognitionCard({
   );
   const hasReactions = Object.values(counts).some((c) => c > 0);
 
-  useEffect(() => {
-    Animated.spring(pickerAnim, {
-      toValue:        showEmojiPicker ? 1 : 0,
-      friction:       6,
-      tension:        140,
-      useNativeDriver: true,
-    }).start();
-  }, [showEmojiPicker]);
+  const handleOpenPicker = () => {
+    reactBtnRef.current?.measure((_fx, _fy, _w, _h, _px, py) => {
+      setPickerY(py);
+      setShowEmojiPicker(true);
+    });
+  };
 
   const handleResponse = (text: string) => {
     setLocalResponse(text);
@@ -188,7 +186,6 @@ export const RecognitionCard = memo(function RecognitionCard({
 
         {/* ── Reactions ─────────────────────────────────────── */}
         <View style={s.reactionsRow}>
-          {/* Count pills */}
           {hasReactions && (
             <View style={s.countsRow}>
               {REACTIONS.map(({ type, emoji }) => {
@@ -205,46 +202,10 @@ export const RecognitionCard = memo(function RecognitionCard({
             </View>
           )}
 
-          {/* ── Emoji picker — inline, left of react button ── */}
-          {showEmojiPicker && (
-            <Animated.View
-              style={[
-                s.emojiPickerRow,
-                {
-                  opacity:   pickerAnim,
-                  transform: [
-                    { scale: pickerAnim },
-                    {
-                      translateX: pickerAnim.interpolate({
-                        inputRange:  [0, 1],
-                        outputRange: [8, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              {REACTIONS.map(({ type, emoji }) => {
-                const isActive = myReaction?.reaction_type === type;
-                return (
-                  <TouchableOpacity
-                    key={type}
-                    style={[s.emojiBtn, isActive && s.emojiBtnActive]}
-                    onPress={() => handleReact(type)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.emojiText}>{emoji}</Text>
-                    {isActive && <View style={s.activeDot} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </Animated.View>
-          )}
-
-          {/* React button */}
           <TouchableOpacity
+            ref={reactBtnRef}
             style={s.reactBtn}
-            onPress={() => setShowEmojiPicker((v) => !v)}
+            onPress={handleOpenPicker}
             activeOpacity={0.7}
           >
             <Text style={s.reactBtnText}>{showEmojiPicker ? '✕' : '😊'}</Text>
@@ -252,6 +213,37 @@ export const RecognitionCard = memo(function RecognitionCard({
         </View>
 
       </LinearGradient>
+
+      {/* ── Emoji tray — Modal overlay, floats above button ── */}
+      <Modal
+        transparent
+        visible={showEmojiPicker}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowEmojiPicker(false)}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={() => setShowEmojiPicker(false)}
+        />
+        <View style={[s.emojiTray, { top: pickerY - 64 }]}>
+          {REACTIONS.map(({ type, emoji }) => {
+            const isActive = myReaction?.reaction_type === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[s.emojiBtn, isActive && s.emojiBtnActive]}
+                onPress={() => handleReact(type)}
+                activeOpacity={0.7}
+              >
+                <Text style={s.emojiText}>{emoji}</Text>
+                {isActive && <View style={s.activeDot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
 
       {exhaustedType && balance && (
         <ReactionExhaustedModal
@@ -485,12 +477,23 @@ const s = StyleSheet.create({
     fontSize: 18,
   },
 
-  // Emoji picker — inline to the left of the react button
-  emojiPickerRow: {
+  // Emoji tray (modal overlay) — matches SkillCard layout
+  emojiTray: {
+    position: 'absolute',
+    right: 24,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginRight: 6,
+    gap: 8,
+    backgroundColor: '#1e2530',
+    borderRadius: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   emojiBtn: {
     width: 44,
@@ -498,15 +501,14 @@ const s = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   emojiBtnActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   emojiText: {
-    fontSize: 26,
+    fontSize: 28,
   },
   activeDot: {
     position: 'absolute',
