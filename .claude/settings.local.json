@@ -67,7 +67,10 @@
       "Bash(npx eas:*)",
       "Bash(eas update:*)",
       "Bash(find:*)",
-      "Bash(timeout 60 tail -f \"C:\\\\Users\\\\Personel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Personel-Desktop-IndabaCares\\\\6c9d0bb6-2bfb-4c91-989b-cf9f696828a3\\\\tasks\\\\by3xdsasf.output\")"
+      "Bash(timeout 60 tail -f \"C:\\\\Users\\\\Personel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Personel-Desktop-IndabaCares\\\\6c9d0bb6-2bfb-4c91-989b-cf9f696828a3\\\\tasks\\\\by3xdsasf.output\")",
+      "Bash(eas build *)",
+      "Bash(xargs -I {} bash -c \"[ -d '/c/Users/Personel/Desktop/IndabaCares/app/\\(screens\\)/{}' ] && echo '\\(dir\\) {}' || echo '\\(file\\) {}'\")",
+      "Bash(xargs -I {} bash -c \"[ -d '/c/Users/Personel/Desktop/IndabaCares/src/components/{}' ] && echo '{}/'\")"
     ]
   }
 }

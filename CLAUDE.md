@@ -23,6 +23,7 @@ npm run typecheck       # tsc --noEmit
 npm run lint            # eslint
 npm test                # jest
 npm run test:watch      # jest --watch
+npm run test:coverage   # jest --coverage
 npm test -- --testPathPattern=session-manager   # run a single test file
 npx expo start -c       # clear Metro cache
 ```
@@ -64,7 +65,7 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 
 1. Employee logs in → `authenticate_employee` RPC returns a `session_token` (UUID) stored in `employee_active_sessions`.
 2. Client persists the session to `expo-secure-store` via `EmployeeSessionManager` (`src/lib/EmployeeSessionManager.ts`).
-3. Every Supabase request from the mobile app injects `x-session-token` as a custom header (see `src/lib/supabase.ts` — `hotelAwareFetch`).
+3. Every Supabase request from the mobile app passes through `src/lib/secureApi.ts` (domain allowlist + HTTPS enforcement + timeout + redirect guard) then injects `x-session-token` as a custom header (see `src/lib/supabase.ts` — `hotelAwareFetch`).
 4. PostgreSQL RLS reads this header via `current_employee_hotel()` to enforce hotel-level tenant isolation (migration 017).
 5. Edge Functions validate the token via the `validate_session` RPC inside `withEmployeeAuth` middleware (`supabase/functions/_shared/auth-middleware.ts`).
 
@@ -72,7 +73,7 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 
 **Provider chain** (`app/_layout.tsx`):
 ```
-QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → ToastProvider
+ErrorBoundary → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → ToastProvider
 ```
 
 `EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing (unauthenticated → `/(auth)/employee-auth`, authenticated → `/(tabs)/`).
@@ -94,27 +95,38 @@ The canonical hotel list lives in **three places** that must be kept in sync:
 - `admin/src/lib/hotels.ts` (admin dashboard)
 - `is_valid_hotel()` function in migration 017
 
+**`APA_HOTEL` (`'African Procurement Agencies'`)** is a special-cased slug — migration 066 grants it cross-hotel read visibility. Treat it differently from regular hotels in any visibility or tenant logic.
+
 ---
 
 ## Mobile Screen Layout
 
 Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
-- `app/(tabs)/` — bottom-tab navigator (home feed, give recognition, leaderboard, rewards, profile)
-- `app/(screens)/` — full-screen push routes (recognition detail, reward detail, user profile, chat, notifications, etc.)
+- `app/(tabs)/` — bottom-tab navigator (`index`, `give`, `leaderboard`, `rewards`, `profile`)
+- `app/(screens)/` — full-screen push routes: flat screens (chat, campaigns, initiatives, mood, notifications, orders, settings, team, wallet, etc.) plus nested route dirs (`recognition/`, `reward/`, `user/`, `initiative/`, `skills/`, `team/`)
 
 ---
 
 ## Data Layer
 
-**Mobile:** React Query hooks in `src/hooks/` are the consumption layer. The query/mutation logic lives one level below in `src/api/` — PostgREST wrappers in `queries.ts` and typed service files (e.g. `edge-functions.ts`, `reward-service.ts`, `chat-service.ts`). Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
+**Mobile:** React Query hooks in `src/hooks/` are the consumption layer. The query/mutation logic lives one level below in `src/api/` — PostgREST wrappers in `queries.ts` and domain service files:
+
+- `edge-functions.ts` — typed wrappers for all Edge Function calls
+- `reward-service.ts`, `chat-service.ts`, `campaigns-service.ts`, `initiative-service.ts`
+- `leaderboard-service.ts`, `legends-service.ts`, `notification-service.ts`
+- `reaction-analytics-service.ts`, `team-service.ts`
+
+Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
 
 **State split:**
 - Server state → React Query (`@tanstack/react-query`)
 - Auth/session → `EmployeeContext` (React Context)
 - UI-only state → Zustand (`src/stores/ui-store.ts`)
 
-**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (employees, rewards, redemptions, campaigns, initiatives, notifications). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+
+**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages; `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`.
 
 **Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat via `use-realtime.ts` and `use-presence.ts`. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`.
 
@@ -122,21 +134,44 @@ Expo Router route groups:
 
 ## Edge Functions
 
-All 23 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
+18 functions live in `supabase/functions/`. Shared utilities are in `supabase/functions/_shared/`:
 
-- `auth-middleware.ts` — `withEmployeeAuth()` wrapper (validates `x-session-token`)
+- `auth-middleware.ts` — `withEmployeeAuth()` wrapper (validates `x-session-token`); also exports `errorResponse()`/`jsonResponse()` helpers and CORS headers
 - `supabase-client.ts` — `createAdminClient()` (service_role)
-- Other shared: audit logging, notifications, CORS headers
+- `rate-limit.ts` — per-operation rate limit enforcement
+- `notifications.ts` — shared push notification helpers
+- `audit.ts` — shared audit logging helpers
 
 Every new Edge Function should use `withEmployeeAuth` for authenticated routes or handle CORS OPTIONS manually for public routes. All DB writes use `adminClient` (service_role) — RLS is enforced at the DB layer, not the application layer.
 
-Cron functions: `daily-celebrations` (birthday/work-anniversary push notifications), `award-monthly-legend` (monthly top-performer), `reset-budgets`, `refresh-leaderboard`.
+**Function inventory:**
+
+| Function | Purpose |
+|----------|---------|
+| `auth-signup` | Employee registration |
+| `auth-invite` | Admin-initiated employee invite |
+| `auth-me` | Fetch current employee profile |
+| `auth-update-role` | Change employee role |
+| `auth-deactivate-user` | Deactivate an employee account |
+| `claim-employee-code` | Link employee code to account |
+| `send-recognition` | Create a peer recognition |
+| `boost-recognition` | Manager star boost on a recognition |
+| `evaluate-badges` | Check + award badge criteria |
+| `manage-redemption` | Admin approve/reject redemption |
+| `redeem-reward` | Employee redeem from catalogue |
+| `cancel-redemption` | Cancel a pending redemption |
+| `submit-mood` | Log daily mood check-in |
+| `refresh-leaderboard` | Rebuild leaderboard cache (cron) |
+| `award-monthly-legend` | Pick monthly top performer (cron) |
+| `daily-celebrations` | Birthday/work-anniversary push notifications (cron) |
+| `reset-budgets` | Reset recognition budgets (cron) |
+| `remove-background` | External AI image background removal — not behind `withEmployeeAuth`, handle CORS manually |
 
 ---
 
 ## Database Migrations
 
-80 sequential migrations in `supabase/migrations/`. Notable architectural migrations:
+80 migrations (001–080, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
