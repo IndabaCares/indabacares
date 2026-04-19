@@ -3,6 +3,6 @@ node_modules
 android
 ios
 assets
-src
-app
-supabase
+/src
+/app
+/supabase
