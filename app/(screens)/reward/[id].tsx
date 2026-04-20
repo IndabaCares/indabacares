@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -109,6 +109,7 @@ export default function RewardDetailScreen() {
 
   return (
     <>
+      <Stack.Screen options={{ title: 'REWARD' }} />
       <ScrollView
         className="flex-1 bg-white"
         contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
