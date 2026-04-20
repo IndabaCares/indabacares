@@ -50,7 +50,7 @@ BEGIN
 
   -- Audit trail
   INSERT INTO public.points_ledger (employee_id, points, source, hotel)
-  VALUES (p_employee_id, v_delta, 'admin_adjustment', v_hotel);
+  VALUES (p_employee_id, v_delta, 'admin_bonus', v_hotel);
 END;
 $$;
 
