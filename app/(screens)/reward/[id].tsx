@@ -5,36 +5,22 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Modal,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRewardDetail, useEmployeePoints, useRedeemReward } from '@/hooks/use-rewards';
-import { RedeemConfirmation } from '@/components/rewards/RedeemConfirmation';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatDate } from '@/utils/format';
-
-// ─── Status badge colours ─────────────────────────────────────────────────────
-
-const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> = {
-  pending:   { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
-  approved:  { bg: '#dbeafe', text: '#1e40af', label: 'Approved' },
-  fulfilled: { bg: '#dcfce7', text: '#166534', label: 'Fulfilled' },
-  cancelled: { bg: '#f1f5f9', text: '#64748b', label: 'Cancelled' },
-};
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function RewardDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets  = useSafeAreaInsets();
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [successInfo, setSuccessInfo] = useState<{
-    redemptionId: string;
-    newBalance: number;
-  } | null>(null);
+  const [redeemed, setRedeemed] = useState(false);
 
   const { data: reward, isLoading } = useRewardDetail(id);
   const { data: points = 0 }        = useEmployeePoints();
@@ -56,20 +42,20 @@ export default function RewardDetailScreen() {
     redeemMutation.mutate(reward.id, {
       onSuccess: (result) => {
         if (result.ok) {
-          setShowConfirm(false);
-          setSuccessInfo({
-            redemptionId: result.redemption_id!,
-            newBalance:   result.new_balance!,
-          });
+          setRedeemed(true);
+        } else {
+          Alert.alert('Redemption Failed', result.error ?? 'Please try again.');
         }
-        // If not ok, result.error is shown in the RedeemConfirmation
+      },
+      onError: (err: Error) => {
+        Alert.alert('Redemption Failed', err.message);
       },
     });
   };
 
   // ── Success overlay ───────────────────────────────────────────────────────
 
-  if (successInfo) {
+  if (redeemed) {
     return (
       <View
         className="flex-1 items-center justify-center bg-white px-10"
@@ -220,8 +206,8 @@ export default function RewardDetailScreen() {
         style={{ paddingBottom: insets.bottom + 12, paddingTop: 12 }}
       >
         <Pressable
-          onPress={() => setShowConfirm(true)}
-          disabled={outOfStock || !canAfford}
+          onPress={handleRedeem}
+          disabled={outOfStock || !canAfford || redeemMutation.isPending}
           className="items-center justify-center rounded-2xl py-4 active:opacity-80"
           style={{
             backgroundColor:
@@ -233,58 +219,23 @@ export default function RewardDetailScreen() {
             elevation: outOfStock || !canAfford ? 0 : 5,
           }}
         >
-          <Text
-            className="text-base font-bold"
-            style={{ color: outOfStock || !canAfford ? '#94a3b8' : '#fff' }}
-          >
-            {outOfStock
-              ? 'Out of Stock'
-              : !canAfford
-              ? `Need ${reward.points_required - points} more pts`
-              : 'Redeem Reward'}
-          </Text>
+          {redeemMutation.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text
+              className="text-base font-bold"
+              style={{ color: outOfStock || !canAfford ? '#94a3b8' : '#fff' }}
+            >
+              {outOfStock
+                ? 'Out of Stock'
+                : !canAfford
+                ? `Need ${reward.points_required - points} more pts`
+                : 'Redeem Reward'}
+            </Text>
+          )}
         </Pressable>
       </View>
 
-      {/* Confirmation modal */}
-      <Modal
-        visible={showConfirm}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowConfirm(false)}
-      >
-        <Pressable
-          className="flex-1 bg-black/40"
-          onPress={() => setShowConfirm(false)}
-        />
-        <View
-          className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white"
-          style={{ paddingBottom: insets.bottom + 8 }}
-        >
-          {/* Handle */}
-          <View className="items-center pt-3 pb-1">
-            <View className="h-1 w-10 rounded-full bg-slate-200" />
-          </View>
-
-          <RedeemConfirmation
-            reward={reward}
-            pointsBalance={points}
-            onConfirm={handleRedeem}
-            onCancel={() => setShowConfirm(false)}
-            loading={redeemMutation.isPending}
-          />
-
-          {/* Show RPC error */}
-          {redeemMutation.isSuccess && !redeemMutation.data.ok && (
-            <View className="mx-5 mb-3 flex-row items-center rounded-xl bg-red-50 px-4 py-3">
-              <Ionicons name="alert-circle" size={16} color="#ef4444" />
-              <Text className="ml-2 flex-1 text-sm text-red-600">
-                {redeemMutation.data.error}
-              </Text>
-            </View>
-          )}
-        </View>
-      </Modal>
     </>
   );
 }
