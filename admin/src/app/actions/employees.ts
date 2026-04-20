@@ -103,26 +103,33 @@ export async function updateEmployee(
 ) {
   const db = createAdminClient();
 
+  // Update non-guarded fields only — points_balance and reward_wallet_balance
+  // are protected by guard triggers and must go through dedicated RPCs.
   const { error } = await db
     .from('employees')
     .update({
-      full_name:      fields.full_name.trim(),
-      department:     fields.department?.trim() || null,
-      position:       fields.position?.trim()   || null,
-      email:          fields.email?.trim().toLowerCase() || null,
-      date_of_birth:  fields.date_of_birth || null,
-      start_date:     fields.start_date    || null,
-      is_manager:     fields.is_manager,
-      points_balance: fields.points_balance !== undefined
-        ? Math.max(0, Math.round(fields.points_balance))
-        : undefined,
+      full_name:     fields.full_name.trim(),
+      department:    fields.department?.trim() || null,
+      position:      fields.position?.trim()   || null,
+      email:         fields.email?.trim().toLowerCase() || null,
+      date_of_birth: fields.date_of_birth || null,
+      start_date:    fields.start_date    || null,
+      is_manager:    fields.is_manager,
     })
     .eq('id', id);
 
   if (error) throw new Error(error.message);
 
-  // reward_wallet_balance is protected by a guard trigger (migration 079).
-  // Use the admin RPC which sets the required GUC before updating.
+  // points_balance — guarded by trg_guard_points_balance (migration 025/026).
+  if (fields.points_balance !== undefined) {
+    const { error: pointsError } = await db.rpc('admin_set_points_balance', {
+      p_employee_id: id,
+      p_new_balance: Math.max(0, Math.round(fields.points_balance)),
+    });
+    if (pointsError) throw new Error(pointsError.message);
+  }
+
+  // reward_wallet_balance — guarded by trg_guard_wallet_balance (migration 079).
   if (fields.reward_wallet_balance !== undefined) {
     const { error: walletError } = await db.rpc('admin_set_wallet_balance', {
       p_employee_id: id,

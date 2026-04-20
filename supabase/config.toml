@@ -70,7 +70,7 @@ port = 54324
 # =============================================================================
 [storage]
 enabled = true
-file_size_limit = "5MiB"
+file_size_limit = "50MiB"
 
 [storage.s3_protocol]
 enabled = true
