@@ -68,8 +68,9 @@ export function useRedeemReward() {
     },
     onSuccess: (result) => {
       if (!result.ok || !employee) return;
-      // Refresh balance + catalogue (stock changed)
+      // Refresh balance, wallet stats, catalogue (stock changed) and redemption history
       queryClient.invalidateQueries({ queryKey: RK.points(employee.employee_id) });
+      queryClient.invalidateQueries({ queryKey: RK.walletStats(employee.employee_id) });
       queryClient.invalidateQueries({ queryKey: RK.rewards(employee.hotel) });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
     },

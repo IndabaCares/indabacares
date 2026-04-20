@@ -72,27 +72,26 @@ export default function RewardDetailScreen() {
   if (successInfo) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-white px-8"
+        className="flex-1 items-center justify-center bg-white px-10"
         style={{ paddingBottom: insets.bottom }}
       >
         <View
-          className="mb-6 h-24 w-24 items-center justify-center rounded-full"
+          className="mb-8 h-24 w-24 items-center justify-center rounded-full"
           style={{ backgroundColor: '#f3e8ff' }}
         >
           <Ionicons name="checkmark-circle" size={56} color="#ED6813" />
         </View>
-        <Text className="mb-2 text-2xl font-bold text-slate-900">Redeemed!</Text>
-        <Text className="mb-1 text-center text-base text-slate-600">
-          {reward.title}
-        </Text>
-        <Text className="mb-6 text-center text-sm text-slate-400">
-          Your new balance:{' '}
-          <Text className="font-bold text-slate-700">{successInfo.newBalance} pts</Text>
+
+        <Text
+          className="mb-4 text-center text-xl font-bold text-slate-900"
+          style={{ lineHeight: 30 }}
+        >
+          Congratulations your reward has been redeemed.{'\n'}Check your email for the reward voucher.
         </Text>
 
         <Pressable
-          onPress={() => router.push('/(tabs)/rewards' as any)}
-          className="w-full items-center rounded-2xl py-4 active:opacity-80"
+          onPress={() => router.replace('/(tabs)/profile' as any)}
+          className="mt-4 w-full items-center rounded-2xl py-4 active:opacity-80"
           style={{
             backgroundColor: '#ED6813',
             shadowColor: '#ED6813',
@@ -102,7 +101,7 @@ export default function RewardDetailScreen() {
             elevation: 5,
           }}
         >
-          <Text className="text-base font-bold text-white">Back to Catalogue</Text>
+          <Text className="text-base font-bold text-white">Home</Text>
         </Pressable>
       </View>
     );
