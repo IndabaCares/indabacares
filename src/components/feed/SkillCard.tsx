@@ -1,6 +1,6 @@
 import React, { memo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Modal,
+  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
@@ -71,6 +71,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
   // Emoji picker overlay
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pickerY, setPickerY]                 = useState(0);
+  const [pickerRight, setPickerRight]         = useState(24);
   const [exhaustedType, setExhaustedType]     = useState<ReactionType | null>(null);
   const reactBtnRef                           = useRef<TouchableOpacity>(null);
 
@@ -93,6 +94,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
   const handleOpenPicker = () => {
     reactBtnRef.current?.measure((_fx, _fy, _w, _h, _px, py) => {
       setPickerY(py);
+      setPickerRight(Dimensions.get('window').width - (_px + _w));
       setShowEmojiPicker(true);
     });
   };
@@ -237,7 +239,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           onPress={() => setShowEmojiPicker(false)}
         />
         {/* Emoji tray — single container, floated above button */}
-        <View style={[s.emojiTray, { top: pickerY - 64 }]}>
+        <View style={[s.emojiTray, { top: pickerY - 68, right: pickerRight }]}>
           {REACTIONS.map(({ type, emoji }) => {
             const isActive = myReaction?.reaction_type === type;
             return (
@@ -291,7 +293,7 @@ const s = StyleSheet.create({
     right: 6,
     width: 70,
     height: 70,
-    opacity: 0.18,
+    opacity: 0.5,
     tintColor: '#ffffff',
   },
 
@@ -488,7 +490,6 @@ const s = StyleSheet.create({
   // ── Emoji tray (modal overlay) ────────────────────────────────────────────
   emojiTray: {
     position: 'absolute',
-    right: 24,
     flexDirection: 'row',
     gap: 8,
     backgroundColor: '#1e2530',

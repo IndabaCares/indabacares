@@ -1,6 +1,6 @@
 import React, { memo, useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Modal,
+  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
@@ -64,6 +64,7 @@ export const RecognitionCard = memo(function RecognitionCard({
   // Reaction state
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pickerY, setPickerY]                 = useState(0);
+  const [pickerRight, setPickerRight]         = useState(24);
   const [exhaustedType, setExhaustedType]     = useState<ReactionType | null>(null);
   const reactBtnRef                           = useRef<TouchableOpacity>(null);
 
@@ -86,6 +87,7 @@ export const RecognitionCard = memo(function RecognitionCard({
   const handleOpenPicker = () => {
     reactBtnRef.current?.measure((_fx, _fy, _w, _h, _px, py) => {
       setPickerY(py);
+      setPickerRight(Dimensions.get('window').width - (_px + _w));
       setShowEmojiPicker(true);
     });
   };
@@ -227,7 +229,7 @@ export const RecognitionCard = memo(function RecognitionCard({
           activeOpacity={1}
           onPress={() => setShowEmojiPicker(false)}
         />
-        <View style={[s.emojiTray, { top: pickerY - 64 }]}>
+        <View style={[s.emojiTray, { top: pickerY - 68, right: pickerRight }]}>
           {REACTIONS.map(({ type, emoji }) => {
             const isActive = myReaction?.reaction_type === type;
             return (
@@ -477,10 +479,9 @@ const s = StyleSheet.create({
     fontSize: 18,
   },
 
-  // Emoji tray (modal overlay) — matches SkillCard layout
+  // Emoji tray (modal overlay) — positioned dynamically adjacent to the react button
   emojiTray: {
     position: 'absolute',
-    right: 24,
     flexDirection: 'row',
     gap: 8,
     backgroundColor: '#1e2530',

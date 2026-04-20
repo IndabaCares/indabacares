@@ -135,7 +135,6 @@ export default function InitiativeDetailScreen() {
             <View style={styles.pillTrack}>
               {(['photos', 'videos'] as const).map((tab) => {
                 const active = mediaTab === tab;
-                const count  = tab === 'photos' ? photos.length : videos.length;
                 return (
                   <TouchableOpacity
                     key={tab}
@@ -151,13 +150,6 @@ export default function InitiativeDetailScreen() {
                     <Text style={[styles.pillText, active && styles.pillTextActive]}>
                       {tab === 'photos' ? 'Photos' : 'Videos'}
                     </Text>
-                    {count > 0 && (
-                      <View style={[styles.pillBadge, active && styles.pillBadgeActive]}>
-                        <Text style={[styles.pillBadgeText, active && styles.pillBadgeTextActive]}>
-                          {count}
-                        </Text>
-                      </View>
-                    )}
                   </TouchableOpacity>
                 );
               })}

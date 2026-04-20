@@ -563,14 +563,9 @@ export default function ProfileScreen() {
                   ) : (walletStats?.available_to_convert ?? 0) < 5 ? (
                     <Text style={styles.utiliseFeedDesc}>Earn more Recognition Points to unlock conversions.</Text>
                   ) : (
-                    <>
-                      <Text style={styles.utiliseFeedDesc}>
-                        {walletStats!.available_to_convert} RP available
-                      </Text>
-                      <Text style={styles.utiliseFeedInsight}>
-                        = {walletStats!.max_credits} reward credit{walletStats!.max_credits !== 1 ? 's' : ''} at 5:1
-                      </Text>
-                    </>
+                    <Text style={styles.utiliseFeedDesc}>
+                      You are about to convert {walletStats!.available_to_convert} recognition points to {walletStats!.max_credits} Reward Point{walletStats!.max_credits !== 1 ? 's' : ''}
+                    </Text>
                   )}
                 </View>
                 {!walletLoading && (walletStats?.available_to_convert ?? 0) >= 5 && (
