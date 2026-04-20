@@ -5,16 +5,18 @@ import { Resend }         from 'resend';
 import { createAdminClient }   from '@/lib/supabase/admin';
 import { buildVoucherEmail }   from '@/lib/email/voucher-template';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function approveRedemption(id: string) {
   const db = createAdminClient();
 
-  const { error } = await db.rpc('approve_redemption', { p_redemption_id: id });
+  const { data, error } = await db.rpc('approve_redemption', { p_redemption_id: id });
   if (error) throw new Error(error.message);
+  if (!(data as any)?.ok) throw new Error((data as any)?.error ?? 'Approval failed.');
 
   // ── Send voucher email for hotel rewards ──────────────────────────────────
   try {
+    if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY not configured');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     const { data: redemption } = await db
       .from('redemptions')
       .select(`
@@ -53,21 +55,26 @@ export async function approveRedemption(id: string) {
   }
 
   revalidatePath('/redemptions');
+  revalidatePath('/rewards/redemptions');
 }
 
 export async function rejectRedemption(id: string, reason?: string) {
   const db = createAdminClient();
-  const { error } = await db.rpc('reject_redemption', {
+  const { data, error } = await db.rpc('reject_redemption', {
     p_redemption_id: id,
     p_reason:        reason ?? null,
   });
   if (error) throw new Error(error.message);
+  if (!(data as any)?.ok) throw new Error((data as any)?.error ?? 'Rejection failed.');
   revalidatePath('/redemptions');
+  revalidatePath('/rewards/redemptions');
 }
 
 export async function fulfillRedemption(id: string) {
   const db = createAdminClient();
-  const { error } = await db.rpc('fulfill_redemption', { p_redemption_id: id });
+  const { data, error } = await db.rpc('fulfill_redemption', { p_redemption_id: id });
   if (error) throw new Error(error.message);
+  if (!(data as any)?.ok) throw new Error((data as any)?.error ?? 'Fulfillment failed.');
   revalidatePath('/redemptions');
+  revalidatePath('/rewards/redemptions');
 }
