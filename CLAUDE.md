@@ -197,7 +197,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 
 ## Database Migrations
 
-83 migrations (001–083, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
+85 migrations (001–085, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -212,10 +212,14 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | 081 | `mood_entries.user_id` made nullable (legacy NOT NULL constraint removed) |
 | 082 | `admin_set_wallet_balance` SECURITY DEFINER RPC — sets `reward_wallet_balance` directly, bypassing guard trigger |
 | 083 | `admin_set_points_balance` SECURITY DEFINER RPC — sets `points_balance` directly, bypassing `trg_guard_points_balance` |
+| 084 | `notifications.company_id` made nullable — `trg_notify_redemption` inserts without it |
+| 085 | `notifications.user_id` made nullable — same trigger, same pattern as 084 |
 
 **Guard triggers** — `employees.points_balance` and `employees.reward_wallet_balance` are protected by triggers that block all direct UPDATEs. Use `admin_set_points_balance` / `admin_set_wallet_balance` RPCs instead. Never attempt to UPDATE these columns directly from application code.
 
 **`points_ledger.source` CHECK constraint** — only specific values are allowed (e.g. `'admin_bonus'`, `'campaign_reward'`). The value `'admin_adjustment'` is NOT in the allowed list — use `'admin_bonus'` for admin-initiated balance corrections.
+
+**Legacy NOT NULL pattern** — Several tables were created in early migrations (001–005) with `company_id` and `user_id` as NOT NULL. As the schema migrated to hotel-based tenancy, new code omits these columns. When a trigger or RPC inserts without them you get `null value in column "X" violates not-null constraint`. Fix with `ALTER TABLE public.<table> ALTER COLUMN <col> DROP NOT NULL;` (see migrations 074, 081, 084, 085 for prior examples).
 
 **Immutable tables** — `star_transactions`, `point_transactions`, and `audit_logs` have triggers preventing UPDATE/DELETE. Never attempt to modify these rows.
 
