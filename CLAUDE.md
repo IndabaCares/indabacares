@@ -197,7 +197,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 
 ## Database Migrations
 
-80 migrations (001–080, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
+83 migrations (001–083, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -207,8 +207,15 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | 032 | Rebuilt session architecture (`employee_active_sessions`) |
 | 033 | Dynamic leaderboard (no more static cache) |
 | 078 | Points system overhaul |
-| 079 | Reward wallet |
+| 079 | Reward wallet (`trg_guard_wallet_balance` — blocks direct UPDATE, requires `indabacares.allow_wallet_update` GUC) |
 | 080 | Sponsor ad campaigns |
+| 081 | `mood_entries.user_id` made nullable (legacy NOT NULL constraint removed) |
+| 082 | `admin_set_wallet_balance` SECURITY DEFINER RPC — sets `reward_wallet_balance` directly, bypassing guard trigger |
+| 083 | `admin_set_points_balance` SECURITY DEFINER RPC — sets `points_balance` directly, bypassing `trg_guard_points_balance` |
+
+**Guard triggers** — `employees.points_balance` and `employees.reward_wallet_balance` are protected by triggers that block all direct UPDATEs. Use `admin_set_points_balance` / `admin_set_wallet_balance` RPCs instead. Never attempt to UPDATE these columns directly from application code.
+
+**`points_ledger.source` CHECK constraint** — only specific values are allowed (e.g. `'admin_bonus'`, `'campaign_reward'`). The value `'admin_adjustment'` is NOT in the allowed list — use `'admin_bonus'` for admin-initiated balance corrections.
 
 **Immutable tables** — `star_transactions`, `point_transactions`, and `audit_logs` have triggers preventing UPDATE/DELETE. Never attempt to modify these rows.
 
