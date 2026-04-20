@@ -106,22 +106,30 @@ export async function updateEmployee(
   const { error } = await db
     .from('employees')
     .update({
-      full_name:             fields.full_name.trim(),
-      department:            fields.department?.trim() || null,
-      position:              fields.position?.trim()   || null,
-      email:                 fields.email?.trim().toLowerCase() || null,
-      date_of_birth:         fields.date_of_birth || null,
-      start_date:            fields.start_date    || null,
-      is_manager:            fields.is_manager,
-      points_balance:        fields.points_balance !== undefined
+      full_name:      fields.full_name.trim(),
+      department:     fields.department?.trim() || null,
+      position:       fields.position?.trim()   || null,
+      email:          fields.email?.trim().toLowerCase() || null,
+      date_of_birth:  fields.date_of_birth || null,
+      start_date:     fields.start_date    || null,
+      is_manager:     fields.is_manager,
+      points_balance: fields.points_balance !== undefined
         ? Math.max(0, Math.round(fields.points_balance))
-        : undefined,
-      reward_wallet_balance: fields.reward_wallet_balance !== undefined
-        ? Math.max(0, Math.round(fields.reward_wallet_balance))
         : undefined,
     })
     .eq('id', id);
 
   if (error) throw new Error(error.message);
+
+  // reward_wallet_balance is protected by a guard trigger (migration 079).
+  // Use the admin RPC which sets the required GUC before updating.
+  if (fields.reward_wallet_balance !== undefined) {
+    const { error: walletError } = await db.rpc('admin_set_wallet_balance', {
+      p_employee_id: id,
+      p_new_balance: Math.max(0, Math.round(fields.reward_wallet_balance)),
+    });
+    if (walletError) throw new Error(walletError.message);
+  }
+
   revalidatePath('/employees');
 }

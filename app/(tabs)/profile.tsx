@@ -28,6 +28,7 @@ import { usePointsBreakdown } from '@/hooks/use-points-breakdown';
 import { useWalletStats, useConvertPoints } from '@/hooks/use-rewards';
 import { useUserBadges } from '@/hooks/use-user-badges';
 import { QUERY_KEYS } from '@/lib/constants';
+import { BadgeGivenSheet } from '@/components/profile/BadgeGivenSheet';
 
 // ─── Hotel background images ──────────────────────────────────────────────────
 
@@ -74,10 +75,11 @@ const MENU_ITEMS = [
 export default function ProfileScreen() {
   const { employee, clearEmployee } = useEmployee();
 
-  const [photoUrl,   setPhotoUrl] = useState<string | null>(null);
-  const [uploading,  setUploading] = useState(false);
-  const [activeTab,  setActiveTab] = useState<'balance' | 'utilise' | 'achieve'>('balance');
-  const [menuOpen,   setMenuOpen]  = useState(false);
+  const [photoUrl,    setPhotoUrl]    = useState<string | null>(null);
+  const [uploading,   setUploading]   = useState(false);
+  const [activeTab,   setActiveTab]   = useState<'balance' | 'utilise' | 'achieve'>('balance');
+  const [menuOpen,    setMenuOpen]    = useState(false);
+  const [badgeSheet,  setBadgeSheet]  = useState<'recognition' | 'skills' | null>(null);
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: QUERY_KEYS.employeeProfile(employee?.employee_id ?? ''),
@@ -361,7 +363,9 @@ export default function ProfileScreen() {
                   { emoji: '🎖', title: 'Service Milestone',    desc: 'Recognition for your time and loyalty in the company.',          value: pointsBreakdown?.anniversary ?? 0 },
                   { emoji: '⭐', title: 'Status Unlock',        desc: 'New levels achieved through consistent engagement.',             value: pointsBreakdown?.status_unlock ?? 0 },
                   { emoji: '🏆', title: 'Badges Achieved',      desc: 'Awards earned through performance and participation.',           value: pointsBreakdown?.badge_achieved ?? 0 },
-                  { emoji: '👑', title: 'Legend of the Month',  desc: 'Top performer recognition awarded monthly.',                    value: pointsBreakdown?.legend_of_month ?? 0 },
+                  { emoji: '👑', title: 'Legend of the Month',       desc: 'Top performer recognition awarded monthly.',                         value: pointsBreakdown?.legend_of_month          ?? 0 },
+                  { emoji: '📢', title: 'Campaign Points',           desc: 'Earn points by engaging in campaigns.',                              value: pointsBreakdown?.campaign_points          ?? 0 },
+                  { emoji: '🌟', title: 'Special Management Award',  desc: 'Special recognition for extraordinary Guest mentions.',              value: pointsBreakdown?.special_management_award ?? 0 },
                 ]).map((item, i, arr) => (
                   <View key={item.title}>
                     <View style={styles.engageBreakdownRow}>
@@ -387,46 +391,62 @@ export default function ProfileScreen() {
           {activeTab === 'balance' && (
             <>
               {/* Recognition Badges */}
-              <LinearGradient
-                colors={['#3b0764', '#6d28d9', '#7B1FA2']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={styles.utiliseFeedCard}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setBadgeSheet('recognition')}
               >
-                <View style={styles.utiliseFeedIconWrap}>
-                  <Text style={styles.utiliseFeedIcon}>🏅</Text>
-                </View>
-                <View style={styles.utiliseFeedContent}>
-                  <Text style={styles.utiliseFeedTitle}>Recognition Badges</Text>
-                  <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
-                  <Text style={styles.utiliseFeedInsight}>Use these to highlight great performance or behaviour towards Guest or in general.</Text>
-                </View>
-                {recognitionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
-                ) : (
-                  <Text style={styles.utiliseFeedBigCount}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
-                )}
-              </LinearGradient>
+                <LinearGradient
+                  colors={['#3b0764', '#6d28d9', '#7B1FA2']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={styles.utiliseFeedCard}
+                >
+                  <View style={styles.utiliseFeedIconWrap}>
+                    <Text style={styles.utiliseFeedIcon}>🏅</Text>
+                  </View>
+                  <View style={styles.utiliseFeedContent}>
+                    <Text style={styles.utiliseFeedTitle}>Recognition Badges</Text>
+                    <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
+                    <Text style={styles.utiliseFeedInsight}>Use these to highlight great performance or behaviour towards Guest or in general.</Text>
+                  </View>
+                  <View style={styles.utiliseFeedBigCountWrap}>
+                    {recognitionLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.utiliseFeedBigCount}>{recognitionRemaining ?? MONTHLY_RECOGNITION_LIMIT}</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }} />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
 
               {/* Skills Badges */}
-              <LinearGradient
-                colors={['#1e3a5f', '#1d4ed8', '#2563eb']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={styles.utiliseFeedCard}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setBadgeSheet('skills')}
               >
-                <View style={styles.utiliseFeedIconWrap}>
-                  <Text style={styles.utiliseFeedIcon}>🎓</Text>
-                </View>
-                <View style={styles.utiliseFeedContent}>
-                  <Text style={styles.utiliseFeedTitle}>Skills Badges</Text>
-                  <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
-                  <Text style={styles.utiliseFeedInsight}>Use these to endorse skills and talent of a colleague.</Text>
-                </View>
-                {skillsLoading ? (
-                  <ActivityIndicator size="small" color="#fff" style={{ alignSelf: 'center' }} />
-                ) : (
-                  <Text style={styles.utiliseFeedBigCount}>{skillsRemaining ?? MONTHLY_SKILLS_LIMIT}</Text>
-                )}
-              </LinearGradient>
+                <LinearGradient
+                  colors={['#1e3a5f', '#1d4ed8', '#2563eb']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={styles.utiliseFeedCard}
+                >
+                  <View style={styles.utiliseFeedIconWrap}>
+                    <Text style={styles.utiliseFeedIcon}>🎓</Text>
+                  </View>
+                  <View style={styles.utiliseFeedContent}>
+                    <Text style={styles.utiliseFeedTitle}>Skills Badges</Text>
+                    <Text style={styles.utiliseFeedDesc}>You receive ten badges a month to give to colleagues.</Text>
+                    <Text style={styles.utiliseFeedInsight}>Use these to endorse skills and talent of a colleague.</Text>
+                  </View>
+                  <View style={styles.utiliseFeedBigCountWrap}>
+                    {skillsLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.utiliseFeedBigCount}>{skillsRemaining ?? MONTHLY_SKILLS_LIMIT}</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" style={{ marginTop: 4 }} />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
 
               {/* Emoji */}
               <LinearGradient
@@ -498,7 +518,7 @@ export default function ProfileScreen() {
               </LinearGradient>
 
               {/* Wallet breakdown */}
-              <View style={styles.rewardBreakdownCard}>
+              <View style={[styles.rewardBreakdownCard, { marginBottom: 8 }]}>
                 <View style={styles.rewardBreakdownRow}>
                   <Text style={styles.rewardBreakdownLabel}>Available</Text>
                   {walletLoading ? (
@@ -637,6 +657,14 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         </View>
+      )}
+
+      {/* ── Badge given sheet ────────────────────────────────────────────── */}
+      {badgeSheet !== null && (
+        <BadgeGivenSheet
+          cardType={badgeSheet}
+          onClose={() => setBadgeSheet(null)}
+        />
       )}
 
     </SafeAreaView>
@@ -1463,15 +1491,19 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
+  utiliseFeedBigCountWrap: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    flexShrink: 0,
+  },
+
   utiliseFeedBigCount: {
     fontSize: 36,
     fontWeight: '900',
     color: '#fff',
-    alignSelf: 'center',
     minWidth: 44,
     textAlign: 'right',
     opacity: 0.9,
-    flexShrink: 0,
   },
 
   utiliseFeedDesc: {

@@ -53,6 +53,19 @@ supabase functions deploy <name> --linked       # deploy one
 supabase functions logs <name> --linked         # stream logs
 ```
 
+### EAS (mobile builds)
+
+Three build profiles defined in `eas.json`:
+
+```bash
+eas build --profile development --platform android   # dev client (internal)
+eas build --profile preview --platform android       # APK for QA
+eas build --profile production --platform all        # production (autoIncrement)
+eas update --channel production                      # OTA update via expo-updates
+```
+
+`appVersionSource: "remote"` — version is managed by EAS, not `app.json`.
+
 ---
 
 ## Auth Architecture
@@ -63,11 +76,19 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 
 **How it works:**
 
-1. Employee logs in → `authenticate_employee` RPC returns a `session_token` (UUID) stored in `employee_active_sessions`.
-2. Client persists the session to `expo-secure-store` via `EmployeeSessionManager` (`src/lib/EmployeeSessionManager.ts`).
+1. Employee logs in → RPC returns a `session_token` (UUID) stored in `employee_active_sessions`:
+   - First login: `first_time_authenticate` (migration 027) — atomic: identity + password hash + session in one transaction
+   - Returning login: `authenticate_employee`
+2. Client persists the session to `expo-secure-store` via `EmployeeSessionManager` (`src/lib/EmployeeSessionManager.ts`). Legacy AsyncStorage sessions are silently migrated to SecureStore on first load.
 3. Every Supabase request from the mobile app passes through `src/lib/secureApi.ts` (domain allowlist + HTTPS enforcement + timeout + redirect guard) then injects `x-session-token` as a custom header (see `src/lib/supabase.ts` — `hotelAwareFetch`).
 4. PostgreSQL RLS reads this header via `current_employee_hotel()` to enforce hotel-level tenant isolation (migration 017).
 5. Edge Functions validate the token via the `validate_session` RPC inside `withEmployeeAuth` middleware (`supabase/functions/_shared/auth-middleware.ts`).
+
+**Session boot sequence** (handled by `EmployeeProvider` on app start):
+1. `loadSession()` — restore employee + token from SecureStore
+2. `setSessionToken(token)` — inject header into Supabase client
+3. `validateSessionWithDB()` — confirm employee still active in DB
+4. If invalid → `clearSession()` — wipe SecureStore and header, route to login
 
 **Admin dashboard** uses standard Supabase email/password Auth with the `@supabase/ssr` package (HTTP-only cookies). The admin client in `admin/src/lib/supabase/admin.ts` uses `service_role` and bypasses RLS — only use it in Server Components/Actions, never in client components.
 
@@ -103,6 +124,7 @@ The canonical hotel list lives in **three places** that must be kept in sync:
 
 Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
+- `app/(onboarding)/` — first-time welcome flow (shown once via `hasSeenWelcome` flag, migration 075)
 - `app/(tabs)/` — bottom-tab navigator (`index`, `give`, `leaderboard`, `rewards`, `profile`)
 - `app/(screens)/` — full-screen push routes: flat screens (chat, campaigns, initiatives, mood, notifications, orders, settings, team, wallet, etc.) plus nested route dirs (`recognition/`, `reward/`, `user/`, `initiative/`, `skills/`, `team/`)
 
@@ -119,6 +141,10 @@ Expo Router route groups:
 
 Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
 
+All Supabase calls should be wrapped via `src/lib/api-client.ts` (`withTimeout` + exponential-backoff retry for transient network errors; default 10 s timeout).
+
+React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts` — use these rather than inline string arrays in new hooks.
+
 **State split:**
 - Server state → React Query (`@tanstack/react-query`)
 - Auth/session → `EmployeeContext` (React Context)
@@ -126,7 +152,7 @@ Mutations that need business logic (balance checks, atomic updates) call Edge Fu
 
 **Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
 
-**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages; `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`.
+**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`.
 
 **Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat via `use-realtime.ts` and `use-presence.ts`. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`.
 
@@ -192,6 +218,19 @@ To add a migration: `supabase migration new <description>`, edit the generated f
 
 ---
 
+## Shared Constants
+
+`src/lib/constants.ts` is the single source of truth for:
+- `COLORS` — brand palette (primary `#7C3AED`, etc.)
+- `QUERY_KEYS` — React Query cache key factory (use in all new hooks)
+- `PAGE_SIZE`, `MAX_RECIPIENTS`, `MAX_HASHTAGS`, `MIN/MAX_MESSAGE_LENGTH` — limits
+- `RECOGNITION_BADGES`, `REACTION_EMOJIS`, `MOOD_MAP`, `VISIBILITY_OPTIONS`, `REDEMPTION_STATUS`
+- `BADGE_ICONS`
+
+Do not redeclare these values elsewhere.
+
+---
+
 ## UI Conventions
 
 - **Mobile buttons:** Use `TouchableOpacity`, not `Pressable` — `Pressable` does not render `backgroundColor` on the target Android device.
@@ -236,3 +275,14 @@ Three cron jobs must be configured manually after migrations:
 ## Rate Limiting
 
 Application-level rate limiting uses the `auth_rate_limits` table + `check_rate_limit()` function (migration 007). Edge Functions enforce per-operation limits (e.g., 5 recognitions/day, 5 redemptions/hour). Do not bypass these checks in new Edge Functions.
+
+---
+
+## Deployment
+
+**Admin dashboard** is deployed as a standalone Vercel project under the `indabacares` GitHub/Vercel account, served at `indabacares.co.za`.
+
+- Vercel root directory must be set to `admin`, framework preset `Next.js`
+- `.vercelignore` uses `/`-prefixed paths (`/src`, `/app`, `/supabase`) to exclude mobile-only root dirs without accidentally stripping `admin/src/`
+- Git commits must be authored by the account linked to the Vercel project (`hr@indabahotel.co.za`) — Hobby plan blocks deployments from unrecognised commit authors on private repos
+- Admin env vars required in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`
