@@ -65,7 +65,7 @@ export default function RewardDetailScreen() {
           className="mb-8 h-24 w-24 items-center justify-center rounded-full"
           style={{ backgroundColor: '#f3e8ff' }}
         >
-          <Ionicons name="checkmark-circle" size={56} color="#ED6813" />
+          <Ionicons name="checkmark-circle" size={56} color="#7C3AED" />
         </View>
 
         <Text
@@ -79,8 +79,8 @@ export default function RewardDetailScreen() {
           onPress={() => router.replace('/(tabs)/profile' as any)}
           className="mt-4 w-full items-center rounded-2xl py-4 active:opacity-80"
           style={{
-            backgroundColor: '#ED6813',
-            shadowColor: '#ED6813',
+            backgroundColor: '#7C3AED',
+            shadowColor: '#7C3AED',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 10,
@@ -211,8 +211,8 @@ export default function RewardDetailScreen() {
           className="items-center justify-center rounded-2xl py-4 active:opacity-80"
           style={{
             backgroundColor:
-              outOfStock || !canAfford ? '#e2e8f0' : '#ED6813',
-            shadowColor: '#ED6813',
+              outOfStock || !canAfford ? '#e2e8f0' : '#7C3AED',
+            shadowColor: '#7C3AED',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: outOfStock || !canAfford ? 0 : 0.35,
             shadowRadius: 10,
