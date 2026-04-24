@@ -138,6 +138,8 @@ Hotel channel — a WhatsApp-channel-style public feed of photos, videos and tex
 
 **Video rendering:** `app/(screens)/ChannelVideoPost.tsx` is lazy-loaded via `React.lazy()` (PERF-02 pattern) to keep expo-av out of the main bundle.
 
+**Header colour:** Both channel screens (`csr-hotels.tsx`, `channel-feed.tsx`) use `COLORS.primary` from `@/lib/constants` for the header splash — do not introduce a local `PURPLE` constant in these files.
+
 **Admin portal:** `/channel` page in the admin sidebar. Hotel admins post to their hotel; super admin sees a hotel dropdown.
 
 **Admin user scoping** — set on Supabase Auth user metadata (Auth → Users in the dashboard):
