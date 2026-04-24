@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PageHeader } from '@/components/layout/page-header';
 import { ChannelClient } from './channel-client';
+import { getChannelAdmins } from '@/app/actions/channel';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,10 @@ export default async function ChannelPage({
     );
   }
 
-  const posts = await fetchPosts(activeHotel);
+  const [posts, channelAdmins] = await Promise.all([
+    fetchPosts(activeHotel),
+    ctx.isSuperAdmin ? getChannelAdmins() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -79,6 +83,7 @@ export default async function ChannelPage({
         activeHotel={activeHotel}
         isSuperAdmin={ctx.isSuperAdmin}
         channelHotels={[...CHANNEL_HOTELS]}
+        channelAdmins={channelAdmins}
       />
     </div>
   );

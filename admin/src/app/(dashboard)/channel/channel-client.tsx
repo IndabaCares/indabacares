@@ -4,8 +4,9 @@ import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  ImageIcon, Film, Type, Trash2, Plus, Loader2, Rss, X,
+  ImageIcon, Film, Type, Trash2, Plus, Loader2, Rss, UserPlus, X,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Button }   from '@/components/ui/button';
 import { Label }    from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
-import { createChannelPost, deleteChannelPost } from '@/app/actions/channel';
+import { createChannelPost, deleteChannelPost, inviteChannelAdmin, removeChannelAdmin } from '@/app/actions/channel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,11 +38,18 @@ interface ChannelPost {
   is_published:  boolean;
 }
 
+interface ChannelAdmin {
+  id:    string;
+  email: string;
+  hotel: string;
+}
+
 interface Props {
   initialPosts:  ChannelPost[];
   activeHotel:   string;
   isSuperAdmin:  boolean;
   channelHotels: string[];
+  channelAdmins: ChannelAdmin[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,6 +81,7 @@ export function ChannelClient({
   activeHotel,
   isSuperAdmin,
   channelHotels,
+  channelAdmins,
 }: Props) {
   const router  = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -88,6 +97,12 @@ export function ChannelClient({
 
   // ── Delete confirmation ────────────────────────────────────────────────────
   const [confirmPost, setConfirmPost] = useState<ChannelPost | null>(null);
+
+  // ── Invite admin state (super admin only) ──────────────────────────────────
+  const [inviteEmail,  setInviteEmail]  = useState('');
+  const [inviteHotel,  setInviteHotel]  = useState(channelHotels[0] ?? '');
+  const [inviting,     setInviting]     = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<ChannelAdmin | null>(null);
 
   // ── Upload to Storage + create row ────────────────────────────────────────
 
@@ -175,6 +190,39 @@ export function ChannelClient({
       try {
         await deleteChannelPost(p.id, p.media_path);
         toast.success('Post deleted.');
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.includes('@') || !inviteHotel) {
+      toast.error('Enter a valid email and select a hotel.');
+      return;
+    }
+    setInviting(true);
+    try {
+      await inviteChannelAdmin(inviteEmail, inviteHotel);
+      toast.success(`Invite sent to ${inviteEmail}`);
+      setInviteEmail('');
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  function confirmRemoveAdmin() {
+    if (!removeTarget) return;
+    const t = removeTarget;
+    setRemoveTarget(null);
+    startTransition(async () => {
+      try {
+        await removeChannelAdmin(t.id);
+        toast.success(`${t.email} removed as channel admin.`);
         router.refresh();
       } catch (err: any) {
         toast.error(err.message);
@@ -422,7 +470,90 @@ export function ChannelClient({
         </div>
       </div>
 
-      {/* Delete confirmation */}
+      {/* ── Invite panel (super admin only) ───────────────────────────── */}
+      {isSuperAdmin && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Invite form */}
+          <Card>
+            <CardHeader className="border-b pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserPlus className="h-4 w-4 text-violet-600" />
+                Invite Channel Admin
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Send a sign-up invite to a hotel staff member. They will only see the Channel page when they log in.
+              </p>
+              <div className="space-y-1">
+                <Label>Email address</Label>
+                <Input
+                  type="email"
+                  placeholder="admin@hotel.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Hotel</Label>
+                <Select value={inviteHotel} onValueChange={setInviteHotel}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {channelHotels.map((h) => (
+                      <SelectItem key={h} value={h}>{h}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleInvite}
+                disabled={inviting || !inviteEmail.includes('@')}
+              >
+                {inviting
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+                  : <><UserPlus className="mr-2 h-4 w-4" /> Send invite</>}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Existing channel admins */}
+          <Card>
+            <CardHeader className="border-b pb-3">
+              <CardTitle className="text-base">Channel Admins</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {channelAdmins.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No channel admins yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {channelAdmins.map((admin) => (
+                    <li key={admin.id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
+                      <div>
+                        <p className="font-medium">{admin.email}</p>
+                        <p className="text-xs text-muted-foreground">{admin.hotel}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRemoveTarget(admin)}
+                        disabled={isPending}
+                        className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        title="Remove access"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete post confirmation */}
       <AlertDialog open={!!confirmPost} onOpenChange={(o) => !o && setConfirmPost(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -438,6 +569,27 @@ export function ChannelClient({
               onClick={confirmDelete}
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Remove channel admin confirmation */}
+      <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && setRemoveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove channel admin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{removeTarget?.email}</strong> will lose access to the Channel page.
+              Their account is not deleted — only the hotel assignment is removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmRemoveAdmin}
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

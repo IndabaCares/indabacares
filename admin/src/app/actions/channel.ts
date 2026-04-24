@@ -73,6 +73,64 @@ export async function deleteChannelPost(id: string, mediaPath: string | null): P
   revalidatePath('/channel');
 }
 
+// ─── Invite channel admin ─────────────────────────────────────────────────────
+
+export async function inviteChannelAdmin(email: string, hotel: string): Promise<void> {
+  const sb = await createServerSupabaseClient();
+  const { data: { user: caller } } = await sb.auth.getUser();
+  if (!caller) throw new Error('Unauthorized');
+
+  const callerMeta = (caller.user_metadata ?? {}) as Record<string, unknown>;
+  if (!callerMeta.is_super_admin) throw new Error('Only super admins can invite channel admins.');
+
+  const db = createAdminClient();
+  const { error } = await db.auth.admin.inviteUserByEmail(email, {
+    data: { hotel },
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/callback`,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+// ─── List channel admins ──────────────────────────────────────────────────────
+
+export async function getChannelAdmins(): Promise<{ id: string; email: string; hotel: string }[]> {
+  const db = createAdminClient();
+  const { data, error } = await db.auth.admin.listUsers();
+  if (error) throw new Error(error.message);
+
+  return (data.users ?? [])
+    .filter((u) => {
+      const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+      return !!meta.hotel && !meta.is_super_admin;
+    })
+    .map((u) => {
+      const meta = u.user_metadata as Record<string, unknown>;
+      return {
+        id:    u.id,
+        email: u.email ?? '',
+        hotel: meta.hotel as string,
+      };
+    });
+}
+
+// ─── Remove channel admin hotel assignment ────────────────────────────────────
+
+export async function removeChannelAdmin(userId: string): Promise<void> {
+  const sb = await createServerSupabaseClient();
+  const { data: { user: caller } } = await sb.auth.getUser();
+  if (!caller) throw new Error('Unauthorized');
+
+  const callerMeta = (caller.user_metadata ?? {}) as Record<string, unknown>;
+  if (!callerMeta.is_super_admin) throw new Error('Only super admins can remove channel admins.');
+
+  const db = createAdminClient();
+  const { error } = await db.auth.admin.updateUserById(userId, {
+    user_metadata: { hotel: null },
+  });
+  if (error) throw new Error(error.message);
+}
+
 // ─── Fetch posts ──────────────────────────────────────────────────────────────
 
 export async function getPostsForHotel(hotel: string) {
