@@ -48,13 +48,19 @@ export function useAuth() {
     }
   }, [isError]);
 
+  // Derived from Supabase Auth user_metadata (set manually per-user in the dashboard)
+  const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
+  const isChannelOnly = !!meta.hotel && !meta.is_super_admin;
+
   return {
     session,
     user,
     company,
     isLoading,
     role: user?.role ?? null,
-    isSuperAdmin: user?.role === 'super_admin',
+    isSuperAdmin: user?.role === 'super_admin' || !!meta.is_super_admin,
+    isChannelOnly,
+    adminHotel: (meta.hotel as string) ?? null,
     companyId: company?.id ?? null,
   };
 }

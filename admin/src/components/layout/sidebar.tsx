@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
 
 interface NavItem {
   label: string;
@@ -64,9 +65,21 @@ const NAV: NavSection[] = [
   },
 ];
 
+const CHANNEL_ONLY_NAV: NavSection[] = [
+  {
+    title: 'Channel',
+    items: [
+      { label: 'Channel', href: '/channel', icon: Rss },
+    ],
+  },
+];
+
 export function Sidebar() {
-  const pathname    = usePathname();
+  const pathname         = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { isChannelOnly, adminHotel } = useAuth();
+
+  const nav = isChannelOnly ? CHANNEL_ONLY_NAV : NAV;
 
   return (
     <aside
@@ -82,7 +95,12 @@ export function Sidebar() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600">
               <span className="text-xs font-bold text-white">IC</span>
             </div>
-            <span className="text-sm font-bold tracking-tight">IndabaCares</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold tracking-tight leading-none">IndabaCares</p>
+              {isChannelOnly && adminHotel && (
+                <p className="truncate text-[10px] text-muted-foreground">{adminHotel}</p>
+              )}
+            </div>
           </div>
         )}
         <Button
@@ -99,7 +117,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-5 overflow-y-auto px-2 py-4">
-        {NAV.map((section) => (
+        {nav.map((section) => (
           <div key={section.title}>
             {!collapsed && (
               <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
