@@ -8,8 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChannelPosts } from '@/hooks/use-channel';
 import type { ChannelPost } from '@/api/channel-service';
+import { COLORS } from '@/lib/constants';
 
-const PURPLE      = '#7C3AED';
+const PRIMARY     = COLORS.primary;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const VIDEO_HEIGHT = Math.round(SCREEN_WIDTH * 9 / 16);
 
@@ -53,7 +54,7 @@ function VideoCard({ post }: { post: ChannelPost }) {
       <Suspense
         fallback={
           <View style={[s.videoPlaceholder, { height: VIDEO_HEIGHT }]}>
-            <ActivityIndicator color={PURPLE} />
+            <ActivityIndicator color={PRIMARY} />
           </View>
         }
       >
@@ -116,7 +117,7 @@ export default function ChannelFeedScreen() {
       {/* Feed */}
       {isLoading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={PURPLE} />
+          <ActivityIndicator size="large" color={PRIMARY} />
         </View>
       ) : isError ? (
         <View style={s.center}>
@@ -142,7 +143,7 @@ export default function ChannelFeedScreen() {
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             isFetchingNextPage
-              ? <ActivityIndicator style={{ marginVertical: 20 }} color={PURPLE} />
+              ? <ActivityIndicator style={{ marginVertical: 20 }} color={PRIMARY} />
               : null
           }
         />
@@ -160,7 +161,7 @@ const s = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: PURPLE,
+    backgroundColor: PRIMARY,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 18,
@@ -212,7 +213,7 @@ const s = StyleSheet.create({
     marginHorizontal: 12,
     borderRadius: 16,
     borderLeftWidth: 3,
-    borderLeftColor: PURPLE,
+    borderLeftColor: PRIMARY,
     padding: 16,
   },
 
@@ -270,7 +271,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: PURPLE,
+    backgroundColor: PRIMARY,
   },
   retryText: {
     color: '#fff',

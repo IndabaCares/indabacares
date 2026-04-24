@@ -5,8 +5,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const PURPLE = '#7C3AED';
+import { COLORS } from '@/lib/constants';
 
 // Only these two hotels have channels
 const CHANNEL_HOTEL_NAMES = ['Indaba Hotel', 'Chobe Safari Lodge'] as const;
@@ -69,7 +68,7 @@ const s = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: PURPLE,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 24,
