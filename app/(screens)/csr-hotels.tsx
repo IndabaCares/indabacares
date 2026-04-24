@@ -53,7 +53,6 @@ export default function ChannelPickerScreen() {
             </View>
             <View style={s.cardText}>
               <Text style={s.hotelName}>{name}</Text>
-              <Text style={s.hotelSub}>Tap to view channel</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
           </TouchableOpacity>
