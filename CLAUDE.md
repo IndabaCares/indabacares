@@ -126,7 +126,27 @@ Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
 - `app/(onboarding)/` — first-time welcome flow (shown once via `hasSeenWelcome` flag, migration 075)
 - `app/(tabs)/` — bottom-tab navigator (`index`, `give`, `leaderboard`, `rewards`, `profile`)
-- `app/(screens)/` — full-screen push routes: flat screens (chat, campaigns, initiatives, mood, notifications, orders, settings, team, wallet, etc.) plus nested route dirs (`recognition/`, `reward/`, `user/`, `initiative/`, `skills/`, `team/`)
+- `app/(screens)/` — full-screen push routes: flat screens (chat, campaigns, initiatives, mood, notifications, orders, settings, team, wallet, **channel-feed**, etc.) plus nested route dirs (`recognition/`, `reward/`, `user/`, `initiative/`, `skills/`, `team/`)
+
+---
+
+## Channel Feature
+
+Hotel channel — a WhatsApp-channel-style public feed of photos, videos and text posts per hotel. Only two hotels have channels: **`'Indaba Hotel'`** and **`'Chobe Safari Lodge'`** (hardcoded in `app/(screens)/csr-hotels.tsx` and `admin/src/app/(dashboard)/channel/page.tsx`).
+
+**Mobile flow:** Profile → hamburger → Channel → `csr-hotels.tsx` (two-hotel picker) → `channel-feed.tsx` (infinite-scroll feed). All employees can view any hotel's channel regardless of their own hotel. No reactions or comments — read-only.
+
+**Video rendering:** `app/(screens)/ChannelVideoPost.tsx` is lazy-loaded via `React.lazy()` (PERF-02 pattern) to keep expo-av out of the main bundle.
+
+**Admin portal:** `/channel` page in the admin sidebar. Hotel admins post to their hotel; super admin sees a hotel dropdown.
+
+**Admin user scoping** — set on Supabase Auth user metadata (Auth → Users in the dashboard):
+- Super admin: `{ "is_super_admin": true }` — sees all channel hotels, hotel selector dropdown
+- Hotel admin: `{ "hotel": "Indaba Hotel" }` or `{ "hotel": "Chobe Safari Lodge" }` — locked to their hotel
+
+**Upload flow:** client uploads the file directly to the `channel-media` Storage bucket (authenticated Supabase Auth session), then a Server Action inserts the `channel_posts` row via service_role.
+
+**`channel-media` bucket** — public read, 100 MB per file limit, accepts `image/*` and `video/mp4,quicktime,webm`.
 
 ---
 
@@ -138,6 +158,7 @@ Expo Router route groups:
 - `reward-service.ts`, `chat-service.ts`, `campaigns-service.ts`, `initiative-service.ts`
 - `leaderboard-service.ts`, `legends-service.ts`, `notification-service.ts`
 - `reaction-analytics-service.ts`, `team-service.ts`
+- `channel-service.ts` — paginated cursor fetch for `channel_posts` (cross-hotel, used by the Channel tab)
 
 Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
 
@@ -150,9 +171,15 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 - Auth/session → `EmployeeContext` (React Context)
 - UI-only state → Zustand (`src/stores/ui-store.ts`)
 
+**Feature flags** — `src/hooks/use-feature-flags.ts` reads per-hotel feature toggles (`moods_enabled`, `rewards_enabled`, `skills_enabled`, `leaderboards_enabled`, `custom_hashtags_enabled`, `boost_enabled`) from `hotel_settings.feature_flags` (JSONB). Cached 5 minutes via React Query. Check these before rendering feature-gated UI.
+
 **Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
 
 **Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`.
+
+**Admin utilities:**
+- `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
+- `admin/src/lib/email/voucher-template.ts` — plain-HTML voucher email builder (no JSX) sent via Resend when a hotel-category redemption is approved.
 
 **Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat via `use-realtime.ts` and `use-presence.ts`. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`.
 
@@ -214,6 +241,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | 083 | `admin_set_points_balance` SECURITY DEFINER RPC — sets `points_balance` directly, bypassing `trg_guard_points_balance` |
 | 084 | `notifications.company_id` made nullable — `trg_notify_redemption` inserts without it |
 | 085 | `notifications.user_id` made nullable — same trigger, same pattern as 084 |
+| 086 | `channel_posts` table — hotel channel feed (photo/video/text); RLS allows cross-hotel SELECT for all authenticated employees; service_role only for writes; `channel-media` Storage bucket (public read, 100 MB limit) |
 
 **Guard triggers** — `employees.points_balance` and `employees.reward_wallet_balance` are protected by triggers that block all direct UPDATEs. Use `admin_set_points_balance` / `admin_set_wallet_balance` RPCs instead. Never attempt to UPDATE these columns directly from application code.
 
@@ -226,6 +254,8 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 To add a migration: `supabase migration new <description>`, edit the generated file, then `supabase db push --linked`.
 
 `src/types/database.ts` is **manually maintained** — it does not use Supabase-generated types. Update it by hand when adding new tables or columns (or regenerate with `npx supabase gen types typescript --linked > src/types/database.ts` and merge carefully). Database enum mirrors for client-side use are in `src/types/enums.ts` — keep them in sync with `001_foundation.sql`.
+
+`src/types/api.ts` documents the typed request/response contracts for every Edge Function call (e.g. `AuthMeResponse`, `SendRecognitionRequest`). Update this file when adding or changing Edge Function signatures.
 
 ---
 

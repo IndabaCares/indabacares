@@ -378,6 +378,19 @@ type MonthlyLegendRow = {
   created_at: string;
 }
 
+type ChannelPostRow = {
+  id:            string;
+  hotel:         string;
+  post_type:     'photo' | 'video' | 'text';
+  media_url:     string | null;
+  media_path:    string | null;
+  thumbnail_url: string | null;
+  caption:       string | null;
+  created_by:    string;
+  created_at:    string;
+  is_published:  boolean;
+}
+
 // ─── Database interface ─────────────────────────────────────────────────────
 
 export interface Database {
@@ -567,6 +580,12 @@ export interface Database {
         Row: MonthlyLegendRow;
         Insert: Omit<MonthlyLegendRow, 'id' | 'created_at'>;
         Update: Partial<Omit<MonthlyLegendRow, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      channel_posts: {
+        Row: ChannelPostRow;
+        Insert: Omit<ChannelPostRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<ChannelPostRow, 'id' | 'created_at'>>;
         Relationships: [];
       };
     };

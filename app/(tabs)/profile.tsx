@@ -64,7 +64,7 @@ function getStatus(weeklyRecognitions: number) {
 // ─── Dropdown menu items ──────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Events',          icon: 'ribbon-outline'      as const, route: '/(screens)/csr-hotels' },
+  { label: 'Channel',         icon: 'ribbon-outline'      as const, route: '/(screens)/csr-hotels' },
   { label: 'Campaigns',       icon: 'megaphone-outline'   as const, route: '/(screens)/campaigns'  },
   { label: 'Know your team',  icon: 'people-outline'      as const, route: '/(screens)/team'       },
   { label: "FAQ's",           icon: 'help-circle-outline' as const, route: '/(screens)/faq'        },

@@ -1,112 +1,69 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Image,
+  View, Text, TouchableOpacity, StyleSheet, Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useInitiativeHotels } from '@/hooks/use-initiatives';
 
-const PURPLE = '#7B1FA2';
+const PURPLE = '#7C3AED';
 
-// Logo images for hotels that have assets
-const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+// Only these two hotels have channels
+const CHANNEL_HOTEL_NAMES = ['Indaba Hotel', 'Chobe Safari Lodge'] as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const HOTEL_LOGOS: Record<string, any> = {
+  'Indaba Hotel':      require('../../assets/indabahotel.png'),
+  'Chobe Safari Lodge': require('../../assets/chobesafarilodge.png'),
 };
 
-// Fallback Ionicons for hotels without a logo asset
-const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'African Procurement Agencies': 'briefcase-outline',
-};
-
-const DEFAULT_ICON: keyof typeof Ionicons.glyphMap = 'business-outline';
-
-export default function CSRHotelsScreen() {
-  const { data: hotels = [], isLoading, isError } = useInitiativeHotels();
-
+export default function ChannelPickerScreen() {
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+      <View style={s.header}>
+        <View style={s.titleRow}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Events</Text>
+          <Text style={s.title}>Channel</Text>
           <View style={{ width: 38 }} />
         </View>
-        <Text style={styles.subtitle}>Choose a property to explore their CSR projects</Text>
+        <Text style={s.subtitle}>Follow your hotel's story</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
-
-        {isLoading && (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={PURPLE} />
-          </View>
-        )}
-
-        {isError && (
-          <View style={styles.center}>
-            <Ionicons name="alert-circle-outline" size={48} color="#e2d9f3" />
-            <Text style={styles.emptyTitle}>Could not load hotels</Text>
-            <Text style={styles.emptyText}>Please check your connection and try again.</Text>
-          </View>
-        )}
-
-        {!isLoading && !isError && hotels.length === 0 && (
-          <View style={styles.center}>
-            <Ionicons name="ribbon-outline" size={56} color="#e2d9f3" />
-            <Text style={styles.emptyTitle}>No CSR content yet</Text>
-            <Text style={styles.emptyText}>Check back soon — initiatives will appear here.</Text>
-          </View>
-        )}
-
-        {hotels.map((hotel) => (
+      {/* Hotel cards */}
+      <View style={s.body}>
+        {CHANNEL_HOTEL_NAMES.map((name) => (
           <TouchableOpacity
-            key={hotel}
+            key={name}
             activeOpacity={0.75}
-            style={styles.row}
+            style={s.card}
             onPress={() =>
               router.push({
-                pathname: '/(screens)/initiatives',
-                params: { hotel },
+                pathname: '/(screens)/channel-feed' as any,
+                params:   { hotel: name },
               })
             }
           >
-            <View style={styles.iconWrap}>
-              {HOTEL_LOGOS[hotel] ? (
-                <Image
-                  source={HOTEL_LOGOS[hotel]}
-                  style={styles.hotelLogo}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Ionicons
-                  name={HOTEL_ICON[hotel] ?? DEFAULT_ICON}
-                  size={24}
-                  color={PURPLE}
-                />
-              )}
+            <View style={s.logoWrap}>
+              <Image source={HOTEL_LOGOS[name]} style={s.logo} resizeMode="contain" />
             </View>
-            <Text style={styles.rowLabel}>{hotel}</Text>
+            <View style={s.cardText}>
+              <Text style={s.hotelName}>{name}</Text>
+              <Text style={s.hotelSub}>Tap to view channel</Text>
+            </View>
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
           </TouchableOpacity>
         ))}
-
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: '#F2F2F2',
@@ -149,62 +106,47 @@ const styles = StyleSheet.create({
 
   body: {
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 12,
-  },
-
-  center: {
-    paddingTop: 80,
-    alignItems: 'center',
+    paddingTop: 28,
     gap: 14,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e1b4b',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    maxWidth: 260,
-    lineHeight: 22,
-  },
-
-  row: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 18,
     gap: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
     elevation: 3,
   },
-
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  logoWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: '#f5f3ff',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  hotelLogo: {
-    width: 44,
-    height: 44,
+  logo: {
+    width: 46,
+    height: 46,
   },
-
-  rowLabel: {
+  cardText: {
     flex: 1,
+  },
+  hotelName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1e293b',
+  },
+  hotelSub: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 2,
   },
 });

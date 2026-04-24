@@ -14,6 +14,7 @@ import {
   Heart,
   SmilePlus,
   ChevronLeft,
+  Rss,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -57,6 +58,7 @@ const NAV: NavSection[] = [
   {
     title: 'Communication',
     items: [
+      { label: 'Channel',       href: '/channel',        icon: Rss             },
       { label: 'Notifications', href: '/notifications',  icon: Megaphone       },
     ],
   },
