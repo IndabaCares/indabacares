@@ -15,7 +15,7 @@ import { useReactionBalance } from '@/hooks/use-reaction-balance';
 import { ReactionExhaustedModal } from '@/components/reactions/ReactionExhaustedModal';
 import type { RecognitionFeedItem } from '@/api/queries';
 
-const LOGO = require('../../../assets/IndabaCaresLogo.png');
+const LOGO = require('../../../assets/usedlogo.png');
 
 const SKILL_BADGES = [
   { value: 'Leadership',       emoji: '👑', color: '#fbbf24' },
