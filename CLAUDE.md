@@ -80,7 +80,7 @@ This project uses a **custom employee auth system**, not Supabase Auth.
    - First login: `first_time_authenticate` (migration 027) — atomic: identity + password hash + session in one transaction
    - Returning login: `authenticate_employee`
 2. Client persists the session to `expo-secure-store` via `EmployeeSessionManager` (`src/lib/EmployeeSessionManager.ts`). Legacy AsyncStorage sessions are silently migrated to SecureStore on first load.
-3. Every Supabase request from the mobile app passes through `src/lib/secureApi.ts` (domain allowlist + HTTPS enforcement + timeout + redirect guard) then injects `x-session-token` as a custom header (see `src/lib/supabase.ts` — `hotelAwareFetch`).
+3. Every Supabase request from the mobile app passes through `src/lib/secureApi.ts` (domain allowlist + HTTPS enforcement + timeout + redirect guard) then injects `x-session-token` as a custom header (see `src/lib/supabase.ts` — `hotelAwareFetch`). **When adding a new third-party integration, add its domain to `ALLOWED_HOSTNAMES` in `secureApi.ts` or requests will be blocked.**
 4. PostgreSQL RLS reads this header via `current_employee_hotel()` to enforce hotel-level tenant isolation (migration 017).
 5. Edge Functions validate the token via the `validate_session` RPC inside `withEmployeeAuth` middleware (`supabase/functions/_shared/auth-middleware.ts`).
 
@@ -115,6 +115,8 @@ The canonical hotel list lives in **three places** that must be kept in sync:
 - `src/lib/hotels.ts` (mobile)
 - `admin/src/lib/hotels.ts` (admin dashboard)
 - `is_valid_hotel()` function in migration 017
+
+Current hotels: `'Indaba Hotel'`, `'Indaba Lodge Richards Bay'`, `'Indaba Lodge Gaborone'`, `'Chobe Safari Lodge'`, `'Nata Lodge'`, `'African Procurement Agencies'`.
 
 **`APA_HOTEL` (`'African Procurement Agencies'`)** is a special-cased slug — migration 066 grants it cross-hotel read visibility. Treat it differently from regular hotels in any visibility or tenant logic.
 
@@ -164,7 +166,7 @@ Hotel channel — a WhatsApp-channel-style public feed of photos, videos and tex
 
 Mutations that need business logic (balance checks, atomic updates) call Edge Functions via `src/api/edge-functions.ts`. Direct PostgREST calls are used for reads and simple writes.
 
-All Supabase calls should be wrapped via `src/lib/api-client.ts` (`withTimeout` + exponential-backoff retry for transient network errors; default 10 s timeout).
+All Supabase calls should be wrapped via `src/lib/api-client.ts`. Use `fetchWithGuards()` as the primary wrapper — it combines `withTimeout` (default 10 s) and exponential-backoff retry for transient network errors. The module also exports `debounce()` for search/autocomplete inputs.
 
 React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts` — use these rather than inline string arrays in new hooks.
 
@@ -175,9 +177,9 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **Feature flags** — `src/hooks/use-feature-flags.ts` reads per-hotel feature toggles (`moods_enabled`, `rewards_enabled`, `skills_enabled`, `leaderboards_enabled`, `custom_hashtags_enabled`, `boost_enabled`) from `hotel_settings.feature_flags` (JSONB). Cached 5 minutes via React Query. Check these before rendering feature-gated UI.
 
-**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`, `channel.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
 
-**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`.
+**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`.
 
 **Admin utilities:**
 - `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
@@ -226,7 +228,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 
 ## Database Migrations
 
-85 migrations (001–085, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
+86 migrations (001–086, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -274,9 +276,15 @@ Do not redeclare these values elsewhere.
 
 ---
 
+## Shared Mobile Components
+
+`src/components/` is organised into subdirectories by domain — `ui/`, `feed/`, `reactions/`, `recognition/`, `rewards/`, `profile/`, `notifications/`, `comments/`, `leaderboard/`, `mood/`. Prefer composing from these before writing screen-local components.
+
+---
+
 ## UI Conventions
 
-- **Mobile buttons:** Use `TouchableOpacity`, not `Pressable` — `Pressable` does not render `backgroundColor` on the target Android device.
+- **Mobile buttons:** Use `TouchableOpacity`, not `Pressable` inline in screen files — `Pressable` does not render `backgroundColor` correctly on the target Android device when using inline `style` props. The shared `src/components/ui/Button.tsx` uses `Pressable` with NativeWind `className` (not inline styles), which avoids the bug and is the safe exception.
 - **Styling:** NativeWind (Tailwind for React Native) on mobile; Tailwind CSS v4 + shadcn/ui on admin.
 - **Icons:** `@expo/vector-icons` on mobile; `lucide-react` on admin.
 - **Forms (admin):** `react-hook-form` + `zod` for validation.
@@ -318,6 +326,66 @@ Three cron jobs must be configured manually after migrations:
 ## Rate Limiting
 
 Application-level rate limiting uses the `auth_rate_limits` table + `check_rate_limit()` function (migration 007). Edge Functions enforce per-operation limits (e.g., 5 recognitions/day, 5 redemptions/hour). Do not bypass these checks in new Edge Functions.
+
+---
+
+## iOS 26 / New Architecture Compatibility
+
+**RN 0.81 always runs New Architecture (TurboModules / Bridgeless) regardless of `newArchEnabled`.** Do not set `newArchEnabled: false` — it was tried in the sibling project and crashed identically.
+
+### The crash pattern
+
+On iOS 26 with New Architecture, `NativeModules` is `BridgelessNativeModuleProxy`. Any property access routes through `turbomodulemanager.queue`, which dispatches a void method if the TurboModule isn't registered yet — causing `NSException → SIGABRT`. This happens when package code calls `NativeModules.*` or `requireNativeModule()` at **module-eval time** on the Hermes background thread (the thread that evaluates the JS bundle).
+
+### Critical rules
+
+- **Do not add `@sentry/react-native`** — `Sentry.init()` dispatches void TurboModule methods even with `autoInitializeNativeSdk: false` → SIGABRT on iOS 26.
+- **Do not set `newArchEnabled: false`** — has no effect in RN 0.81; crashes identically.
+- **Never import or top-level `require` a package with native modules.** Use a lazy loader:
+
+```ts
+let _mod: typeof import('some-native-pkg') | null = null;
+function _loadMod() {
+  if (!_mod) _mod = require('some-native-pkg');
+  return _mod;
+}
+```
+
+If the package itself calls `NativeModules.*` at its own module-level code, the lazy-require pattern isn't enough — apply the `patch-package` Proxy pattern instead (see below).
+
+### patch-package patches (applied automatically on `npm install`)
+
+Eight patches in `patches/` guard the Expo SDK packages that access `NativeModules.*` at module-eval time:
+
+| Patch | What it fixes |
+|-------|--------------|
+| `@expo+vector-icons+15.0.3.patch` | `NativeModules.RNVectorIconsManager` eval-time access → lazy Proxy |
+| `expo+54.0.33.patch` | `NativeModules.EXDevLauncher` in `Expo.fx.tsx` → `false` (production-only) |
+| `expo-asset+12.0.12.patch` | `requireNativeModule('ExpoAsset')` eval-time → lazy Proxy |
+| `expo-constants+18.0.13.patch` | `NativeModules.EXDevLauncher` block removed; `getManifest()` gains lazy `_nativeInitAttempted` retry guard |
+| `expo-linking+8.0.11.patch` | `requireNativeModule('ExpoLinking')` eval-time → lazy Proxy |
+| `expo-modules-core+3.0.29.patch` | `NativeModulesProxy.native.ts` — critical New Arch detection rule: use `global.expo?.modules` (registry existence), NOT `global.expo?.modules?.NativeModulesProxy` (may be null even on New Arch) |
+| `expo-router+6.0.23.patch` | `splash.js`: lazy `_getSplashModule()` + `_splashHidden` guard (re-dispatching void `hide()` after dismiss → SIGABRT); `statusbar.js`: lazy `canOverrideStatusBarBehavior` getter |
+| `react-native-safe-area-context+5.6.2.patch` | `TurboModuleRegistry.get('RNCSafeAreaContext')` eval-time → lazy Proxy; `initialWindowMetrics` set to `null` (safe: `SafeAreaProvider` fills it via `onInsetsChange`) |
+
+**Adding a new package with native modules:** follow the lazy-require pattern above. If the package accesses `NativeModules.*` in its own module-level code, apply the Proxy pattern via `patch-package`: edit the file in `node_modules/`, then run `npx patch-package <package-name>`.
+
+### expo-updates SIGABRT risk
+
+`expo-updates` v29 (installed) initialises its SQLite database via a `dispatch_once` block on a background GCD thread at app launch — even with a `runtimeVersion` policy configured. On New Architecture this is a **potential SIGABRT**. The package is kept because OTA updates (`eas update`) are a core feature. If iOS launch crashes appear with no obvious JS cause, this is the first thing to investigate. There is no simple fix other than removing `expo-updates` (which would break OTA) or waiting for Expo to patch the native init sequence.
+
+### Pre-submission build gate
+
+**Run a preview build before every store submission.** Preview builds are production-equivalent (Hermes bytecode, New Architecture / Bridgeless) and catch crashes that the Expo dev client never sees.
+
+```bash
+eas build --profile preview --platform all --clear-cache
+```
+
+**Always use `--clear-cache` for iOS builds.** EAS fingerprints `package.json`, `app.json`, and plugin files — JS-only changes reuse a cached native binary that may predate patch fixes. `--clear-cache` forces a full native recompile so all patches are included.
+
+- Test on iOS 26 (current production OS) before submitting to App Store.
+- Any new SIGABRT or hang at launch is almost certainly another package accessing `NativeModules.<anything>` at module-eval time — apply the lazy-Proxy `patch-package` pattern.
 
 ---
 

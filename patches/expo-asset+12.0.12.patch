@@ -1,0 +1,20 @@
+diff --git a/node_modules/expo-asset/build/ExpoAsset.js b/node_modules/expo-asset/build/ExpoAsset.js
+index 0000000..0000001 100644
+--- a/node_modules/expo-asset/build/ExpoAsset.js
++++ b/node_modules/expo-asset/build/ExpoAsset.js
+@@ -1,5 +1,14 @@
+ import { requireNativeModule } from 'expo-modules-core';
+-const AssetModule = requireNativeModule('ExpoAsset');
++// Lazy-init Proxy: defers requireNativeModule('ExpoAsset') to first property access.
++// Prevents TurboModule access at bundle-eval time on Hermes background thread
++// (called via: expo-router → expo → Expo.fx.tsx → expo-asset → ExpoAsset.js).
++let _assetModule = null;
++const AssetModule = new Proxy({}, {
++    get(_, prop) {
++        if (!_assetModule) _assetModule = requireNativeModule('ExpoAsset');
++        return _assetModule[prop];
++    }
++});
+ /**
+  * Downloads the asset from the given URL to a local cache and returns the local URL of the cached
+  * file.
