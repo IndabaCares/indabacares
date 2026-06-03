@@ -311,6 +311,49 @@ SUPABASE_SERVICE_ROLE_KEY=      # required for admin client (Server Components o
 
 Edge Functions receive `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` automatically from the Supabase project.
 
+**App Store / Play Store reviewer access (set via EAS Secrets — never commit):**
+
+```
+EXPO_PUBLIC_REVIEW_MODE=true        # enables auto-login with demo account
+EXPO_PUBLIC_DEMO_CODE=DEMO01
+EXPO_PUBLIC_DEMO_HOTEL=Indaba Hotel
+EXPO_PUBLIC_DEMO_PASSWORD=DemoViewer1!
+```
+
+Set these with `eas secret:create --scope project` for review builds only. Standard production builds must NOT set `EXPO_PUBLIC_REVIEW_MODE=true`.
+
+---
+
+## App Store Review — Demo Account
+
+`supabase/demo_seed.sql` creates **DEMO01** (the reviewer login) plus four fictional colleagues (Zanele, Sipho, Ayanda, Thandi) at Indaba Hotel, with recognitions, reactions, comments, mood history, and a rewards catalogue so every screen has visible content.
+
+**Credentials:** Employee code `DEMO01` · Hotel `Indaba Hotel` · Password `DemoViewer1!`
+
+**The seed is time-sensitive.** All recognitions and mood entries use timestamps relative to when the seed was last run. Re-run Section 1 of `demo_seed.sql` in the Supabase SQL Editor before every review submission to refresh all dates. The script is idempotent — it wipes and recreates cleanly each time.
+
+**The "Try Demo" button** in `app/(auth)/employee-auth.tsx:552` is hidden (`display: 'none'`). Restore it for review builds, or leave it hidden and provide credentials manually in App Store Connect under App Review Information.
+
+**After Apple and Google approval:** run the cleanup block (Section 3 of `demo_seed.sql`) to remove all demo rows, then delete `src/lib/demoCredentials.ts` and remove the `handleDemoLogin` function and button from `employee-auth.tsx`.
+
+---
+
+## WiCode / Retail Voucher Integration
+
+The `rewards` table has a `wicode text` column (migration 065). Admins can set a WiCode value on any `category = 'retail'` reward via the dashboard. **No live API integration exists yet** — the value is stored but never surfaced to employees or included in voucher emails.
+
+**Planned integration vendor: Yoyo Rewards** (formerly WiGroup) — the originators of WiCode technology in South Africa. Their **IYOB (Issue Your Own Barcode)** B2B API is the correct product for programmatic voucher issuance. Contact yoyorewards.co.za and request the IYOB API.
+
+**When the integration is ready, only three files need changing — no mobile build required:**
+
+| File | Change |
+|------|--------|
+| `supabase/functions/manage-redemption/index.ts` | Call Yoyo Rewards IYOB API on approval, store returned code |
+| `admin/src/lib/email/voucher-template.ts` | Surface WiCode in the voucher email for retail redemptions |
+| `supabase/functions/_shared/` | Add Yoyo API key as an Edge Function secret |
+
+Hotel rewards (spa, room upgrades, etc.) use voucher email with the redemption UUID and are unaffected.
+
 ---
 
 ## Scheduled Jobs (pg_cron)

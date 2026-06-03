@@ -72,7 +72,9 @@
       "Bash(xargs -I {} bash -c \"[ -d '/c/Users/Personel/Desktop/IndabaCares/app/\\(screens\\)/{}' ] && echo '\\(dir\\) {}' || echo '\\(file\\) {}'\")",
       "Bash(xargs -I {} bash -c \"[ -d '/c/Users/Personel/Desktop/IndabaCares/src/components/{}' ] && echo '{}/'\")",
       "Bash(supabase db *)",
-      "Bash(npx eas-cli *)"
+      "Bash(npx eas-cli *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\node_modules\\\\expo-modules-core\\\\package.json\")",
+      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\node_modules\\\\expo-modules-core\\\\package.json\" -Raw | ConvertFrom-Json; Write-Host \"version: $\\($pkg.version\\)\"; Write-Host \"main: $\\($pkg.main\\)\"; Write-Host \"source: $\\($pkg.source\\)\")"
     ]
   }
 }
