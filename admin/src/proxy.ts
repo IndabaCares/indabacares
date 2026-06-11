@@ -29,7 +29,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/privacy'];
 
 export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
