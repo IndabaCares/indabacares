@@ -92,12 +92,40 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 3. `validateSessionWithDB()` — confirm employee still active in DB
 4. If invalid → `clearSession()` — wipe SecureStore and header, route to login
 
+**`EmployeeSession` type** (persisted in SecureStore, injected into context):
+```ts
+{
+  employee_id:   string;   // UUID
+  full_name:     string;
+  employee_code: string;
+  hotel:         string;   // hotel slug
+  department:    string | null;
+  position:      string | null;
+  session_token: string;   // UUID used as x-session-token header
+}
+```
+
+**`EmployeeContext` API** (`useEmployee()`):
+- `employee: EmployeeSession | null`
+- `isLoaded: boolean` — true once SecureStore read completes; `AuthProvider` waits before routing
+- `setEmployee(session)` — persists + activates session token
+- `clearEmployee()` — revokes server-side session, clears store and header
+- `hasSeenWelcome: boolean | null` — null until loaded from DB; drives the onboarding gate
+- `markWelcomeSeen()` — called when the first-time welcome video is dismissed
+
+**Supabase Auth is disabled on the mobile client** (`src/lib/supabase.ts`):
+```ts
+auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+```
+Do not use `supabase.auth.*` in mobile code — all session management goes through `EmployeeSessionManager`.
+
 **Admin dashboard** uses standard Supabase email/password Auth with the `@supabase/ssr` package (HTTP-only cookies). The admin client in `admin/src/lib/supabase/admin.ts` uses `service_role` and bypasses RLS — only use it in Server Components/Actions, never in client components.
 
 **Provider chain** (`app/_layout.tsx`):
 ```
-GestureHandlerRootView → SafeAreaProvider → ErrorBoundary → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → NotificationProvider → ToastProvider
+ErrorBoundary → GestureHandlerRootView → SafeAreaProvider → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → NotificationProvider → ToastProvider
 ```
+Root layout also loads `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) — app renders with system font fallback until loaded.
 
 `EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing (unauthenticated → `/(auth)/employee-auth`, authenticated → `/(tabs)/`).
 
@@ -185,7 +213,9 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`, `channel.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
 
-**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/` are public auth routes. API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`.
+**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/`, `privacy/` are public routes (no auth). API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`.
+
+**`privacy/page.tsx`** — public privacy policy page served at `indabacares.co.za/privacy`. Required by Apple for App Store submission. No auth guard.
 
 **Admin utilities:**
 - `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
@@ -460,3 +490,14 @@ eas build --profile preview --platform all --clear-cache
 - `.vercelignore` uses `/`-prefixed paths (`/src`, `/app`, `/supabase`) to exclude mobile-only root dirs without accidentally stripping `admin/src/`
 - Git commits must be authored by the account linked to the Vercel project (`hr@indabahotel.co.za`) — Hobby plan blocks deployments from unrecognised commit authors on private repos
 - Admin env vars required in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`
+
+**Mobile — iOS TestFlight / App Store:**
+
+- Bundle ID: `com.indabacares.app` · EAS Project ID: `2769acb0-54c1-4935-9da1-864c41506d37`
+- Credentials managed by EAS (`credentialsSource: "remote"` in `production` profile)
+- Always use `--clear-cache` on iOS builds — EAS fingerprint reuse can exclude patch-package fixes
+- Build command: `eas build --profile production --platform ios --clear-cache`
+- Submit to TestFlight: `eas submit --profile production --platform ios`
+- On Windows, EAS CLI requires `$env:NODE_TLS_REJECT_UNAUTHORIZED = "0"` if behind a corporate proxy
+- Privacy policy hosted at `indabacares.co.za/privacy` (required for App Store submission)
+- `eas.json` android `buildType` must be `"app-bundle"` (not `"aab"`) — EAS validation rejects `"aab"`
