@@ -217,6 +217,8 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **`privacy/page.tsx`** — public privacy policy page served at `indabacares.co.za/privacy`. Required by Apple for App Store submission. No auth guard.
 
+**Auth middleware** — `admin/src/proxy.ts` is the Next.js middleware (exported as `default` with a `matcher` config). It redirects all unauthenticated requests to `/login`. To add a new public route, add its path to the `PUBLIC_PATHS` array at the top of that file. Current public paths: `/login`, `/forgot-password`, `/reset-password`, `/privacy`.
+
 **Admin utilities:**
 - `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
 - `admin/src/lib/email/voucher-template.ts` — plain-HTML voucher email builder (no JSX) sent via Resend when a hotel-category redemption is approved.
@@ -498,6 +500,8 @@ eas build --profile preview --platform all --clear-cache
 - Always use `--clear-cache` on iOS builds — EAS fingerprint reuse can exclude patch-package fixes
 - Build command: `eas build --profile production --platform ios --clear-cache`
 - Submit to TestFlight: `eas submit --profile production --platform ios`
-- On Windows, EAS CLI requires `$env:NODE_TLS_REJECT_UNAUTHORIZED = "0"` if behind a corporate proxy
+- On Windows, EAS CLI and Vercel CLI both require `set NODE_TLS_REJECT_UNAUTHORIZED=0` (cmd) if behind a corporate proxy — SSL certificate chain cannot be verified by Node.js
 - Privacy policy hosted at `indabacares.co.za/privacy` (required for App Store submission)
 - `eas.json` android `buildType` must be `"app-bundle"` (not `"aab"`) — EAS validation rejects `"aab"`
+- Vercel CLI: run `npx vercel --prod` from the **repo root** (not from `admin/`) — the Vercel project has `rootDirectory: admin` set, so running from inside `admin/` doubles the path. The `.vercel` config folder lives at the repo root.
+- TestFlight testers: internal testing (up to 100) requires no Beta App Review — add testers by Apple ID in App Store Connect → TestFlight → Internal Testing
