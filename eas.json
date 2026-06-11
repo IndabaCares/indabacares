@@ -18,7 +18,7 @@
       "autoIncrement": true,
       "channel": "production",
       "android": {
-        "buildType": "aab",
+        "buildType": "app-bundle",
         "credentialsSource": "remote"
       },
       "ios": {
