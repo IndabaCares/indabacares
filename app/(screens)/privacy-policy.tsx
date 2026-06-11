@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PURPLE = '#7C3AED';
-const CONTACT_EMAIL = 'support@tenbucks-mobile.co.za';
+const CONTACT_EMAIL = 'privacy@indabacares.com';
 
 export default function PrivacyPolicyScreen() {
   return (

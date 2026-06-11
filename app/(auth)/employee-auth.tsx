@@ -548,16 +548,18 @@ export default function EmployeeAuthScreen() {
               )}
             </Pressable>
 
-            {/* ── Try Demo button — hidden during testing, restore for app store review ── */}
-            <TouchableOpacity
-              onPress={handleDemoLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-              style={[styles.demoButton, { display: 'none' }]}
-            >
-              <Ionicons name="play-circle-outline" size={20} color={ACCENT} style={{ marginRight: 8 }} />
-              <Text style={styles.demoButtonText}>Try Demo</Text>
-            </TouchableOpacity>
+            {/* ── Try Demo button — only visible in review builds (EXPO_PUBLIC_REVIEW_MODE=true) ── */}
+            {process.env.EXPO_PUBLIC_REVIEW_MODE === 'true' && (
+              <TouchableOpacity
+                onPress={handleDemoLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+                style={styles.demoButton}
+              >
+                <Ionicons name="play-circle-outline" size={20} color={ACCENT} style={{ marginRight: 8 }} />
+                <Text style={styles.demoButtonText}>Try Demo</Text>
+              </TouchableOpacity>
+            )}
 
             {/* ── Global error ── */}
             {globalError && (

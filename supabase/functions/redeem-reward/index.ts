@@ -40,6 +40,11 @@ Deno.serve(
       return errorResponse("rewardId is required");
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(body.rewardId)) {
+      return errorResponse("rewardId must be a valid UUID", 400);
+    }
+
     // ── Rate limit: max 5 redemptions per employee per hour ──────────
     const { data: withinLimit } = await adminClient.rpc("check_rate_limit", {
       p_identifier:    employee.employee_id,

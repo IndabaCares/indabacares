@@ -8,6 +8,7 @@ import { QueryProvider } from '@/providers/QueryProvider';
 import { EmployeeProvider } from '@/providers/EmployeeContext';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { RealtimeProvider } from '@/providers/RealtimeProvider';
+import { NotificationProvider } from '@/providers/NotificationProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -27,10 +28,12 @@ export default function RootLayout() {
             <EmployeeProvider>
               <AuthProvider>
                 <RealtimeProvider>
-                  <ToastProvider>
-                    <StatusBar style="dark" />
-                    <Slot />
-                  </ToastProvider>
+                  <NotificationProvider>
+                    <ToastProvider>
+                      <StatusBar style="dark" />
+                      <Slot />
+                    </ToastProvider>
+                  </NotificationProvider>
                 </RealtimeProvider>
               </AuthProvider>
             </EmployeeProvider>

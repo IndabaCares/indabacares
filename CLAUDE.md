@@ -59,12 +59,14 @@ Three build profiles defined in `eas.json`:
 
 ```bash
 eas build --profile development --platform android   # dev client (internal)
-eas build --profile preview --platform android       # APK for QA
+eas build --profile preview --platform android       # APK for QA / TestFlight
 eas build --profile production --platform all        # production (autoIncrement)
 eas update --channel production                      # OTA update via expo-updates
 ```
 
 `appVersionSource: "remote"` — version is managed by EAS, not `app.json`.
+
+**Android build formats:** `preview` outputs APK (sideloadable for QA). `production` outputs AAB — the Play Store rejects APK for new submissions. Do not change `production` Android back to `apk`.
 
 ---
 
@@ -94,10 +96,12 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 
 **Provider chain** (`app/_layout.tsx`):
 ```
-ErrorBoundary → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → ToastProvider
+GestureHandlerRootView → SafeAreaProvider → ErrorBoundary → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → NotificationProvider → ToastProvider
 ```
 
 `EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing (unauthenticated → `/(auth)/employee-auth`, authenticated → `/(tabs)/`).
+
+**`NotificationProvider`** (`src/providers/NotificationProvider.tsx`) — handles push token re-registration on each login and attaches the notification response listener that drives tapped-notification → deep link routing. It sits inside `RealtimeProvider` in the root layout chain.
 
 ---
 
@@ -127,8 +131,10 @@ Current hotels: `'Indaba Hotel'`, `'Indaba Lodge Richards Bay'`, `'Indaba Lodge 
 Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
 - `app/(onboarding)/` — first-time welcome flow (shown once via `hasSeenWelcome` flag, migration 075)
-- `app/(tabs)/` — bottom-tab navigator (`index`, `give`, `leaderboard`, `rewards`, `profile`)
-- `app/(screens)/` — full-screen push routes: flat screens (chat, campaigns, initiatives, mood, notifications, orders, settings, team, wallet, **channel-feed**, etc.) plus nested route dirs (`recognition/`, `reward/`, `user/`, `initiative/`, `skills/`, `team/`)
+- `app/(tabs)/` — bottom-tab navigator: `profile`, `index` (feed), `give` (centre FAB), `leaderboard`, `rewards`
+- `app/(screens)/` — full-screen push routes: flat screens (`chat`, `campaigns`, `initiatives`, `mood`, `notifications`, `orders`, `settings`, `team`, `wallet`, `channel-feed`, etc.) plus dynamic routes: `recognition/[id]`, `reward/[id]`, `user/[id]`, `initiative/[slug]`, `team/[department]`, and `skills/` (sub-routes: `index`, `rate`, `my-scores`)
+
+**Feature-flag-gated tabs** — `leaderboard` and `rewards` are hidden from the tab bar when their flags are off via `href: null` in `app/(tabs)/_layout.tsx`. The screens still exist; only the tab entry point is suppressed.
 
 ---
 
@@ -138,7 +144,7 @@ Hotel channel — a WhatsApp-channel-style public feed of photos, videos and tex
 
 **Mobile flow:** Profile → hamburger → Channel → `csr-hotels.tsx` (two-hotel picker) → `channel-feed.tsx` (infinite-scroll feed). All employees can view any hotel's channel regardless of their own hotel. No reactions or comments — read-only.
 
-**Video rendering:** `app/(screens)/ChannelVideoPost.tsx` is lazy-loaded via `React.lazy()` (PERF-02 pattern) to keep expo-av out of the main bundle.
+**Video rendering:** `app/(screens)/ChannelVideoPost.tsx` is lazy-loaded via `React.lazy()` (PERF-02 pattern) to keep expo-av out of the main bundle. `app/(screens)/initiative/VideoComponents.tsx` follows the same pattern for initiative media.
 
 **Header colour:** Both channel screens (`csr-hotels.tsx`, `channel-feed.tsx`) use `COLORS.primary` from `@/lib/constants` for the header splash — do not introduce a local `PURPLE` constant in these files.
 
@@ -184,6 +190,8 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 **Admin utilities:**
 - `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
 - `admin/src/lib/email/voucher-template.ts` — plain-HTML voucher email builder (no JSX) sent via Resend when a hotel-category redemption is approved.
+- `admin/src/lib/validation.ts` — **server-side** Zod schemas for all Server Actions and API routes (hotel enum, UUIDs, trimmed text, etc.). Use `schema.parse(data)` in Server Actions.
+- `admin/src/lib/validations.ts` — **client-side** Zod schemas for form validation (login, invite rows, etc.). Used with `react-hook-form` in client components.
 
 **Realtime:** `RealtimeProvider` (`src/providers/RealtimeProvider.tsx`) subscribes to Postgres changes for notifications, reactions, and chat via `use-realtime.ts` and `use-presence.ts`. The `supabase_realtime` publication includes: `recognitions`, `reactions`, `comments`, `notifications`.
 
@@ -220,7 +228,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | `submit-mood` | Log daily mood check-in |
 | `refresh-leaderboard` | Rebuild leaderboard cache (cron) |
 | `award-monthly-legend` | Pick monthly top performer (cron) |
-| `daily-celebrations` | Birthday/work-anniversary push notifications (cron) |
+| `daily-celebrations` | Birthday/work-anniversary push notifications (cron) — must also INSERT into the `celebrations` table for `CelebrationCard` to appear in the feed |
 | `reset-budgets` | Reset recognition budgets (cron) |
 | `remove-background` | External AI image background removal — not behind `withEmployeeAuth`, handle CORS manually |
 
@@ -260,6 +268,18 @@ To add a migration: `supabase migration new <description>`, edit the generated f
 `src/types/database.ts` is **manually maintained** — it does not use Supabase-generated types. Update it by hand when adding new tables or columns (or regenerate with `npx supabase gen types typescript --linked > src/types/database.ts` and merge carefully). Database enum mirrors for client-side use are in `src/types/enums.ts` — keep them in sync with `001_foundation.sql`.
 
 `src/types/api.ts` documents the typed request/response contracts for every Edge Function call (e.g. `AuthMeResponse`, `SendRecognitionRequest`). Update this file when adding or changing Edge Function signatures.
+
+---
+
+## Utility Helpers (`src/utils/`)
+
+Five small utility modules — prefer these over inline helpers:
+
+- `format.ts` — `formatRelativeTime()` (relative date string), `formatNumber()` (K/M abbreviations)
+- `notification-router.ts` — `routeFromNotification()` maps a notification payload (`referenceType` + `referenceId`) to the correct Expo Router route
+- `image.ts` — image manipulation helpers (resize, compress)
+- `validation.ts` — input validation helpers
+- `linking.ts` — deep-link URL construction helpers
 
 ---
 
@@ -332,7 +352,7 @@ Set these with `eas secret:create --scope project` for review builds only. Stand
 
 **The seed is time-sensitive.** All recognitions and mood entries use timestamps relative to when the seed was last run. Re-run Section 1 of `demo_seed.sql` in the Supabase SQL Editor before every review submission to refresh all dates. The script is idempotent — it wipes and recreates cleanly each time.
 
-**The "Try Demo" button** in `app/(auth)/employee-auth.tsx:552` is hidden (`display: 'none'`). Restore it for review builds, or leave it hidden and provide credentials manually in App Store Connect under App Review Information.
+**The "Try Demo" button** in `app/(auth)/employee-auth.tsx` is conditionally rendered — it only appears when `process.env.EXPO_PUBLIC_REVIEW_MODE === 'true'`. It is invisible in standard production builds (Metro dead-code eliminates the block). Set the EAS Secret `EXPO_PUBLIC_REVIEW_MODE=true` on a review build profile to show it, or leave it hidden and supply credentials manually in App Store Connect under App Review Information.
 
 **After Apple and Google approval:** run the cleanup block (Section 3 of `demo_seed.sql`) to remove all demo rows, then delete `src/lib/demoCredentials.ts` and remove the `handleDemoLogin` function and button from `employee-auth.tsx`.
 
