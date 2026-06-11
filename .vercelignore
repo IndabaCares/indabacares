@@ -6,3 +6,6 @@ assets
 /src
 /app
 /supabase
+*.ipa
+*.apk
+*.aab
