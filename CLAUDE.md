@@ -467,7 +467,9 @@ If the package itself calls `NativeModules.*` at its own module-level code, the 
 
 ### patch-package patches (applied automatically on `npm install`)
 
-Eight patches in `patches/` guard the Expo SDK packages that access `NativeModules.*` at module-eval time:
+**Critical Metro resolution note:** Metro (RN bundler) prefers the `"react-native"` field in `package.json` over `"main"`. Packages like `react-native-gesture-handler` and `react-native-reanimated` set `"react-native": "src/index.ts"` — Metro loads TypeScript source from `src/`, completely ignoring `lib/commonjs/`. When adding a new patch, always check the package's `package.json` `"react-native"` and `"main"` fields and target whichever one Metro resolves to. Patching the wrong file has zero effect.
+
+Ten patches in `patches/` guard the Expo SDK packages that access `NativeModules.*` at module-eval time:
 
 | Patch | What it fixes |
 |-------|--------------|
@@ -475,10 +477,12 @@ Eight patches in `patches/` guard the Expo SDK packages that access `NativeModul
 | `expo+54.0.33.patch` | `NativeModules.EXDevLauncher` in `Expo.fx.tsx` → `false` (production-only) |
 | `expo-asset+12.0.12.patch` | `requireNativeModule('ExpoAsset')` eval-time → lazy Proxy |
 | `expo-constants+18.0.13.patch` | `NativeModules.EXDevLauncher` block removed; `getManifest()` gains lazy `_nativeInitAttempted` retry guard |
+| `expo-font+14.0.11.patch` | `requireNativeModule('ExpoFontLoader')` in `build/ExpoFontLoader.js` — `typeof window === 'undefined'` is `false` in RN/Hermes so the ternary takes the native branch at eval time → lazy Proxy |
 | `expo-linking+8.0.11.patch` | `requireNativeModule('ExpoLinking')` eval-time → lazy Proxy |
 | `expo-modules-core+3.0.29.patch` | `NativeModulesProxy.native.ts` — critical New Arch detection rule: use `global.expo?.modules` (registry existence), NOT `global.expo?.modules?.NativeModulesProxy` (may be null even on New Arch) |
 | `expo-router+6.0.23.patch` | `splash.js`: lazy `_getSplashModule()` + `_splashHidden` guard (re-dispatching void `hide()` after dismiss → SIGABRT); `statusbar.js`: lazy `canOverrideStatusBarBehavior` getter |
-| `react-native-gesture-handler+2.28.0.patch` | `TurboModuleRegistry.getEnforcing('RNGestureHandlerModule')` in `RNGestureHandlerModule.js` eval-time → lazy Proxy; defers native module access from bundle-eval (Hermes BG thread) to first `install()` call during `GestureHandlerRootView` render (main JS thread) |
+| `react-native-gesture-handler+2.28.0.patch` | `TurboModuleRegistry.getEnforcing('RNGestureHandlerModule')` in `src/specs/NativeRNGestureHandlerModule.ts` eval-time → lazy Proxy. **Targets `src/` because Metro uses `"react-native": "src/index.ts"` — `lib/commonjs/` is never loaded.** |
+| `react-native-reanimated+4.1.6.patch` | `TurboModuleRegistry.get('ReanimatedModule')` in `src/specs/NativeReanimatedModule.ts` eval-time → lazy Proxy. Metro uses `"react-native": "src/index"`. |
 | `react-native-safe-area-context+5.6.2.patch` | `TurboModuleRegistry.get('RNCSafeAreaContext')` eval-time → lazy Proxy; `initialWindowMetrics` set to `null` (safe: `SafeAreaProvider` fills it via `onInsetsChange`) |
 
 **Adding a new package with native modules:** follow the lazy-require pattern above. If the package accesses `NativeModules.*` in its own module-level code, apply the Proxy pattern via `patch-package`: edit the file in `node_modules/`, then run `npx patch-package <package-name>`.
