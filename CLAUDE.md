@@ -213,6 +213,8 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`, `channel.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
 
+**Admin hooks** — `admin/src/hooks/` contains eight React hooks for the admin dashboard: `use-audit-logs`, `use-auth`, `use-departments`, `use-gamification`, `use-mood`, `use-recognitions`, `use-rewards`, `use-users`. Check here before writing new data-fetching logic in admin client components.
+
 **Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/`, `privacy/` are public routes (no auth). API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`.
 
 **`privacy/page.tsx`** — public privacy policy page served at `indabacares.co.za/privacy`. Required by Apple for App Store submission. No auth guard.
@@ -220,6 +222,7 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 **Auth middleware** — `admin/src/proxy.ts` is the Next.js middleware (exported as `default` with a `matcher` config). It redirects all unauthenticated requests to `/login`. To add a new public route, add its path to the `PUBLIC_PATHS` array at the top of that file. Current public paths: `/login`, `/forgot-password`, `/reset-password`, `/privacy`.
 
 **Admin utilities:**
+- `admin/src/lib/supabase/admin.ts` — service_role client (`createAdminClient()`); use in Server Components/Actions only. `server.ts` — SSR-safe client (cookie-based, for Server Components). `client.ts` — browser client for Client Components.
 - `admin/src/lib/csv-import/parser.ts` + `validator.ts` — bulk employee import; handles quoted fields, CRLF/LF, UTF-8 BOM, and blank rows. Consumed by `admin/src/app/api/employees/import/route.ts`.
 - `admin/src/lib/email/voucher-template.ts` — plain-HTML voucher email builder (no JSX) sent via Resend when a hotel-category redemption is approved.
 - `admin/src/lib/validation.ts` — **server-side** Zod schemas for all Server Actions and API routes (hotel enum, UUIDs, trimmed text, etc.). Use `schema.parse(data)` in Server Actions.
@@ -384,7 +387,19 @@ Set these with `eas secret:create --scope project` for review builds only. Stand
 
 **The seed is time-sensitive.** All recognitions and mood entries use timestamps relative to when the seed was last run. Re-run Section 1 of `demo_seed.sql` in the Supabase SQL Editor before every review submission to refresh all dates. The script is idempotent — it wipes and recreates cleanly each time.
 
-**The "Try Demo" button** in `app/(auth)/employee-auth.tsx` is conditionally rendered — it only appears when `process.env.EXPO_PUBLIC_REVIEW_MODE === 'true'`. It is invisible in standard production builds (Metro dead-code eliminates the block). Set the EAS Secret `EXPO_PUBLIC_REVIEW_MODE=true` on a review build profile to show it, or leave it hidden and supply credentials manually in App Store Connect under App Review Information.
+**The "Try Demo" button** in `app/(auth)/employee-auth.tsx` is conditionally rendered — it only appears when `process.env.EXPO_PUBLIC_REVIEW_MODE === 'true'`. It is invisible in standard production builds (Metro dead-code eliminates the block).
+
+**Building the review binary** — use the dedicated `review` profile in `eas.json` (inherits from `production`, sets all demo env vars as static strings):
+
+```bash
+eas build --profile review --platform ios --clear-cache
+```
+
+Do not use EAS Secrets for `EXPO_PUBLIC_REVIEW_MODE` — secrets are project-wide and would appear in production builds. The `review` profile in `eas.json` scopes them correctly. Do not use `$VAR` references in env blocks (EAS servers resolve them literally).
+
+**Seed content for reviewers:** recognitions (received + sent), reactions, likes, comments, mood history (5 days), rewards catalogue (4 tiers), and 4 notifications (2 unread). Feature flags for Indaba Hotel default to all-enabled (migration 055 seeded them; missing rows fall back to all-enabled via `COALESCE` in `get_hotel_settings()`).
+
+**Before every submission:** re-run Section 1 of `demo_seed.sql` in the Supabase SQL Editor (service_role) to refresh timestamps. The script is idempotent — it wipes and recreates cleanly each time.
 
 **After Apple and Google approval:** run the cleanup block (Section 3 of `demo_seed.sql`) to remove all demo rows, then delete `src/lib/demoCredentials.ts` and remove the `handleDemoLogin` function and button from `employee-auth.tsx`.
 
@@ -436,6 +451,8 @@ On iOS 26 with New Architecture, `NativeModules` is `BridgelessNativeModuleProxy
 
 - **Do not add `@sentry/react-native`** — `Sentry.init()` dispatches void TurboModule methods even with `autoInitializeNativeSdk: false` → SIGABRT on iOS 26.
 - **Do not set `newArchEnabled: false`** — has no effect in RN 0.81; crashes identically.
+- **`expo-notifications` must be lazy-required with a 3-second delay** — `BadgeModule.native.js` calls `requireNativeModule('ExpoBadgeModule')` at module-eval time → void TurboModule dispatch → NSException → `convertNSExceptionToJSError` creates Hermes JSI values from the wrong thread → Hermes heap corruption → SIGBUS ~60s after launch. Fixed in `src/providers/NotificationProvider.tsx` with a module-level lazy loader (`_loadNotifications()`) and a 3-second `setTimeout` before `setNotificationHandler`. Never add a top-level `import * as Notifications from 'expo-notifications'`.
+- **`expo-updates` native init fires regardless of `checkOnLaunch` setting** — the `"checkOnLaunch": "NEVER"` in `app.json` is JS-layer only; native ObjC still registers and initialises its SQLite database via `dispatch_once` on a GCD background thread at launch. The risk is accepted because OTA updates (`eas update`) are a core feature. If unexplained launch crashes appear, this is the first thing to investigate.
 - **Never import or top-level `require` a package with native modules.** Use a lazy loader:
 
 ```ts
@@ -461,6 +478,7 @@ Eight patches in `patches/` guard the Expo SDK packages that access `NativeModul
 | `expo-linking+8.0.11.patch` | `requireNativeModule('ExpoLinking')` eval-time → lazy Proxy |
 | `expo-modules-core+3.0.29.patch` | `NativeModulesProxy.native.ts` — critical New Arch detection rule: use `global.expo?.modules` (registry existence), NOT `global.expo?.modules?.NativeModulesProxy` (may be null even on New Arch) |
 | `expo-router+6.0.23.patch` | `splash.js`: lazy `_getSplashModule()` + `_splashHidden` guard (re-dispatching void `hide()` after dismiss → SIGABRT); `statusbar.js`: lazy `canOverrideStatusBarBehavior` getter |
+| `react-native-gesture-handler+2.28.0.patch` | `TurboModuleRegistry.getEnforcing('RNGestureHandlerModule')` in `RNGestureHandlerModule.js` eval-time → lazy Proxy; defers native module access from bundle-eval (Hermes BG thread) to first `install()` call during `GestureHandlerRootView` render (main JS thread) |
 | `react-native-safe-area-context+5.6.2.patch` | `TurboModuleRegistry.get('RNCSafeAreaContext')` eval-time → lazy Proxy; `initialWindowMetrics` set to `null` (safe: `SafeAreaProvider` fills it via `onInsetsChange`) |
 
 **Adding a new package with native modules:** follow the lazy-require pattern above. If the package accesses `NativeModules.*` in its own module-level code, apply the Proxy pattern via `patch-package`: edit the file in `node_modules/`, then run `npx patch-package <package-name>`.
@@ -471,11 +489,13 @@ Eight patches in `patches/` guard the Expo SDK packages that access `NativeModul
 
 ### Pre-submission build gate
 
-**Run a preview build before every store submission.** Preview builds are production-equivalent (Hermes bytecode, New Architecture / Bridgeless) and catch crashes that the Expo dev client never sees.
+**Run a preview build before every store submission.** Preview builds are production-equivalent (Hermes bytecode, New Architecture / Bridgeless, `EXPO_ROUTER_IMPORT_MODE=lazy`) and catch crashes that the Expo dev client never sees.
 
 ```bash
 eas build --profile preview --platform all --clear-cache
 ```
+
+**`EXPO_ROUTER_IMPORT_MODE=lazy`** is set in `eas.json` env for both preview and production builds. This makes Expo Router defer loading all route modules until first navigation, reducing the module-eval-time surface to only `app/_layout.tsx` and the initial route. Do not add `$VAR` references to eas.json env blocks — EAS build servers resolve them literally (no shell env expansion). Only static string values belong there.
 
 **Always use `--clear-cache` for iOS builds.** EAS fingerprints `package.json`, `app.json`, and plugin files — JS-only changes reuse a cached native binary that may predate patch fixes. `--clear-cache` forces a full native recompile so all patches are included.
 

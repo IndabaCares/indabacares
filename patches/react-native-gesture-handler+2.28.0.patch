@@ -1,0 +1,37 @@
+diff --git a/node_modules/react-native-gesture-handler/lib/commonjs/RNGestureHandlerModule.js b/node_modules/react-native-gesture-handler/lib/commonjs/RNGestureHandlerModule.js
+index 0000000..0000001 100644
+--- a/node_modules/react-native-gesture-handler/lib/commonjs/RNGestureHandlerModule.js
++++ b/node_modules/react-native-gesture-handler/lib/commonjs/RNGestureHandlerModule.js
+@@ -1,12 +1,27 @@
+ "use strict";
+
+ Object.defineProperty(exports, "__esModule", {
+   value: true
+ });
+ exports.default = void 0;
+-var _NativeRNGestureHandlerModule = _interopRequireDefault(require("./specs/NativeRNGestureHandlerModule"));
+-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+-// Reexport the native module spec used by codegen. The relevant files are inluded on Android
+-// to ensure the compatibility with the old arch, while iOS doesn't require those at all.
+-var _default = exports.default = _NativeRNGestureHandlerModule.default;
++
++// Lazy Proxy — defers TurboModuleRegistry.getEnforcing('RNGestureHandlerModule')
++// from module-eval time to first method call. On iOS 26 New Architecture (Bridgeless),
++// TurboModuleRegistry.getEnforcing() on the Hermes background thread throws NSException
++// via a void TurboModule dispatch -> SIGABRT on expo.controller.errorRecoveryQueue.
++var _nativeMod = null;
++function _getNativeMod() {
++  if (!_nativeMod) {
++    _nativeMod = require('./specs/NativeRNGestureHandlerModule').default;
++  }
++  return _nativeMod;
++}
++
++var _default = exports.default = new Proxy({}, {
++  get: function(_, prop) {
++    var mod = _getNativeMod();
++    var val = mod[prop];
++    return typeof val === 'function' ? val.bind(mod) : val;
++  }
++});
+ //# sourceMappingURL=RNGestureHandlerModule.js.map

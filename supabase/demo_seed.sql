@@ -83,6 +83,9 @@ BEGIN
   DELETE FROM public.employee_active_sessions
     WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);
 
+  DELETE FROM public.notifications
+    WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);
+
   DELETE FROM public.rewards
     WHERE id IN (v_rwd1, v_rwd2, v_rwd3, v_rwd4);
 
@@ -313,10 +316,44 @@ BEGIN
     ('00000099-0000-0000-0000-000000000005'::uuid,  '00000099-0000-0000-0000-000000000005'::uuid,  'good',    current_date - 4,  v_demo01);
 
 
+  -- ────────────────────────────────────────────────────────────────────────────
+  -- 11. NOTIFICATIONS FOR DEMO01
+  -- ────────────────────────────────────────────────────────────────────────────
+  --
+  -- Populates the notification bell so the reviewer sees content.
+  -- Columns: employee_id, hotel, type, title, message, read, created_at
+  -- Types: recognition_received, admin_announcement
+  -- company_id and user_id are nullable (migrations 084–085) — omitted here.
+
+  INSERT INTO public.notifications
+    (employee_id, hotel, type, title, message, read, created_at)
+  VALUES
+    (v_demo01, v_hotel, 'recognition_received',
+     'Zanele Mokoena recognised you!',
+     'Thank you for staying late to assist our VIP guests last night! Your dedication made all the difference.',
+     false, now() - interval '3 days' + interval '30 minutes'),
+
+    (v_demo01, v_hotel, 'recognition_received',
+     'Sipho Dlamini recognised you!',
+     'Demo always steps up when the restaurant gets slammed — that kind of teamwork keeps service running smoothly!',
+     false, now() - interval '5 days' + interval '30 minutes'),
+
+    (v_demo01, v_hotel, 'recognition_received',
+     'Thandi Sithole recognised you!',
+     'Our guests keep asking for Demo by name. You have set the gold standard for excellent service at this hotel.',
+     true, now() - interval '8 days' + interval '30 minutes'),
+
+    (v_demo01, v_hotel, 'admin_announcement',
+     'Welcome to IndabaCares!',
+     'You can now give and receive recognitions, track your points, and redeem rewards. Thank you for being part of the team!',
+     true, now() - interval '30 days');
+
+
   RAISE NOTICE '✅ Demo seed complete.';
   RAISE NOTICE '   DEMO01 points balance: 190 (30 from recognitions + 160 from reactions)';
   RAISE NOTICE '   Rewards: 4 items seeded (can afford Coffee Voucher at 20 pts and Spa at 75 pts)';
   RAISE NOTICE '   Mood: 5 entries seeded (last 5 days)';
+  RAISE NOTICE '   Notifications: 4 seeded (2 unread recognition_received, 2 read)';
 
 END;
 $$;
@@ -371,6 +408,8 @@ $$;
 --       'b0000001-0000-0000-0000-000000000006'
 --     );
 --   DELETE FROM public.mood_entries
+--     WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);
+--   DELETE FROM public.notifications
 --     WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);
 --   DELETE FROM public.redemptions
 --     WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);

@@ -106,7 +106,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/2769acb0-54c1-4935-9da1-864c41506d37"
+      "url": "https://u.expo.dev/2769acb0-54c1-4935-9da1-864c41506d37",
+      "checkOnLaunch": "NEVER"
     }
   }
 }
