@@ -519,8 +519,8 @@ eas build --profile preview --platform all --clear-cache
 - Credentials managed by EAS (`credentialsSource: "remote"` in `production` profile)
 - Always use `--clear-cache` on iOS builds — EAS fingerprint reuse can exclude patch-package fixes
 - Build command: `eas build --profile production --platform ios --clear-cache`
-- Submit to TestFlight: `eas submit --profile production --platform ios`
-- On Windows, EAS CLI and Vercel CLI both require `set NODE_TLS_REJECT_UNAUTHORIZED=0` (cmd) if behind a corporate proxy — SSL certificate chain cannot be verified by Node.js
+- Submit to TestFlight: `eas submit --platform ios --latest` (interactive — prompts for Apple ID + 2FA). **Must run in PowerShell or cmd.exe, not bash.** In cmd: `set NODE_TLS_REJECT_UNAUTHORIZED=0 && eas submit --platform ios --latest`. In PowerShell: `$env:NODE_TLS_REJECT_UNAUTHORIZED = "0"; eas submit --platform ios --latest`. Non-interactive submit requires `ascAppId` in `eas.json` submit profile.
+- On Windows, EAS CLI and Vercel CLI both require `NODE_TLS_REJECT_UNAUTHORIZED=0` if behind a corporate proxy — SSL certificate chain cannot be verified by Node.js. Use `set VAR=0` in cmd or `$env:VAR = "0"` in PowerShell (bash `$env:` syntax does not work in cmd/bash).
 - Privacy policy hosted at `indabacares.co.za/privacy` (required for App Store submission)
 - `eas.json` android `buildType` must be `"app-bundle"` (not `"aab"`) — EAS validation rejects `"aab"`
 - Vercel CLI: run `npx vercel --prod` from the **repo root** (not from `admin/`) — the Vercel project has `rootDirectory: admin` set, so running from inside `admin/` doubles the path. The `.vercel` config folder lives at the repo root.
