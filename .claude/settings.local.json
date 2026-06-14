@@ -74,7 +74,20 @@
       "Bash(supabase db *)",
       "Bash(npx eas-cli *)",
       "Bash(Get-Content \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\node_modules\\\\expo-modules-core\\\\package.json\")",
-      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\node_modules\\\\expo-modules-core\\\\package.json\" -Raw | ConvertFrom-Json; Write-Host \"version: $\\($pkg.version\\)\"; Write-Host \"main: $\\($pkg.main\\)\"; Write-Host \"source: $\\($pkg.source\\)\")"
+      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\node_modules\\\\expo-modules-core\\\\package.json\" -Raw | ConvertFrom-Json; Write-Host \"version: $\\($pkg.version\\)\"; Write-Host \"main: $\\($pkg.main\\)\"; Write-Host \"source: $\\($pkg.source\\)\")",
+      "Bash(cat plugins/withPrivacyManifest.js)",
+      "Bash(cat plugins/withPrivacyManifest.ts)",
+      "Bash(eas --version)",
+      "Bash(eas whoami *)",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\admin\\\\.vercel\")",
+      "Bash(Write-Output \"done\")",
+      "PowerShell(Move-Item *)",
+      "PowerShell(eas whoami *)",
+      "PowerShell(eas build *)",
+      "PowerShell(eas submit *)",
+      "Bash(npx patch-package *)",
+      "PowerShell($env:NODE_TLS_REJECT_UNAUTHORIZED = \"0\"; cd \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\"; npx patch-package react-native-gesture-handler 2>&1)",
+      "PowerShell(eas build:list *)"
     ]
   }
 }
