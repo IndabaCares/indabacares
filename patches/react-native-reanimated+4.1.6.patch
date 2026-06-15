@@ -2,8 +2,8 @@ diff --git a/node_modules/react-native-reanimated/src/specs/NativeReanimatedModu
 index 0000000..0000001 100644
 --- a/node_modules/react-native-reanimated/src/specs/NativeReanimatedModule.ts
 +++ b/node_modules/react-native-reanimated/src/specs/NativeReanimatedModule.ts
-@@ -8,2 +8,15 @@
-
+@@ -8,2 +8,16 @@
+ 
 -export default TurboModuleRegistry.get<Spec>('ReanimatedModule');
 +// Patched: TurboModuleRegistry.get('ReanimatedModule') at module-eval time on Hermes
 +// BG thread can cause instability on iOS 26 New Architecture (Bridgeless). Defer.
