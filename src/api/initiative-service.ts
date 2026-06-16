@@ -60,34 +60,7 @@ export async function getInitiativeThumbnails(hotel: string): Promise<Initiative
   return result;
 }
 
-/**
- * The company-wide welcome/onboarding video stored directly in initiative-media bucket.
- * Used by the first-time welcome screen.
- */
-export const WELCOME_VIDEO_URL =
-  'https://typfhdrmtusmffxfclfq.supabase.co/storage/v1/object/public/initiative-media/Billy_Video.mp4';
 
-/**
- * Returns the welcome video URL.
- * Checks the initiatives table first; falls back to the fixed bucket URL.
- */
-export async function getWelcomeVideoUrl(hotel: string): Promise<string> {
-  try {
-    const { data } = await supabase
-      .from('initiatives')
-      .select('video_url')
-      .eq('hotel', hotel)
-      .not('video_url', 'is', null)
-      .limit(1)
-      .maybeSingle();
-
-    if (data?.video_url) return data.video_url;
-  } catch {
-    // fall through to default
-  }
-
-  return WELCOME_VIDEO_URL;
-}
 
 /**
  * Mark the employee's welcome screen as seen.

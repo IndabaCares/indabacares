@@ -362,9 +362,22 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=      # required for admin client (Server Components only)
+RESEND_API_KEY=                 # voucher emails via Resend
+RESEND_FROM_DOMAIN=             # sender domain (e.g. indabacares.co.za)
 ```
 
 Edge Functions receive `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` automatically from the Supabase project.
+
+### Storage Buckets
+
+Create these in Supabase Dashboard → Storage → New Bucket (or via migration). All must exist before the app can upload files:
+
+| Bucket | Public | Max size | Allowed MIME |
+|--------|--------|----------|--------------|
+| `avatars` | Yes | 2 MB | image/jpeg, image/png, image/webp |
+| `recognition-images` | Yes | 5 MB | image/jpeg, image/png, image/webp, image/gif |
+| `reward-images` | Yes | 5 MB | image/jpeg, image/png, image/webp |
+| `channel-media` | Yes | 100 MB | image/*, video/mp4, video/quicktime, video/webm |
 
 **App Store / Play Store reviewer access (set via EAS Secrets — never commit):**
 
@@ -425,11 +438,46 @@ Hotel rewards (spa, room upgrades, etc.) use voucher email with the redemption U
 
 ## Scheduled Jobs (pg_cron)
 
-Three cron jobs must be configured manually after migrations:
+Five cron jobs must be configured manually after migrations. Run this in the Supabase SQL Editor (requires `pg_cron` extension — enable it first under Database > Extensions):
 
-- `refresh-leaderboard` — daily at 02:00 UTC
-- `reset-budgets` — 1st of month at 00:05 UTC
-- `cleanup-rate-limits` — hourly
+```sql
+-- Daily leaderboard refresh (02:00 UTC)
+SELECT cron.schedule('refresh-leaderboard', '0 2 * * *', $$
+  SELECT net.http_post(
+    url := current_setting('app.settings.supabase_url') || '/functions/v1/refresh-leaderboard',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+  )
+$$);
+
+-- Monthly budget reset (1st of month, 00:05 UTC)
+SELECT cron.schedule('reset-budgets', '5 0 1 * *', $$
+  SELECT net.http_post(
+    url := current_setting('app.settings.supabase_url') || '/functions/v1/reset-budgets',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+  )
+$$);
+
+-- Hourly rate limit cleanup
+SELECT cron.schedule('cleanup-rate-limits', '0 * * * *', $$
+  SELECT public.cleanup_rate_limits()
+$$);
+
+-- Daily birthday/anniversary push notifications + feed cards (08:00 UTC)
+SELECT cron.schedule('daily-celebrations', '0 8 * * *', $$
+  SELECT net.http_post(
+    url := current_setting('app.settings.supabase_url') || '/functions/v1/daily-celebrations',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+  )
+$$);
+
+-- Monthly legend award (1st of month, 00:30 UTC)
+SELECT cron.schedule('award-monthly-legend', '30 0 1 * *', $$
+  SELECT net.http_post(
+    url := current_setting('app.settings.supabase_url') || '/functions/v1/award-monthly-legend',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+  )
+$$);
+```
 
 ---
 
