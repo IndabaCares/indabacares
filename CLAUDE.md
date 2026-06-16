@@ -110,8 +110,8 @@ This project uses a **custom employee auth system**, not Supabase Auth.
 - `isLoaded: boolean` — true once SecureStore read completes; `AuthProvider` waits before routing
 - `setEmployee(session)` — persists + activates session token
 - `clearEmployee()` — revokes server-side session, clears store and header
-- `hasSeenWelcome: boolean | null` — null until loaded from DB; drives the onboarding gate
-- `markWelcomeSeen()` — called when the first-time welcome video is dismissed
+- `hasSeenWelcome: boolean | null` — null until loaded from DB; `AuthProvider` waits for it before routing
+- `markWelcomeSeen()` — called by `AuthProvider` for first-time employees (welcome video removed; flag is still written so the DB stays consistent)
 
 **Supabase Auth is disabled on the mobile client** (`src/lib/supabase.ts`):
 ```ts
@@ -127,7 +127,7 @@ ErrorBoundary → GestureHandlerRootView → SafeAreaProvider → QueryProvider 
 ```
 Root layout also loads `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) — app renders with system font fallback until loaded.
 
-`EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing (unauthenticated → `/(auth)/employee-auth`, authenticated → `/(tabs)/`).
+`EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing: unauthenticated → `/(auth)/employee-auth`; first-time employee (`hasSeenWelcome === false`) → calls `markWelcomeSeen()` then routes directly to `/(tabs)/profile`; returning employee → `/(tabs)/profile`.
 
 **`NotificationProvider`** (`src/providers/NotificationProvider.tsx`) — handles push token re-registration on each login and attaches the notification response listener that drives tapped-notification → deep link routing. It sits inside `RealtimeProvider` in the root layout chain.
 
@@ -158,7 +158,6 @@ Current hotels: `'Indaba Hotel'`, `'Indaba Lodge Richards Bay'`, `'Indaba Lodge 
 
 Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
-- `app/(onboarding)/` — first-time welcome flow (shown once via `hasSeenWelcome` flag, migration 075)
 - `app/(tabs)/` — bottom-tab navigator: `profile`, `index` (feed), `give` (centre FAB), `leaderboard`, `rewards`
 - `app/(screens)/` — full-screen push routes: flat screens (`chat`, `campaigns`, `initiatives`, `mood`, `notifications`, `orders`, `settings`, `team`, `wallet`, `channel-feed`, etc.) plus dynamic routes: `recognition/[id]`, `reward/[id]`, `user/[id]`, `initiative/[slug]`, `team/[department]`, and `skills/` (sub-routes: `index`, `rate`, `my-scores`)
 
