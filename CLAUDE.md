@@ -290,6 +290,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | 084 | `notifications.company_id` made nullable — `trg_notify_redemption` inserts without it |
 | 085 | `notifications.user_id` made nullable — same trigger, same pattern as 084 |
 | 086 | `channel_posts` table — hotel channel feed (photo/video/text); RLS allows cross-hotel SELECT for all authenticated employees; service_role only for writes; `channel-media` Storage bucket (public read, 100 MB limit) |
+| 087 | Enable RLS on `auth_rate_limits` and `notifications_archive` — both accessed only via SECURITY DEFINER functions (postgres superuser bypasses RLS); no client-facing policies needed |
 
 **Guard triggers** — `employees.points_balance` and `employees.reward_wallet_balance` are protected by triggers that block all direct UPDATEs. Use `admin_set_points_balance` / `admin_set_wallet_balance` RPCs instead. Never attempt to UPDATE these columns directly from application code.
 
