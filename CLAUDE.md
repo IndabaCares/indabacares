@@ -68,6 +68,8 @@ eas update --channel production                      # OTA update via expo-updat
 
 **Android build formats:** `preview` outputs APK (sideloadable for QA). `production` outputs AAB — the Play Store rejects APK for new submissions. Do not change `production` Android back to `apk`.
 
+**Android permissions — `READ_MEDIA_IMAGES` must stay blocked:** The `expo-image-picker` Expo config plugin auto-injects `android.permission.READ_MEDIA_IMAGES` into `AndroidManifest.xml`. The app uses camera-only capture (no gallery picker), so this permission is unnecessary and must stay in `blockedPermissions` in `app.json`. If it appears in the manifest, the Play Store may flag it. Do not move it back to the regular `permissions` array.
+
 ---
 
 ## Auth Architecture
