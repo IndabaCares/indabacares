@@ -55,12 +55,13 @@ supabase functions logs <name> --linked         # stream logs
 
 ### EAS (mobile builds)
 
-Three build profiles defined in `eas.json`:
+Four build profiles defined in `eas.json`:
 
 ```bash
 eas build --profile development --platform android   # dev client (internal)
 eas build --profile preview --platform android       # APK for QA / TestFlight
 eas build --profile production --platform all        # production (autoIncrement)
+eas build --profile review --platform ios --clear-cache  # App Store review binary (demo account)
 eas update --channel production                      # OTA update via expo-updates
 ```
 
@@ -127,7 +128,7 @@ Do not use `supabase.auth.*` in mobile code — all session management goes thro
 ```
 ErrorBoundary → GestureHandlerRootView → SafeAreaProvider → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → NotificationProvider → ToastProvider
 ```
-Root layout also loads `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) — app renders with system font fallback until loaded.
+Root layout pre-loads two fonts via `useFonts()`: `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) and `Ionicons.font` (from `@expo/vector-icons`). App renders with system font fallback until loaded. **Ionicons must be pre-loaded here** — on iOS 26 New Architecture the per-component `componentDidMount` font-load path can fail silently, leaving all `<Ionicons>` components blank forever. Adding new icon families follows the same pattern: spread `IconFamily.font` into the `useFonts()` call.
 
 `EmployeeProvider` owns the session state. `AuthProvider` wraps it and handles routing: unauthenticated → `/(auth)/employee-auth`; first-time employee (`hasSeenWelcome === false`) → calls `markWelcomeSeen()` then routes directly to `/(tabs)/profile`; returning employee → `/(tabs)/profile`.
 

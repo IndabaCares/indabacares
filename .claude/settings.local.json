@@ -87,7 +87,22 @@
       "PowerShell(eas submit *)",
       "Bash(npx patch-package *)",
       "PowerShell($env:NODE_TLS_REJECT_UNAUTHORIZED = \"0\"; cd \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\"; npx patch-package react-native-gesture-handler 2>&1)",
-      "PowerShell(eas build:list *)"
+      "PowerShell(eas build:list *)",
+      "PowerShell(eas build:view *)",
+      "Bash(python3 -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\('main:', p.get\\('main'\\)\\); print\\('react-native:', p.get\\('react-native'\\)\\); print\\('module:', p.get\\('module'\\)\\)\")",
+      "PowerShell(eas build:logs *)",
+      "PowerShell(eas *)",
+      "PowerShell($env:NODE_TLS_REJECT_UNAUTHORIZED = \"0\"; npx patch-package react-native-gesture-handler 2>&1)",
+      "PowerShell(node -e \"const s=require\\('C:/Users/Personel/Desktop/IndabaCares/node_modules/react-native-screens/package.json'\\);console.log\\('rn:',s['react-native'],'main:',s['main'],'ver:',s['version']\\)\")",
+      "PowerShell(node -e \"const s=require\\('C:/Users/Personel/Desktop/IndabaCares/node_modules/react-native-worklets/package.json'\\);console.log\\('rn:',s['react-native'],'main:',s['main'],'ver:',s['version']\\)\")",
+      "PowerShell(node -e \"const s=require\\('C:/Users/Personel/Desktop/IndabaCares/node_modules/expo-system-ui/package.json'\\);console.log\\('rn:',s['react-native'],'main:',s['main'],'ver:',s['version']\\)\")",
+      "Bash(Get-Content supabase/migrations/007_auth_hardening.sql)",
+      "Bash(Select-String -Pattern \"CREATE TABLE|ENABLE ROW LEVEL\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\\\\supabase\\\\migrations\\\\\" | ForEach-Object { $matches = Select-String -Path $_.FullName -Pattern \"CREATE TABLE|ENABLE ROW LEVEL SECURITY\" -SimpleMatch; if \\($matches\\) { Write-Host \"=== $\\($_.Name\\) ===\"; $matches | ForEach-Object { Write-Host $_.Line.Trim\\(\\) } } })",
+      "PowerShell(cd \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\"; $env:NODE_TLS_REJECT_UNAUTHORIZED = \"0\"; npx supabase db push --linked 2>&1)",
+      "PowerShell(git push *)",
+      "PowerShell(eas update *)",
+      "PowerShell(git add *)"
     ]
   }
 }

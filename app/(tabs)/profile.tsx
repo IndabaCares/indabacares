@@ -352,7 +352,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Scrollable breakdown */}
-            <ScrollView style={styles.contentScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.contentScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
               <View style={styles.rewardBreakdownCard}>
                 {([
                   { emoji: '🏅', title: 'Recognition Received', desc: 'The number of times you\'ve been recognised for your work.',     value: pointsBreakdown?.recognition_received ?? 0 },
@@ -385,7 +385,7 @@ export default function ProfileScreen() {
         )}
 
         {/* ── Content area (Balance + Reward tabs) ────────────────────────── */}
-        <ScrollView style={[styles.contentScroll, activeTab === 'utilise' && { display: 'none' }]} contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.contentScroll, activeTab === 'utilise' && { display: 'none' }]} contentContainerStyle={[styles.content, { paddingBottom: 24 }]} showsVerticalScrollIndicator={false}>
 
           {/* ── Balance tab ─────────────────────────────────────────────── */}
           {activeTab === 'balance' && (

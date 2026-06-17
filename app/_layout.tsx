@@ -15,9 +15,13 @@ import {
   useFonts,
   DancingScript_700Bold,
 } from '@expo-google-fonts/dancing-script';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ DancingScript_700Bold });
+  const [fontsLoaded] = useFonts({
+    DancingScript_700Bold,
+    ...Ionicons.font,
+  });
 
   // Render app whether or not fonts have loaded — system font fallback used until ready
   return (
