@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Platform,
   Alert,
-  ImageBackground,
   ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -224,12 +223,13 @@ export default function ProfileScreen() {
       <View style={styles.screen}>
 
         {/* ── Image header card ───────────────────────────────────────────── */}
-        <ImageBackground
-          source={HOTEL_BACKGROUNDS[employee.hotel] ?? DEFAULT_BG}
-          style={styles.header}
-          resizeMode="cover"
-        >
-          {/* Dark overlay — full height of ImageBackground */}
+        <View style={styles.header}>
+          <Image
+            source={HOTEL_BACKGROUNDS[employee.hotel] ?? DEFAULT_BG}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+          />
+          {/* Dark overlay — full height of header */}
           <View style={styles.headerOverlay}>
 
           {/* Top navigation */}
@@ -302,7 +302,7 @@ export default function ProfileScreen() {
 
           </View>{/* end headerOverlay */}
 
-        </ImageBackground>
+        </View>{/* end header */}
 
         {/* ── Pill tab selector — sits on the header's rounded bottom edge ── */}
         <View style={styles.tabContainer}>
