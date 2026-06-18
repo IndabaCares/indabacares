@@ -162,7 +162,7 @@ Current hotels: `'Indaba Hotel'`, `'Indaba Lodge Richards Bay'`, `'Indaba Lodge 
 Expo Router route groups:
 - `app/(auth)/` — unauthenticated screens (employee login)
 - `app/(tabs)/` — bottom-tab navigator: `profile`, `index` (feed), `give` (centre FAB), `leaderboard`, `rewards`
-- `app/(screens)/` — full-screen push routes: flat screens (`chat`, `campaigns`, `initiatives`, `mood`, `notifications`, `orders`, `settings`, `team`, `wallet`, `channel-feed`, etc.) plus dynamic routes: `recognition/[id]`, `reward/[id]`, `user/[id]`, `initiative/[slug]`, `team/[department]`, and `skills/` (sub-routes: `index`, `rate`, `my-scores`)
+- `app/(screens)/` — full-screen push routes: flat screens (`chat`, `campaigns`, `initiatives`, `mood`, `notifications`, `orders`, `settings`, `team`, `wallet`, `channel-feed`, `edit-profile`, `redeemed`, `faq`, `delete-account`, `terms-of-service`, `privacy-policy`, etc.) plus dynamic routes: `recognition/[id]`, `reward/[id]`, `user/[id]`, `initiative/[slug]`, `team/[department]`, and `skills/` (sub-routes: `index`, `rate`, `my-scores`)
 
 **Feature-flag-gated tabs** — `leaderboard` and `rewards` are hidden from the tab bar when their flags are off via `href: null` in `app/(tabs)/_layout.tsx`. The screens still exist; only the tab entry point is suppressed.
 
@@ -218,11 +218,11 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **Admin hooks** — `admin/src/hooks/` contains eight React hooks for the admin dashboard: `use-audit-logs`, `use-auth`, `use-departments`, `use-gamification`, `use-mood`, `use-recognitions`, `use-rewards`, `use-users`. Check here before writing new data-fetching logic in admin client components.
 
-**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/`, `privacy/` are public routes (no auth). API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`.
+**Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/`, `privacy/` are public routes (no auth). API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`. The `users/` directory has sub-pages `[id]` (user detail) and `invite`. The `rewards/` directory has a nested `redemptions/` sub-page (in addition to the top-level `redemptions/` route). The `rewards/` directory also has a `categories/` sub-page.
 
 **`privacy/page.tsx`** — public privacy policy page served at `indabacares.co.za/privacy`. Required by Apple for App Store submission. No auth guard.
 
-**Auth middleware** — `admin/src/proxy.ts` is the Next.js middleware (exported as `default` with a `matcher` config). It redirects all unauthenticated requests to `/login`. To add a new public route, add its path to the `PUBLIC_PATHS` array at the top of that file. Current public paths: `/login`, `/forgot-password`, `/reset-password`, `/privacy`.
+**Auth middleware** — `admin/src/proxy.ts` is the Next.js middleware (exported as `default` with a `matcher` config). It enforces three layers of access control: (1) redirects unauthenticated requests to `/login`; (2) blocks users whose `app_metadata.role` is not `'admin'` or `'super_admin'`; (3) restricts `SUPER_ADMIN_ONLY` routes (`/audit-logs`, `/settings`) to `super_admin` only. It also injects security headers (CSP, HSTS, X-Frame-Options, etc.) on every response. To add a new public route, add its path to the `PUBLIC_PATHS` array at the top of that file. Current public paths: `/login`, `/forgot-password`, `/reset-password`, `/privacy`.
 
 **Admin utilities:**
 - `admin/src/lib/supabase/admin.ts` — service_role client (`createAdminClient()`); use in Server Components/Actions only. `server.ts` — SSR-safe client (cookie-based, for Server Components). `client.ts` — browser client for Client Components.
@@ -274,7 +274,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 
 ## Database Migrations
 
-87 migrations (001–087, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
+87 migrations (001–087) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -575,6 +575,10 @@ eas build --profile preview --platform all --clear-cache
 - `.vercelignore` uses `/`-prefixed paths (`/src`, `/app`, `/supabase`) to exclude mobile-only root dirs without accidentally stripping `admin/src/`
 - Git commits must be authored by the account linked to the Vercel project (`hr@indabahotel.co.za`) — Hobby plan blocks deployments from unrecognised commit authors on private repos
 - Admin env vars required in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`
+
+**Mobile — Android Play Store:**
+
+- Live in production (South Africa + Botswana). **Each Play Console track (Alpha, Production, etc.) requires its own country/region list** — countries added to Alpha are not inherited by Production; set them separately under Production → Countries / regions before creating a production release.
 
 **Mobile — iOS TestFlight / App Store:**
 
