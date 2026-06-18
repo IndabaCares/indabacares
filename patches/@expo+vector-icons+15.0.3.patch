@@ -1,4 +1,4 @@
-diff --git a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
+﻿diff --git a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
 index 5847373..ad1f2bc 100644
 --- a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
 +++ b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
@@ -44,3 +44,49 @@ index 68aad7f..64a68bd 100644
    if (!NativeIconAPI) {
      throw new Error(
        'The native RNVectorIcons API is not available, did you properly integrate the module? Please verify your autolinking setup and recompile.'
+
+diff --git a/node_modules/@expo/vector-icons/build/Ionicons.js b/node_modules/@expo/vector-icons/build/Ionicons.js
+index 0000000..0000001 100644
+--- a/node_modules/@expo/vector-icons/build/Ionicons.js
++++ b/node_modules/@expo/vector-icons/build/Ionicons.js
+@@ -2,5 +2,5 @@
+ import createIconSet from './createIconSet';
+ import font from './vendor/react-native-vector-icons/Fonts/Ionicons.ttf';
+ import glyphMap from './vendor/react-native-vector-icons/glyphmaps/Ionicons.json';
+-export default createIconSet(glyphMap, 'ionicons', font);
++export default createIconSet(glyphMap, 'Ionicons', font);
+ //# sourceMappingURL=Ionicons.js.map
+diff --git a/node_modules/@expo/vector-icons/build/createIconSet.js b/node_modules/@expo/vector-icons/build/createIconSet.js
+index 0000000..0000001 100644
+--- a/node_modules/@expo/vector-icons/build/createIconSet.js
++++ b/node_modules/@expo/vector-icons/build/createIconSet.js
+@@ -52,17 +52,25 @@
+         };
+         _mounted = false;
+         _icon;
+         state = {
+-            fontIsLoaded: Font.isLoaded(fontName),
++            // On New Architecture (global.expo?.modules is set), the expo-font config plugin
++            // embeds the font natively via UIAppFonts before JS runs - no async loading needed.
++            fontIsLoaded: Font.isLoaded(fontName) || !!global.expo?.modules,
+         };
+         async componentDidMount() {
+             this._mounted = true;
+             if (!this.state.fontIsLoaded) {
+-                await Font.loadAsync(font);
+-                /* eslint-disable react/no-did-mount-set-state */
+-                this._mounted && this.setState({ fontIsLoaded: true });
++                try {
++                    await Font.loadAsync(font);
++                }
++                catch (_e) {
++                    // Font.loadAsync failed. On New Architecture the font is available
++                    // via the expo-font config plugin (UIAppFonts). Proceed to render.
++                }
++                /* eslint-disable react/no-did-mount-set-state */
++                this._mounted && this.setState({ fontIsLoaded: true });
+             }
+         }
+         componentWillUnmount() {
+             this._mounted = false;
+         }
