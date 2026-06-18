@@ -210,6 +210,7 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 - Server state → React Query (`@tanstack/react-query`)
 - Auth/session → `EmployeeContext` (React Context)
 - UI-only state → Zustand (`src/stores/ui-store.ts`)
+- Admin auth state → Zustand (`admin/src/stores/auth-store.ts`)
 
 **Feature flags** — `src/hooks/use-feature-flags.ts` reads per-hotel feature toggles (`moods_enabled`, `rewards_enabled`, `skills_enabled`, `leaderboards_enabled`, `custom_hashtags_enabled`, `boost_enabled`) from `hotel_settings.feature_flags` (JSONB). Cached 5 minutes via React Query. Check these before rendering feature-gated UI.
 
@@ -273,7 +274,7 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 
 ## Database Migrations
 
-86 migrations (001–086, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
+87 migrations (001–087, with a few gaps) in `supabase/migrations/`. Notable architectural migrations:
 
 | Migration | What it does |
 |-----------|-------------|
@@ -504,6 +505,7 @@ On iOS 26 with New Architecture, `NativeModules` is `BridgelessNativeModuleProxy
 - **Do not set `newArchEnabled: false`** — has no effect in RN 0.81; crashes identically.
 - **`expo-notifications` must be lazy-required with a 3-second delay** — `BadgeModule.native.js` calls `requireNativeModule('ExpoBadgeModule')` at module-eval time → void TurboModule dispatch → NSException → `convertNSExceptionToJSError` creates Hermes JSI values from the wrong thread → Hermes heap corruption → SIGBUS ~60s after launch. Fixed in `src/providers/NotificationProvider.tsx` with a module-level lazy loader (`_loadNotifications()`) and a 3-second `setTimeout` before `setNotificationHandler`. Never add a top-level `import * as Notifications from 'expo-notifications'`.
 - **`expo-updates` native init fires regardless of `checkOnLaunch` setting** — the `"checkOnLaunch": "NEVER"` in `app.json` is JS-layer only; native ObjC still registers and initialises its SQLite database via `dispatch_once` on a GCD background thread at launch. The risk is accepted because OTA updates (`eas update`) are a core feature. If unexplained launch crashes appear, this is the first thing to investigate.
+- **`app/(screens)/notification-permission.tsx` has a top-level `import * as Notifications from 'expo-notifications'`** — this violates the pattern but is safe because `EXPO_ROUTER_IMPORT_MODE=lazy` defers screen module evaluation until first navigation (post-login, after TurboModules are registered). Do not remove lazy mode or this becomes a launch crash.
 - **Never import or top-level `require` a package with native modules.** Use a lazy loader:
 
 ```ts
