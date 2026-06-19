@@ -128,9 +128,9 @@ Do not use `supabase.auth.*` in mobile code — all session management goes thro
 ```
 ErrorBoundary → GestureHandlerRootView → SafeAreaProvider → QueryProvider → EmployeeProvider → AuthProvider → RealtimeProvider → NotificationProvider → ToastProvider
 ```
-Root layout pre-loads two fonts via `useFonts()`: `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) and `Ionicons.font` (from `@expo/vector-icons`). After the build-13 patch, `Ionicons.font` resolves to `{ 'Ionicons': require('Ionicons.ttf') }` (capital I). **Ionicons is also embedded natively via the `expo-font` config plugin in `app.json`.**
+Root layout pre-loads two fonts via `useFonts()`: `DancingScript_700Bold` (from `@expo-google-fonts/dancing-script`) and `Ionicons.font` (from `@expo/vector-icons`). After the build-14 patch, `Ionicons.font` resolves to `{ 'Ionicons': require('Ionicons.ttf') }` (capital I). **Ionicons is also embedded natively via the `expo-font` config plugin in `app.json`.**
 
-**Root cause of blank icons on iOS 26 (fixed in build 13):** `@expo/vector-icons/build/Ionicons.js` called `createIconSet(glyphMap, 'ionicons', ...)` (lowercase). On iOS `<Text fontFamily="ionicons">` is case-sensitive. The `expo-font` config plugin registers the font via `UIAppFonts` under its PostScript name `'Ionicons'` (capital I). The mismatch meant iOS could never find the font. Two-part fix in `@expo+vector-icons+15.0.3.patch`: (1) `Ionicons.js` now passes `'Ionicons'` to `createIconSet`; (2) `createIconSet.js` initialises `fontIsLoaded = true` immediately on New Architecture (`!!global.expo?.modules` is truthy) so icons render from the UIAppFonts-registered font without waiting for `ExpoFontLoader.loadAsync()`, with a try/catch fallback to prevent a failed load from permanently blanking icons.
+**Root cause of blank icons on iOS 26 (fixed in build 14):** `@expo/vector-icons/build/Ionicons.js` called `createIconSet(glyphMap, 'ionicons', ...)` (lowercase). On iOS `<Text fontFamily="ionicons">` is case-sensitive. The `expo-font` config plugin registers the font via `UIAppFonts` under its PostScript name `'Ionicons'` (capital I). The mismatch meant iOS could never find the font. Two-part fix in `@expo+vector-icons+15.0.3.patch`: (1) `Ionicons.js` now passes `'Ionicons'` to `createIconSet`; (2) `createIconSet.js` initialises `fontIsLoaded = true` immediately on New Architecture (`!!global.expo?.modules` is truthy) so icons render from the UIAppFonts-registered font without waiting for `ExpoFontLoader.loadAsync()`, with a try/catch fallback to prevent a failed load from permanently blanking icons.
 
 Adding new icon families requires: spreading `IconFamily.font` into `useFonts()` AND adding the `.ttf` path to the `expo-font` plugin fonts array in `app.json` AND verifying the font family name passed to `createIconSet` matches the font's PostScript name (patch `build/IconFamily.js` if it doesn't).
 
@@ -531,7 +531,7 @@ If the package itself calls `NativeModules.*` at its own module-level code, the 
 
 | Patch | What it fixes |
 |-------|--------------|
-| `@expo+vector-icons+15.0.3.patch` | `NativeModules.RNVectorIconsManager` eval-time access → lazy Proxy |
+| `@expo+vector-icons+15.0.3.patch` | Four fixes: (1) `NativeModules.RNVectorIconsManager` eval-time → lazy Proxy; (2) `ensureNativeModuleAvailable` skipped on New Arch; (3) `Ionicons.js` font family name `'ionicons'` → `'Ionicons'` (PostScript name, iOS case-sensitive); (4) `createIconSet.js` initialises `fontIsLoaded=true` on New Arch (`!!global.expo?.modules`) so icons render from UIAppFonts without ExpoFontLoader |
 | `@react-native-community+netinfo+11.4.1.patch` | `NativeModules.RNCNetInfo` in `src/internal/nativeModule.ts` eval-time → lazy Proxy. Metro uses `"react-native": "src/index.ts"`. |
 | `expo+54.0.33.patch` | `NativeModules.EXDevLauncher` in `Expo.fx.tsx` → `false` (production-only) |
 | `expo-asset+12.0.12.patch` | `requireNativeModule('ExpoAsset')` eval-time → lazy Proxy |
