@@ -13,7 +13,7 @@ module.exports = function withAdiRegistration(config) {
       fs.mkdirSync(assetsDir, { recursive: true });
       fs.writeFileSync(
         path.join(assetsDir, 'adi-registration.properties'),
-        'DKZYIVTASY4X0AAAAAAAAAAAAA\n'
+        'DKZYIVTASY4XOAAAAAAAAAAAAA'
       );
       return config;
     },
