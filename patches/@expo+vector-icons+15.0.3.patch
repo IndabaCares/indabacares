@@ -46,7 +46,7 @@ index 68aad7f..64a68bd 100644
        'The native RNVectorIcons API is not available, did you properly integrate the module? Please verify your autolinking setup and recompile.'
 
 diff --git a/node_modules/@expo/vector-icons/build/Ionicons.js b/node_modules/@expo/vector-icons/build/Ionicons.js
-index 0000000..0000001 100644
+index 992a84b..51ef58b 100644
 --- a/node_modules/@expo/vector-icons/build/Ionicons.js
 +++ b/node_modules/@expo/vector-icons/build/Ionicons.js
 @@ -2,5 +2,5 @@
@@ -57,25 +57,32 @@ index 0000000..0000001 100644
 +export default createIconSet(glyphMap, 'Ionicons', font);
  //# sourceMappingURL=Ionicons.js.map
 diff --git a/node_modules/@expo/vector-icons/build/createIconSet.js b/node_modules/@expo/vector-icons/build/createIconSet.js
-index 0000000..0000001 100644
+index bfdac87..3b29d5e 100644
 --- a/node_modules/@expo/vector-icons/build/createIconSet.js
 +++ b/node_modules/@expo/vector-icons/build/createIconSet.js
 @@ -52,17 +52,25 @@
          };
          _mounted = false;
          _icon;
-         state = {
+-        state = {
 -            fontIsLoaded: Font.isLoaded(fontName),
-+            // On New Architecture (global.expo?.modules is set), the expo-font config plugin
-+            // embeds the font natively via UIAppFonts before JS runs - no async loading needed.
-+            fontIsLoaded: Font.isLoaded(fontName) || !!global.expo?.modules,
-         };
-         async componentDidMount() {
-             this._mounted = true;
-             if (!this.state.fontIsLoaded) {
+-        };
+-        async componentDidMount() {
+-            this._mounted = true;
+-            if (!this.state.fontIsLoaded) {
 -                await Font.loadAsync(font);
 -                /* eslint-disable react/no-did-mount-set-state */
 -                this._mounted && this.setState({ fontIsLoaded: true });
+-            }
+-        }
++        state = {
++            // On New Architecture (global.expo?.modules is set), the expo-font config plugin
++            // embeds the font natively via UIAppFonts before JS runs - no async loading needed.
++            fontIsLoaded: Font.isLoaded(fontName) || !!global.expo?.modules,
++        };
++        async componentDidMount() {
++            this._mounted = true;
++            if (!this.state.fontIsLoaded) {
 +                try {
 +                    await Font.loadAsync(font);
 +                }
@@ -85,8 +92,8 @@ index 0000000..0000001 100644
 +                }
 +                /* eslint-disable react/no-did-mount-set-state */
 +                this._mounted && this.setState({ fontIsLoaded: true });
-             }
-         }
++            }
++        }
          componentWillUnmount() {
              this._mounted = false;
          }
