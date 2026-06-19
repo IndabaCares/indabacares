@@ -1,4 +1,4 @@
-﻿diff --git a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
+diff --git a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
 index 5847373..ad1f2bc 100644
 --- a/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
 +++ b/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/lib/create-icon-set.js
@@ -44,7 +44,6 @@ index 68aad7f..64a68bd 100644
    if (!NativeIconAPI) {
      throw new Error(
        'The native RNVectorIcons API is not available, did you properly integrate the module? Please verify your autolinking setup and recompile.'
-
 diff --git a/node_modules/@expo/vector-icons/build/Ionicons.js b/node_modules/@expo/vector-icons/build/Ionicons.js
 index 992a84b..51ef58b 100644
 --- a/node_modules/@expo/vector-icons/build/Ionicons.js
