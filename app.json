@@ -79,6 +79,7 @@
       "expo-secure-store",
       "./plugins/withPrivacyManifest",
       "./plugins/withNetworkSecurityConfig",
+      "./plugins/withAdiRegistration",
       [
         "expo-notifications",
         {
