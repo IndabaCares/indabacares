@@ -511,6 +511,15 @@ On iOS 26 with New Architecture, `NativeModules` is `BridgelessNativeModuleProxy
 - **`expo-updates` native init fires regardless of `checkOnLaunch` setting** — the `"checkOnLaunch": "NEVER"` in `app.json` is JS-layer only; native ObjC still registers and initialises its SQLite database via `dispatch_once` on a GCD background thread at launch. The risk is accepted because OTA updates (`eas update`) are a core feature. If unexplained launch crashes appear, this is the first thing to investigate.
 - **`app/(screens)/notification-permission.tsx` has a top-level `import * as Notifications from 'expo-notifications'`** — this violates the pattern but is safe because `EXPO_ROUTER_IMPORT_MODE=lazy` defers screen module evaluation until first navigation (post-login, after TurboModules are registered). Do not remove lazy mode or this becomes a launch crash.
 - **Never use `ImageBackground` from React Native** — on iOS 26 New Architecture its image layer does not render (the background shows as transparent, revealing only the overlay colour). Replace with an explicit `View` containing an `expo-image` `<Image style={StyleSheet.absoluteFillObject} contentFit="cover" />` as the first child. The `overflow: 'hidden'` + `borderRadius` on the parent `View` clips it correctly. `app/(tabs)/profile.tsx` is the canonical example.
+- **Never pass a raw `require()` number as the `source` prop to any Image component on iOS** — On New Architecture Fabric, the `{ uri, __packager_asset: true, width: N, height: M, scale: 1 }` object produced by `resolveAssetSource(number)` causes local images to silently not render (the `width`/`height` metadata conflicts with Fabric layout). Always pre-resolve local assets to plain `{ uri: string }` objects using this helper (place after imports at module level):
+  ```ts
+  import { Image as RNImage } from 'react-native';
+  function _resolveLocal(src: number): { uri: string } {
+    return { uri: RNImage.resolveAssetSource(src).uri };
+  }
+  const MY_IMAGE = _resolveLocal(require('./assets/photo.jpg'));
+  ```
+  This strips the metadata and makes the source identical in shape to a remote `{ uri: 'https://...' }` which already works. `app/(tabs)/profile.tsx` (hotel backgrounds) and `app/(screens)/csr-hotels.tsx` (hotel logos) are canonical examples.
 - **Never import or top-level `require` a package with native modules.** Use a lazy loader:
 
 ```ts
@@ -527,14 +536,14 @@ If the package itself calls `NativeModules.*` at its own module-level code, the 
 
 **Critical Metro resolution note:** Metro (RN bundler) prefers the `"react-native"` field in `package.json` over `"main"`. Packages like `react-native-gesture-handler` and `react-native-reanimated` set `"react-native": "src/index.ts"` — Metro loads TypeScript source from `src/`, completely ignoring `lib/commonjs/`. When adding a new patch, always check the package's `package.json` `"react-native"` and `"main"` fields and target whichever one Metro resolves to. Patching the wrong file has zero effect.
 
-17 patches in `patches/` guard packages that access `NativeModules.*` at module-eval time:
+17 patches in `patches/` guard packages that access `NativeModules.*` at module-eval time. **`scripts/fix-expo-asset.js`** (run via `postinstall` after patch-package) applies two additional fixes to `expo-asset` that cannot be expressed as a simple patch-package diff:
 
 | Patch | What it fixes |
 |-------|--------------|
 | `@expo+vector-icons+15.0.3.patch` | Four fixes: (1) `NativeModules.RNVectorIconsManager` eval-time → lazy Proxy; (2) `ensureNativeModuleAvailable` skipped on New Arch; (3) `Ionicons.js` font family name `'ionicons'` → `'Ionicons'` (PostScript name, iOS case-sensitive); (4) `createIconSet.js` initialises `fontIsLoaded=true` on New Arch (`!!global.expo?.modules`) so icons render from UIAppFonts without ExpoFontLoader |
 | `@react-native-community+netinfo+11.4.1.patch` | `NativeModules.RNCNetInfo` in `src/internal/nativeModule.ts` eval-time → lazy Proxy. Metro uses `"react-native": "src/index.ts"`. |
 | `expo+54.0.33.patch` | `NativeModules.EXDevLauncher` in `Expo.fx.tsx` → `false` (production-only) |
-| `expo-asset+12.0.12.patch` | `requireNativeModule('ExpoAsset')` eval-time → lazy Proxy |
+| `expo-asset+12.0.12.patch` | `requireNativeModule('ExpoAsset')` eval-time → lazy Proxy. **Additionally patched by `scripts/fix-expo-asset.js`** (runs in `postinstall` after patch-package): (1) Proxy gains try/catch + null guard + `downloadAsync` fallback (returns URL directly if ExpoAsset TurboModule unavailable); (2) `build/Asset.js` gains an iOS `file://` shortcut — marks embedded assets `downloaded=true` immediately, skipping `downloadAsync()` entirely (mirrors the Android drawable shortcut). |
 | `expo-constants+18.0.13.patch` | `NativeModules.EXDevLauncher` block removed; `getManifest()` gains lazy `_nativeInitAttempted` retry guard |
 | `expo-font+14.0.11.patch` | `requireNativeModule('ExpoFontLoader')` in `build/ExpoFontLoader.js` — `typeof window === 'undefined'` is `false` in RN/Hermes so the ternary takes the native branch at eval time → lazy Proxy |
 | `expo-image+3.0.11.patch` | `requireNativeModule('ExpoImage')` in `src/ImageModule.ts` eval-time → lazy Proxy. Metro uses `"main": "src/index.ts"` (no `react-native` field). |

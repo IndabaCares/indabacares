@@ -14,7 +14,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && node scripts/fix-expo-asset.js"
   },
   "dependencies": {
     "@expo-google-fonts/dancing-script": "^0.4.2",

@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Image as RNImage,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,13 +31,19 @@ import { QUERY_KEYS } from '@/lib/constants';
 import { BadgeGivenSheet } from '@/components/profile/BadgeGivenSheet';
 
 // ─── Hotel background images ──────────────────────────────────────────────────
+// Pre-resolve to { uri } objects so expo-image treats them like remote URLs.
+// Passing __packager_asset+width+height metadata to expo-image Fabric on New Arch
+// causes the image to not render; a plain { uri } object works like a remote URL.
+function _resolveLocal(src: number): { uri: string } {
+  return { uri: RNImage.resolveAssetSource(src).uri };
+}
 
-const HOTEL_BACKGROUNDS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':                  require('../../assets/Indaba-long.jpg'),
-  'Indaba Lodge Gaborone':         require('../../assets/ILG.jpg'),
-  'Indaba Lodge Richards Bay':     require('../../assets/ILRB.jpg'),
+const HOTEL_BACKGROUNDS: Record<string, { uri: string }> = {
+  'Indaba Hotel':                  _resolveLocal(require('../../assets/Indaba-long.jpg')),
+  'Indaba Lodge Gaborone':         _resolveLocal(require('../../assets/ILG.jpg')),
+  'Indaba Lodge Richards Bay':     _resolveLocal(require('../../assets/ILRB.jpg')),
 };
-const DEFAULT_BG = require('../../assets/Indaba-long.jpg');
+const DEFAULT_BG = _resolveLocal(require('../../assets/Indaba-long.jpg'));
 
 // ─── Brand colours ────────────────────────────────────────────────────────────
 
