@@ -1,14 +1,15 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image,
+  View, Text, TouchableOpacity, StyleSheet, Image as RNImage,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/lib/constants';
 
 function _resolveLocal(src: number): { uri: string } {
-  return { uri: Image.resolveAssetSource(src).uri };
+  return { uri: RNImage.resolveAssetSource(src).uri };
 }
 
 // Only these two hotels have channels
@@ -53,7 +54,7 @@ export default function ChannelPickerScreen() {
             }
           >
             <View style={s.logoWrap}>
-              <Image source={HOTEL_LOGOS[name]} style={s.logo} resizeMode="contain" />
+              <Image source={HOTEL_LOGOS[name]} style={s.logo} contentFit="contain" />
             </View>
             <View style={s.cardText}>
               <Text style={s.hotelName}>{name}</Text>

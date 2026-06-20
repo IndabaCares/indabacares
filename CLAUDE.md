@@ -218,9 +218,15 @@ React Query cache keys are centralised in `QUERY_KEYS` in `src/lib/constants.ts`
 
 **Feature flags** — `src/hooks/use-feature-flags.ts` reads per-hotel feature toggles (`moods_enabled`, `rewards_enabled`, `skills_enabled`, `leaderboards_enabled`, `custom_hashtags_enabled`, `boost_enabled`) from `hotel_settings.feature_flags` (JSONB). Cached 5 minutes via React Query. Check these before rendering feature-gated UI.
 
-**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`, `channel.ts`). Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+**Admin data layer** — three tiers, each with a distinct role:
+- `admin/src/api/queries.ts` — PostgREST read functions (paginated lists, filters) called by admin hooks via React Query
+- `admin/src/api/mutations.ts` — PostgREST write functions for client-side direct updates (departments, thumbs-up types, etc.)
+- `admin/src/api/edge-functions.ts` — typed wrappers for admin-initiated Edge Function calls
+- `admin/src/api/export.ts` — bulk data export helpers
 
-**Admin hooks** — `admin/src/hooks/` contains eight React hooks for the admin dashboard: `use-audit-logs`, `use-auth`, `use-departments`, `use-gamification`, `use-mood`, `use-recognitions`, `use-rewards`, `use-users`. Check here before writing new data-fetching logic in admin client components.
+**Admin mutations** use Next.js Server Actions in `admin/src/app/actions/` (`employees.ts`, `rewards.ts`, `redemptions.ts`, `campaigns.ts`, `initiatives.ts`, `notifications.ts`, `channel.ts`) for form-based mutations that need server-side validation. Server Components fetch data directly via `createAdminClient()`. Client components call Server Actions via `useTransition`.
+
+**Admin hooks** — `admin/src/hooks/` contains eight React hooks for the admin dashboard: `use-audit-logs`, `use-auth`, `use-departments`, `use-gamification`, `use-mood`, `use-recognitions`, `use-rewards`, `use-users`. These wrap `admin/src/api/queries.ts` via React Query. Check here before writing new data-fetching logic in admin client components.
 
 **Admin routes** (`admin/src/app/`): `(dashboard)/` contains all authenticated admin pages (`analytics`, `audit-logs`, `campaigns`, `channel`, `departments`, `employees`, `gamification`, `initiatives`, `mood`, `notifications`, `recognitions`, `redemptions`, `rewards`, `settings`, `users`); `login/`, `forgot-password/`, `reset-password/`, `privacy/` are public routes (no auth). API routes live in `api/`. The `gamification/` directory has five nested pages: `badges`, `budgets`, `company-values`, `skills`, `thumbs-up-types`. The `users/` directory has sub-pages `[id]` (user detail) and `invite`. The `rewards/` directory has a nested `redemptions/` sub-page (in addition to the top-level `redemptions/` route). The `rewards/` directory also has a `categories/` sub-page.
 
@@ -316,26 +322,27 @@ To add a migration: `supabase migration new <description>`, edit the generated f
 
 ## Utility Helpers (`src/utils/`)
 
-Five small utility modules — prefer these over inline helpers:
+Six small utility modules — prefer these over inline helpers:
 
 - `format.ts` — `formatRelativeTime()` (relative date string), `formatNumber()` (K/M abbreviations)
 - `notification-router.ts` — `routeFromNotification()` maps a notification payload (`referenceType` + `referenceId`) to the correct Expo Router route
 - `image.ts` — image manipulation helpers (resize, compress)
 - `validation.ts` — input validation helpers
 - `linking.ts` — deep-link URL construction helpers
+- `src/lib/haptics.ts` — `notificationHaptic()` (success feedback) and `impactHaptic(style)` (`'light' | 'medium' | 'heavy'`); no-ops on web
 
 ---
 
 ## Shared Constants
 
-`src/lib/constants.ts` is the single source of truth for:
+`src/lib/constants.ts` is the single source of truth for the mobile app:
 - `COLORS` — brand palette (primary `#7C3AED`, etc.)
-- `QUERY_KEYS` — React Query cache key factory (use in all new hooks)
+- `QUERY_KEYS` — React Query cache key factory (use in all new mobile hooks)
 - `PAGE_SIZE`, `MAX_RECIPIENTS`, `MAX_HASHTAGS`, `MIN/MAX_MESSAGE_LENGTH` — limits
 - `RECOGNITION_BADGES`, `REACTION_EMOJIS`, `MOOD_MAP`, `VISIBILITY_OPTIONS`, `REDEMPTION_STATUS`
 - `BADGE_ICONS`
 
-Do not redeclare these values elsewhere.
+`admin/src/lib/constants.ts` is the equivalent for the admin dashboard — its own `QUERY_KEYS`, `PAGE_SIZE`, `ROLE_LABELS`, `ROLE_COLORS`, `MOOD_MAP`, and `REDEMPTION_STATUS`. Do not import mobile constants in admin code or vice versa.
 
 ---
 
@@ -354,6 +361,7 @@ Do not redeclare these values elsewhere.
 - **Tables (admin):** `@tanstack/react-table`.
 - **Charts (admin):** `recharts`.
 - **Toasts (admin):** `sonner`.
+- **Zod version mismatch:** Mobile uses Zod v3 (`"^3.24.2"`); admin uses Zod v4 (`"^4.3.6"`). Zod v4 has breaking API changes — do not copy validation schemas between workspaces without reviewing the diff. The two `validation.ts` / `validations.ts` files in `admin/src/lib/` are already on v4 syntax.
 
 ---
 

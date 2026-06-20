@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, FlatList, RefreshControl, StyleSheet,
-  ActivityIndicator, TouchableOpacity, ScrollView, Image,
+  ActivityIndicator, TouchableOpacity, ScrollView, Image as RNImage,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '@/hooks/use-feed';
@@ -25,12 +26,16 @@ import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
 
-const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+function _resolveLocal(src: number): { uri: string } {
+  return { uri: RNImage.resolveAssetSource(src).uri };
+}
+
+const HOTEL_LOGOS: Record<string, { uri: string }> = {
+  'Indaba Hotel':              _resolveLocal(require('../../assets/indabahotel.png')),
+  'Indaba Lodge Richards Bay': _resolveLocal(require('../../assets/indabalodgerichardsbay.png')),
+  'Indaba Lodge Gaborone':     _resolveLocal(require('../../assets/indabalodgegaborone.png')),
+  'Chobe Safari Lodge':        _resolveLocal(require('../../assets/chobesafarilodge.png')),
+  'Nata Lodge':                _resolveLocal(require('../../assets/natalodge.png')),
 };
 
 
@@ -49,7 +54,7 @@ function HotelPicker({ onSelect }: { onSelect: (hotel: string) => void }) {
         >
           <View style={picker.iconWrap}>
             {HOTEL_LOGOS[hotel] ? (
-              <Image source={HOTEL_LOGOS[hotel]} style={picker.hotelLogo} resizeMode="contain" />
+              <Image source={HOTEL_LOGOS[hotel]} style={picker.hotelLogo} contentFit="contain" />
             ) : (
               <Ionicons name="business-outline" size={22} color={PURPLE} />
             )}

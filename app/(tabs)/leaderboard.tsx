@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   SafeAreaView as RNSafeAreaView,
+  Image as RNImage,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -187,12 +188,16 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
-const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+function _resolveLocal(src: number): { uri: string } {
+  return { uri: RNImage.resolveAssetSource(src).uri };
+}
+
+const HOTEL_LOGOS: Record<string, { uri: string }> = {
+  'Indaba Hotel':              _resolveLocal(require('../../assets/indabahotel.png')),
+  'Indaba Lodge Richards Bay': _resolveLocal(require('../../assets/indabalodgerichardsbay.png')),
+  'Indaba Lodge Gaborone':     _resolveLocal(require('../../assets/indabalodgegaborone.png')),
+  'Chobe Safari Lodge':        _resolveLocal(require('../../assets/chobesafarilodge.png')),
+  'Nata Lodge':                _resolveLocal(require('../../assets/natalodge.png')),
 };
 
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {

@@ -15,8 +15,32 @@
  *    Fix: if uri starts with 'file://' on iOS, set localUri=uri and downloaded=true.
  */
 
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
+
+function applyFix(label, filePath, oldStr, newStr, alreadyPatchedStr) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.warn('[fix-expo-asset] ' + label + ': file not found at ' + filePath + ' — skipping');
+      return;
+    }
+    const content = fs.readFileSync(filePath, 'utf8');
+    if (content.includes(alreadyPatchedStr)) {
+      console.log('[fix-expo-asset] ' + label + ': already patched, skipping');
+      return;
+    }
+    if (content.includes(oldStr)) {
+      fs.writeFileSync(filePath, content.replace(oldStr, newStr), 'utf8');
+      console.log('[fix-expo-asset] ' + label + ': patch applied');
+    } else {
+      console.warn('[fix-expo-asset] ' + label + ': expected pattern not found — file may have changed');
+    }
+  } catch (err) {
+    console.warn('[fix-expo-asset] ' + label + ': error during patch — ' + err.message);
+  }
+}
 
 // ── Fix 1: ExpoAsset.js ────────────────────────────────────────────────────────
 
@@ -50,16 +74,7 @@ const AssetModule = new Proxy({}, {
     }
 });`;
 
-let expoAsset = fs.readFileSync(expoAssetPath, 'utf8');
-if (expoAsset.includes(oldProxy)) {
-  expoAsset = expoAsset.replace(oldProxy, newProxy);
-  fs.writeFileSync(expoAssetPath, expoAsset, 'utf8');
-  console.log('[fix-expo-asset] ExpoAsset.js: improved lazy Proxy with try/catch + fallback');
-} else if (expoAsset.includes('_assetModuleResolved')) {
-  console.log('[fix-expo-asset] ExpoAsset.js: already patched, skipping');
-} else {
-  console.warn('[fix-expo-asset] ExpoAsset.js: pattern not found — check the file');
-}
+applyFix('ExpoAsset.js', expoAssetPath, oldProxy, newProxy, '_assetModuleResolved');
 
 // ── Fix 2: Asset.js ───────────────────────────────────────────────────────────
 
@@ -86,13 +101,4 @@ const newAndroidBlock =
             }
             Asset.byHash[meta.hash] = asset;`;
 
-let assetJs = fs.readFileSync(assetPath, 'utf8');
-if (assetJs.includes(oldAndroidBlock)) {
-  assetJs = assetJs.replace(oldAndroidBlock, newAndroidBlock);
-  fs.writeFileSync(assetPath, assetJs, 'utf8');
-  console.log('[fix-expo-asset] Asset.js: added iOS file:// shortcut (skip downloadAsync)');
-} else if (assetJs.includes("Platform.OS === 'ios' && uri.startsWith('file://')")) {
-  console.log('[fix-expo-asset] Asset.js: already patched, skipping');
-} else {
-  console.warn('[fix-expo-asset] Asset.js: pattern not found — check the file');
-}
+applyFix('Asset.js', assetPath, oldAndroidBlock, newAndroidBlock, "Platform.OS === 'ios' && uri.startsWith('file://')");
