@@ -86,6 +86,10 @@ BEGIN
   DELETE FROM public.notifications
     WHERE employee_id IN (v_demo01, v_zanele, v_sipho, v_ayanda, v_thandi);
 
+  -- Also catch any redemptions referencing these reward rows from prior runs
+  DELETE FROM public.redemptions
+    WHERE reward_id IN (v_rwd1, v_rwd2, v_rwd3, v_rwd4);
+
   DELETE FROM public.rewards
     WHERE id IN (v_rwd1, v_rwd2, v_rwd3, v_rwd4);
 
