@@ -21,17 +21,18 @@ import { useReactionRealtime } from '@/hooks/use-reaction-realtime';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { useLegendOfMonth } from '@/hooks/use-legend-of-month';
 import { HOTELS, APA_HOTEL } from '@/lib/hotels';
+import { indabaHotel, indabalodgeRichardsBay, indabalodgeGaborone, chobeSafariLodge, nataLodge } from '@/lib/localImages';
 import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
 import type { RecognitionFeedItem } from '@/api/queries';
 
 const PURPLE = '#7B1FA2';
 
-const HOTEL_LOGOS: Record<string, number> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+const HOTEL_LOGOS: Record<string, string> = {
+  'Indaba Hotel':              indabaHotel,
+  'Indaba Lodge Richards Bay': indabalodgeRichardsBay,
+  'Indaba Lodge Gaborone':     indabalodgeGaborone,
+  'Chobe Safari Lodge':        chobeSafariLodge,
+  'Nata Lodge':                nataLodge,
 };
 
 
@@ -50,7 +51,7 @@ function HotelPicker({ onSelect }: { onSelect: (hotel: string) => void }) {
         >
           <View style={picker.iconWrap}>
             {HOTEL_LOGOS[hotel] ? (
-              <Image source={HOTEL_LOGOS[hotel]} style={picker.hotelLogo} contentFit="contain" />
+              <Image source={{ uri: HOTEL_LOGOS[hotel] }} style={picker.hotelLogo} contentFit="contain" />
             ) : (
               <Ionicons name="business-outline" size={22} color={PURPLE} />
             )}

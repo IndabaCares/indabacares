@@ -16,8 +16,9 @@ import {
 import { useReactionBalance } from '@/hooks/use-reaction-balance';
 import { ReactionExhaustedModal } from '@/components/reactions/ReactionExhaustedModal';
 import type { RecognitionFeedItem } from '@/api/queries';
+import { usedLogo } from '@/lib/localImages';
 
-const LOGO = require('../../../assets/usedlogo.png');
+const LOGO = { uri: usedLogo };
 
 const REACTIONS: { type: ReactionType; emoji: string }[] = [
   { type: 'heart',     emoji: '❤️' },

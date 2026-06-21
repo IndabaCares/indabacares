@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDepartments } from '@/hooks/use-team';
 import { useEmployee } from '@/providers/EmployeeContext';
+import { indabaHotel, indabalodgeRichardsBay, indabalodgeGaborone, chobeSafariLodge, nataLodge } from '@/lib/localImages';
 import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 
 const PURPLE = '#7B1FA2';
@@ -27,12 +28,12 @@ const DEPT_ICONS: Record<string, { icon: keyof typeof import('@expo/vector-icons
 
 const DEFAULT_ICON = { icon: 'briefcase-outline' as const, color: PURPLE, bg: '#ede9fe' };
 
-const HOTEL_LOGOS: Record<string, number> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+const HOTEL_LOGOS: Record<string, string> = {
+  'Indaba Hotel':              indabaHotel,
+  'Indaba Lodge Richards Bay': indabalodgeRichardsBay,
+  'Indaba Lodge Gaborone':     indabalodgeGaborone,
+  'Chobe Safari Lodge':        chobeSafariLodge,
+  'Nata Lodge':                nataLodge,
 };
 
 // ─── Hotel picker (APA only) ──────────────────────────────────────────────────
@@ -54,7 +55,7 @@ function HotelPicker() {
         >
           <View style={styles.iconWrap}>
             {HOTEL_LOGOS[hotel] ? (
-              <Image source={HOTEL_LOGOS[hotel]} style={styles.hotelLogo} contentFit="contain" />
+              <Image source={{ uri: HOTEL_LOGOS[hotel] }} style={styles.hotelLogo} contentFit="contain" />
             ) : (
               <Ionicons name="business-outline" size={22} color={PURPLE} />
             )}

@@ -6,8 +6,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
 import { useEmployee } from '@/providers/EmployeeContext';
 import type { CelebrationFeedItem } from '@/hooks/use-celebrations';
+import { usedLogo } from '@/lib/localImages';
 
-const LOGO = require('../../../assets/usedlogo.png');
+const LOGO = { uri: usedLogo };
 
 const MILESTONE_YEARS = [1, 5, 10, 15, 20, 25, 30, 35, 40];
 

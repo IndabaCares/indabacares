@@ -18,6 +18,7 @@ import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { HOTELS, APA_HOTEL } from '@/lib/hotels';
 import { COLORS } from '@/lib/constants';
+import { indabaHotel, indabalodgeRichardsBay, indabalodgeGaborone, chobeSafariLodge, nataLodge } from '@/lib/localImages';
 import { type PeriodType } from '@/api/leaderboard-service';
 import { LeaderboardRow } from '@/components/leaderboard/LeaderboardRow';
 import { TopThreePodium } from '@/components/leaderboard/TopThreePodium';
@@ -188,12 +189,12 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
-const HOTEL_LOGOS: Record<string, number> = {
-  'Indaba Hotel':              require('../../assets/indabahotel.png'),
-  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
-  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
-  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
-  'Nata Lodge':                require('../../assets/natalodge.png'),
+const HOTEL_LOGOS: Record<string, string> = {
+  'Indaba Hotel':              indabaHotel,
+  'Indaba Lodge Richards Bay': indabalodgeRichardsBay,
+  'Indaba Lodge Gaborone':     indabalodgeGaborone,
+  'Chobe Safari Lodge':        chobeSafariLodge,
+  'Nata Lodge':                nataLodge,
 };
 
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -213,7 +214,7 @@ function HotelPickerView({ onSelect }: { onSelect: (hotel: string) => void }) {
         >
           <View style={pickerStyles.iconWrap}>
             {HOTEL_LOGOS[hotel] ? (
-              <Image source={HOTEL_LOGOS[hotel]} style={pickerStyles.hotelLogo} contentFit="contain" />
+              <Image source={{ uri: HOTEL_LOGOS[hotel] }} style={pickerStyles.hotelLogo} contentFit="contain" />
             ) : (
               <Ionicons name={HOTEL_ICON[hotel] ?? 'business-outline'} size={22} color={PURPLE} />
             )}
@@ -273,7 +274,7 @@ export default function LeaderboardScreen() {
   // APA with no hotel — show picker
   if (isAPA && !selectedHotel) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: COLORS.primary }]} edges={['top']}>
         <View style={styles.screen}>
           <View style={styles.pickerHeader}>
             <Text style={styles.pickerTitle}>Leaderboard</Text>

@@ -5,13 +5,14 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/lib/constants';
+import { indabaHotel, chobeSafariLodge } from '@/lib/localImages';
 
 // Only these two hotels have channels
 const CHANNEL_HOTEL_NAMES = ['Indaba Hotel', 'Chobe Safari Lodge'] as const;
 
-const HOTEL_LOGOS: Record<string, number> = {
-  'Indaba Hotel':       require('../../assets/indabahotel.png'),
-  'Chobe Safari Lodge': require('../../assets/chobesafarilodge.png'),
+const HOTEL_LOGOS: Record<string, string> = {
+  'Indaba Hotel':       indabaHotel,
+  'Chobe Safari Lodge': chobeSafariLodge,
 };
 
 export default function ChannelPickerScreen() {
@@ -46,7 +47,7 @@ export default function ChannelPickerScreen() {
             }
           >
             <View style={s.logoWrap}>
-              <Image source={HOTEL_LOGOS[name]} style={s.logo} contentFit="contain" />
+              <Image source={{ uri: HOTEL_LOGOS[name] }} style={s.logo} contentFit="contain" />
             </View>
             <View style={s.cardText}>
               <Text style={s.hotelName}>{name}</Text>
