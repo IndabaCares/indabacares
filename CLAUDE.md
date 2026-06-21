@@ -503,6 +503,20 @@ Application-level rate limiting uses the `auth_rate_limits` table + `check_rate_
 
 ---
 
+## Custom Expo Config Plugins (`plugins/`)
+
+Three custom `withDangerousMod` plugins run at `npx expo prebuild` time (listed in `app.json` plugins array). Do not remove them — each fills a gap that Expo's built-in plugins don't cover.
+
+| Plugin | Platform | What it does |
+|--------|----------|--------------|
+| `withPrivacyManifest.js` | iOS | Injects `PrivacyInfo.xcprivacy` (required by Apple since May 2024). Declares four required-reason APIs: `UserDefaults` (AsyncStorage/SecureStore/Reanimated/Notifications), `FileTimestamp` (expo-image disk cache), `DiskSpace` (expo-image cache eviction), `SystemBootTime` (Reanimated animation timing). |
+| `withNetworkSecurityConfig.js` | Android | Writes `network_security_config.xml` to enforce OS-level HTTPS. Cleartext HTTP is blocked in release builds; `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` are exempt in debug builds only (for Metro and local Supabase). This is a second enforcement layer complementing `secureApi.ts`. |
+| `withAdiRegistration.js` | Android | Writes `adi-registration.properties` (ADI token `DKZYIVTASY4XOAAAAAAAAAAAAA`) into `app/src/main/assets/` — required for Play Store's Application Defence Initiative verification. |
+
+If you add a new permission or SDK that accesses a "required reason" API on iOS, update `withPrivacyManifest.js` to declare it.
+
+---
+
 ## iOS 26 / New Architecture Compatibility
 
 **RN 0.81 always runs New Architecture (TurboModules / Bridgeless) regardless of `newArchEnabled`.** Do not set `newArchEnabled: false` — it was tried in the sibling project and crashed identically.
