@@ -623,9 +623,19 @@ eas build --profile preview --platform all --clear-cache
 - Credentials managed by EAS (`credentialsSource: "remote"` in `production` profile)
 - Always use `--clear-cache` on iOS builds — EAS fingerprint reuse can exclude patch-package fixes
 - Build command: `eas build --profile production --platform ios --clear-cache`
+- Review build (for App Store submission): `eas build --profile review --platform ios --clear-cache` — inherits production + sets `EXPO_PUBLIC_REVIEW_MODE=true` to show the Try Demo button for Apple reviewers
 - Submit to TestFlight: `eas submit --platform ios --latest` (interactive — prompts for Apple ID + 2FA). **Must run in PowerShell or cmd.exe, not bash.** In cmd: `set NODE_TLS_REJECT_UNAUTHORIZED=0 && eas submit --platform ios --latest`. In PowerShell: `$env:NODE_TLS_REJECT_UNAUTHORIZED = "0"; eas submit --platform ios --latest`. Non-interactive submit requires `ascAppId` in `eas.json` submit profile.
 - On Windows, EAS CLI and Vercel CLI both require `NODE_TLS_REJECT_UNAUTHORIZED=0` if behind a corporate proxy — SSL certificate chain cannot be verified by Node.js. Use `set VAR=0` in cmd or `$env:VAR = "0"` in PowerShell (bash `$env:` syntax does not work in cmd/bash).
 - Privacy policy hosted at `indabacares.co.za/privacy` (required for App Store submission)
 - `eas.json` android `buildType` must be `"app-bundle"` (not `"aab"`) — EAS validation rejects `"aab"`
 - Vercel CLI: run `npx vercel --prod` from the **repo root** (not from `admin/`) — the Vercel project has `rootDirectory: admin` set, so running from inside `admin/` doubles the path. The `.vercel` config folder lives at the repo root.
 - TestFlight testers: internal testing (up to 100) requires no Beta App Review — add testers by Apple ID in App Store Connect → TestFlight → Internal Testing
+
+**App Store Connect metadata required before submission** (one-time setup):
+- Copyright: `© 2025 Indaba Hospitality Group` (App Store Connect → Version → Copyright field)
+- Content Rights: App Information → Content Rights → "Does not contain third-party content"
+- Primary Category: Business (App Information → Category)
+- App Privacy: complete the data collection questionnaire (Contact Info, Identifiers, Usage Data — all linked to identity, not sold)
+- Pricing: Free (Tier 0) under Pricing and Availability
+
+**Current submission state (2026-06-21):** Build 20 (`review` profile, build number 20) submitted to Apple for review. Build 21 (`review` profile, build number 21, includes base64 logo fix + purple leaderboard header) is in TestFlight ready to submit if build 20 is rejected.
