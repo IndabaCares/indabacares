@@ -1,7 +1,8 @@
 import React, { memo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Dimensions,
+  View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { useEmployee } from '@/providers/EmployeeContext';
@@ -124,7 +125,7 @@ export const SkillCard = memo(function SkillCard({ recognition }: SkillCardProps
           style={s.card}
         >
           {/* ── Logo watermark ────────────────────────────────── */}
-          <Image source={LOGO} style={s.logo} resizeMode="contain" />
+          <Image source={LOGO} style={s.logo} contentFit="contain" />
 
           {/* ── Receiver row: avatar · name · dept · time ─────── */}
           <View style={s.receiverBlock}>

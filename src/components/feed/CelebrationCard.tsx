@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { useLikes, useToggleLike } from '@/hooks/use-likes';
@@ -64,7 +65,7 @@ export const CelebrationCard = memo(function CelebrationCard({ celebration }: Pr
       style={[s.card, { shadowColor }]}
     >
       {/* ── Logo watermark ────────────────────────────────── */}
-      <Image source={LOGO} style={s.logo} resizeMode="contain" />
+      <Image source={LOGO} style={s.logo} contentFit="contain" />
 
       {/* ── Header ────────────────────────────────────────── */}
       {isBirthday ? (

@@ -1,7 +1,8 @@
 import React, { memo, useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Dimensions,
+  View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/ui/Avatar';
 import { RECOGNITION_BADGES } from '@/lib/constants';
@@ -116,7 +117,7 @@ export const RecognitionCard = memo(function RecognitionCard({
         style={s.card}
       >
         {/* ── Logo watermark — bottom-right ─────────────────── */}
-        <Image source={LOGO} style={s.logo} resizeMode="contain" />
+        <Image source={LOGO} style={s.logo} contentFit="contain" />
 
         {/* ── Receiver row: avatar · name · dept · time ─────── */}
         <View style={s.receiverBlock}>
