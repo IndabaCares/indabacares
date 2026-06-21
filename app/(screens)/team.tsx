@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +27,7 @@ const DEPT_ICONS: Record<string, { icon: keyof typeof import('@expo/vector-icons
 
 const DEFAULT_ICON = { icon: 'briefcase-outline' as const, color: PURPLE, bg: '#ede9fe' };
 
-const HOTEL_LOGOS: Record<string, ReturnType<typeof require>> = {
+const HOTEL_LOGOS: Record<string, number> = {
   'Indaba Hotel':              require('../../assets/indabahotel.png'),
   'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
   'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
@@ -53,7 +54,7 @@ function HotelPicker() {
         >
           <View style={styles.iconWrap}>
             {HOTEL_LOGOS[hotel] ? (
-              <Image source={HOTEL_LOGOS[hotel]} style={styles.hotelLogo} resizeMode="contain" />
+              <Image source={HOTEL_LOGOS[hotel]} style={styles.hotelLogo} contentFit="contain" />
             ) : (
               <Ionicons name="business-outline" size={22} color={PURPLE} />
             )}

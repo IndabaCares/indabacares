@@ -10,7 +10,6 @@ import {
   Platform,
   TouchableOpacity,
   SafeAreaView as RNSafeAreaView,
-  Image as RNImage,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { useEmployee } from '@/providers/EmployeeContext';
 import { HOTELS, APA_HOTEL } from '@/lib/hotels';
+import { COLORS } from '@/lib/constants';
 import { type PeriodType } from '@/api/leaderboard-service';
 import { LeaderboardRow } from '@/components/leaderboard/LeaderboardRow';
 import { TopThreePodium } from '@/components/leaderboard/TopThreePodium';
@@ -188,16 +188,12 @@ function MyRankStrip({ entries }: { entries: LeaderboardEntry[] }) {
 
 // ─── APA Hotel Picker ─────────────────────────────────────────────────────────
 
-function _resolveLocal(src: number): { uri: string } {
-  return { uri: RNImage.resolveAssetSource(src).uri };
-}
-
-const HOTEL_LOGOS: Record<string, { uri: string }> = {
-  'Indaba Hotel':              _resolveLocal(require('../../assets/indabahotel.png')),
-  'Indaba Lodge Richards Bay': _resolveLocal(require('../../assets/indabalodgerichardsbay.png')),
-  'Indaba Lodge Gaborone':     _resolveLocal(require('../../assets/indabalodgegaborone.png')),
-  'Chobe Safari Lodge':        _resolveLocal(require('../../assets/chobesafarilodge.png')),
-  'Nata Lodge':                _resolveLocal(require('../../assets/natalodge.png')),
+const HOTEL_LOGOS: Record<string, number> = {
+  'Indaba Hotel':              require('../../assets/indabahotel.png'),
+  'Indaba Lodge Richards Bay': require('../../assets/indabalodgerichardsbay.png'),
+  'Indaba Lodge Gaborone':     require('../../assets/indabalodgegaborone.png'),
+  'Chobe Safari Lodge':        require('../../assets/chobesafarilodge.png'),
+  'Nata Lodge':                require('../../assets/natalodge.png'),
 };
 
 const HOTEL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -279,9 +275,9 @@ export default function LeaderboardScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.screen}>
-          <View style={[styles.header, { justifyContent: 'center', alignItems: 'center', paddingVertical: 24 }]}>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1e293b' }}>Leaderboard</Text>
-            <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>Choose a property</Text>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>Leaderboard</Text>
+            <Text style={styles.pickerSubtitle}>Choose a property</Text>
           </View>
           <HotelPickerView onSelect={setSelectedHotel} />
         </View>
@@ -483,6 +479,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#9CA3AF',
+  },
+
+  pickerHeader: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  pickerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  pickerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
   },
 });
 

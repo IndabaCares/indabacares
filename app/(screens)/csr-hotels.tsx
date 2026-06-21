@@ -1,25 +1,17 @@
 import React from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, Image as RNImage,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/lib/constants';
 
-function _resolveLocal(src: number): { uri: string } {
-  return { uri: RNImage.resolveAssetSource(src).uri };
-}
-
 // Only these two hotels have channels
 const CHANNEL_HOTEL_NAMES = ['Indaba Hotel', 'Chobe Safari Lodge'] as const;
 
-// Pre-resolved to { uri } — plain URI avoids __packager_asset metadata that
-// confuses Fabric Image on New Architecture (number source renders blank).
-const HOTEL_LOGOS: Record<string, { uri: string }> = {
-  'Indaba Hotel':      _resolveLocal(require('../../assets/indabahotel.png')),
-  'Chobe Safari Lodge': _resolveLocal(require('../../assets/chobesafarilodge.png')),
+const HOTEL_LOGOS: Record<string, number> = {
+  'Indaba Hotel':       require('../../assets/indabahotel.png'),
+  'Chobe Safari Lodge': require('../../assets/chobesafarilodge.png'),
 };
 
 export default function ChannelPickerScreen() {
