@@ -533,15 +533,16 @@ On iOS 26 with New Architecture, `NativeModules` is `BridgelessNativeModuleProxy
 - **`expo-updates` native init fires regardless of `checkOnLaunch` setting** — the `"checkOnLaunch": "NEVER"` in `app.json` is JS-layer only; native ObjC still registers and initialises its SQLite database via `dispatch_once` on a GCD background thread at launch. The risk is accepted because OTA updates (`eas update`) are a core feature. If unexplained launch crashes appear, this is the first thing to investigate.
 - **`app/(screens)/notification-permission.tsx` has a top-level `import * as Notifications from 'expo-notifications'`** — this violates the pattern but is safe because `EXPO_ROUTER_IMPORT_MODE=lazy` defers screen module evaluation until first navigation (post-login, after TurboModules are registered). Do not remove lazy mode or this becomes a launch crash.
 - **Never use `ImageBackground` from React Native** — on iOS 26 New Architecture its image layer does not render (the background shows as transparent, revealing only the overlay colour). Replace with an explicit `View` containing an `expo-image` `<Image style={StyleSheet.absoluteFillObject} contentFit="cover" />` as the first child. The `overflow: 'hidden'` + `borderRadius` on the parent `View` clips it correctly. `app/(tabs)/profile.tsx` is the canonical example.
-- **Never pass a raw `require()` number as the `source` prop to any Image component on iOS** — On New Architecture Fabric, the `{ uri, __packager_asset: true, width: N, height: M, scale: 1 }` object produced by `resolveAssetSource(number)` causes local images to silently not render (the `width`/`height` metadata conflicts with Fabric layout). Always pre-resolve local assets to plain `{ uri: string }` objects using this helper (place after imports at module level):
+- **Local `require()` images are completely broken on iOS 26 New Architecture — use base64 data URIs.** Three approaches were tried and all fail silently: (1) `require()` number → RN `Image`; (2) `require()` number → expo-image; (3) `_resolveLocal` (`{ uri: resolveAssetSource(...).uri }`) → expo-image. Root cause: Fabric codegen cannot serialise `require()` numbers for custom Fabric views (expo-image), and SDWebImage silently rejects `file://` app-bundle URIs on iOS 26. Remote `{ uri: 'https://...' }` sources work fine. **The correct fix** is to pre-encode static local images as base64 data URIs in `src/lib/localImages.ts` and use `source={{ uri: dataUri }}` with expo-image:
   ```ts
-  import { Image as RNImage } from 'react-native';
-  function _resolveLocal(src: number): { uri: string } {
-    return { uri: RNImage.resolveAssetSource(src).uri };
-  }
-  const MY_IMAGE = _resolveLocal(require('./assets/photo.jpg'));
+  // src/lib/localImages.ts
+  export const myImage: string = 'data:image/png;base64,iVBOR...';
+
+  // In component:
+  import { myImage } from '@/lib/localImages';
+  <Image source={{ uri: myImage }} style={...} contentFit="contain" />
   ```
-  This strips the metadata and makes the source identical in shape to a remote `{ uri: 'https://...' }` which already works. `app/(tabs)/profile.tsx` (hotel backgrounds) and `app/(screens)/csr-hotels.tsx` (hotel logos) are canonical examples.
+  `src/lib/localImages.ts` currently exports: `indabaHotel`, `indabalodgeRichardsBay`, `indabalodgeGaborone`, `chobeSafariLodge`, `nataLodge` (hotel logos), and `usedLogo` (brand logo used in feed cards). When adding a new static local image, add it to `localImages.ts` — never use `require()` for local image assets on iOS.
 - **Never import or top-level `require` a package with native modules.** Use a lazy loader:
 
 ```ts
