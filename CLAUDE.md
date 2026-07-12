@@ -454,46 +454,71 @@ Hotel rewards (spa, room upgrades, etc.) use voucher email with the redemption U
 
 ## Scheduled Jobs (pg_cron)
 
-Five cron jobs must be configured manually after migrations. Run this in the Supabase SQL Editor (requires `pg_cron` extension — enable it first under Database > Extensions):
+Five cron jobs must be configured manually after migrations (requires `pg_cron` and `pg_net` extensions — enable under Database > Extensions). All five are registered and confirmed working as of 2026-07-12 (verified via `net._http_response` returning `status_code = 200`).
+
+**Do not use `current_setting('app.settings.supabase_url'/'service_role_key')`** — that pattern (shown in older docs/migration comments) silently fails on hosted Supabase. Supabase's `postgres` role cannot run `ALTER DATABASE ... SET` (permission denied: `42501`), so those custom GUCs are never actually set. The job still shows `status = 'succeeded'` in `cron.job_run_details` because that only reflects the SQL queuing step (`net.http_post` is async) — the real failure only shows up in `net._http_response` (`error_msg: "Couldn't resolve host name"`, `status_code: null`). This cost significant debugging time once already — always verify a new/edited cron job by manually re-running its `net.http_post` call and checking `net._http_response` for `status_code = 200`, not just `cron.job_run_details.status`.
+
+**Correct pattern:** embed the project URL and `service_role` key as literal strings directly in the job command (values from `admin/.env.local` → `SUPABASE_SERVICE_ROLE_KEY`). Replace `<SERVICE_ROLE_KEY>` below before running — never commit the real key value into this file or migrations.
 
 ```sql
 -- Daily leaderboard refresh (02:00 UTC)
 SELECT cron.schedule('refresh-leaderboard', '0 2 * * *', $$
   SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url') || '/functions/v1/refresh-leaderboard',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+    url := 'https://typfhdrmtusmffxfclfq.supabase.co/functions/v1/refresh-leaderboard',
+    headers := jsonb_build_object('Authorization', 'Bearer <SERVICE_ROLE_KEY>', 'Content-Type', 'application/json')
   )
 $$);
 
 -- Monthly budget reset (1st of month, 00:05 UTC)
 SELECT cron.schedule('reset-budgets', '5 0 1 * *', $$
   SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url') || '/functions/v1/reset-budgets',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+    url := 'https://typfhdrmtusmffxfclfq.supabase.co/functions/v1/reset-budgets',
+    headers := jsonb_build_object('Authorization', 'Bearer <SERVICE_ROLE_KEY>', 'Content-Type', 'application/json')
   )
 $$);
 
--- Hourly rate limit cleanup
-SELECT cron.schedule('cleanup-rate-limits', '0 * * * *', $$
-  SELECT public.cleanup_rate_limits()
-$$);
+-- Hourly rate limit cleanup (no network call, no auth needed)
+SELECT cron.schedule('cleanup-rate-limits', '0 * * * *', 'SELECT public.cleanup_rate_limits()');
 
--- Daily birthday/anniversary push notifications + feed cards (08:00 UTC)
-SELECT cron.schedule('daily-celebrations', '0 8 * * *', $$
+-- Daily birthday/anniversary push notifications + feed cards (06:00 UTC)
+SELECT cron.schedule('daily-celebrations', '0 6 * * *', $$
   SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url') || '/functions/v1/daily-celebrations',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
+    url := 'https://typfhdrmtusmffxfclfq.supabase.co/functions/v1/daily-celebrations',
+    headers := jsonb_build_object('Authorization', 'Bearer <SERVICE_ROLE_KEY>', 'Content-Type', 'application/json')
   )
 $$);
 
--- Monthly legend award (1st of month, 00:30 UTC)
-SELECT cron.schedule('award-monthly-legend', '30 0 1 * *', $$
-  SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url') || '/functions/v1/award-monthly-legend',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'), 'Content-Type', 'application/json')
-  )
+-- Monthly legend award (last day of month, 23:45 UTC)
+SELECT cron.schedule('award-monthly-legend', '45 23 28-31 * *', $$
+  SELECT CASE
+    WHEN date_trunc('day', now()) = date_trunc('month', now()) + interval '1 month' - interval '1 day'
+    THEN net.http_post(
+      url := 'https://typfhdrmtusmffxfclfq.supabase.co/functions/v1/award-monthly-legend',
+      headers := jsonb_build_object('Authorization', 'Bearer <SERVICE_ROLE_KEY>', 'Content-Type', 'application/json')
+    )
+  END
 $$);
 ```
+
+**Verifying a job actually works (not just scheduled):**
+
+```sql
+-- 1. Confirm registration
+SELECT jobid, jobname, schedule, active FROM cron.job ORDER BY jobid;
+
+-- 2. Manually trigger one call and note the returned request id
+SELECT net.http_post(
+  url := 'https://typfhdrmtusmffxfclfq.supabase.co/functions/v1/daily-celebrations',
+  headers := jsonb_build_object('Authorization', 'Bearer <SERVICE_ROLE_KEY>', 'Content-Type', 'application/json')
+);
+
+-- 3. Check the real HTTP result (wait a few seconds for the async response to land)
+SELECT id, status_code, error_msg, content, created FROM net._http_response ORDER BY created DESC LIMIT 3;
+```
+
+**pg_cron + pause prevention:** these jobs run on a real Supabase project even before any hotel has launched (no signups yet). `daily-celebrations` firing successfully once a day is enough legitimate API activity on its own to prevent Supabase's free-tier inactivity auto-pause; the other four jobs add further redundancy. If the project ever shows as paused despite this, first check `net._http_response` for recent `status_code = 200` rows to confirm the jobs are truly succeeding, not just scheduled.
+
+**SQL Editor gotcha:** when pasting multi-statement SQL blocks with `$$...$$` dollar-quoting, run one `cron.schedule` call at a time — pasting several together can cause quote-boundary parsing errors. Also strip any surrounding prose/comments before pasting; the SQL Editor has no tolerance for plain English mixed into the query.
 
 ---
 
