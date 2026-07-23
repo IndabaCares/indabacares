@@ -71,6 +71,8 @@ eas update --channel production                      # OTA update via expo-updat
 
 **Android permissions — `READ_MEDIA_IMAGES` must stay blocked:** The `expo-image-picker` Expo config plugin auto-injects `android.permission.READ_MEDIA_IMAGES` into `AndroidManifest.xml`. The app uses camera-only capture (no gallery picker), so this permission is unnecessary and must stay in `blockedPermissions` in `app.json`. If it appears in the manifest, the Play Store may flag it. Do not move it back to the regular `permissions` array.
 
+**Android target API level — `compileSdkVersion`/`targetSdkVersion` pinned to 36 (Android 16) via `expo-build-properties` in `app.json`.** Google Play requires app updates to target API 36 by August 31, 2026 (extension to Nov 1, 2026 available); existing apps must stay at API 35+ to remain visible to new users on newer-OS devices. Expo SDK 54's own default is already 36 — these values were previously hardcoded to 35 (a leftover from before the project was on SDK 54) and were bumped 2026-07-23. Android 16 makes edge-to-edge layout mandatory (no opt-out at this target level) — after any future SDK-level change, manually check every screen on an API 36 device/emulator for status-bar/nav-bar overlap before submitting. This is config-only (`app.json`); this is a managed/CNG project with no committed `android/` folder, so there's no native Gradle file to also update.
+
 ---
 
 ## Auth Architecture
