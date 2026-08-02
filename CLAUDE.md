@@ -643,6 +643,7 @@ eas build --profile preview --platform all --clear-cache
 **Mobile — Android Play Store:**
 
 - Live in production (South Africa + Botswana). **Each Play Console track (Alpha, Production, etc.) requires its own country/region list** — countries added to Alpha are not inherited by Production; set them separately under Production → Countries / regions before creating a production release.
+- **Current build state (2026-08-02):** versionCode 11 (`production` profile, AAB, `--clear-cache`) built after the targetSdkVersion/compileSdkVersion 36 bump — https://expo.dev/accounts/tenbucks/projects/indabacares/builds/c7388f7e-4010-4e83-9039-1438dccfd167. Not yet submitted to Play Console.
 
 **Mobile — iOS TestFlight / App Store:**
 

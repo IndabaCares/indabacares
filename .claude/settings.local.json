@@ -102,7 +102,8 @@
       "PowerShell(cd \"C:\\\\Users\\\\Personel\\\\Desktop\\\\IndabaCares\"; $env:NODE_TLS_REJECT_UNAUTHORIZED = \"0\"; npx supabase db push --linked 2>&1)",
       "PowerShell(git push *)",
       "PowerShell(eas update *)",
-      "PowerShell(git add *)"
+      "PowerShell(git add *)",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 eas build --profile preview --platform android --clear-cache --non-interactive)"
     ]
   }
 }
