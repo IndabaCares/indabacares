@@ -282,6 +282,11 @@ Every new Edge Function should use `withEmployeeAuth` for authenticated routes o
 | `reset-budgets` | Reset recognition budgets (cron) |
 | `remove-background` | External AI image background removal — not behind `withEmployeeAuth`, handle CORS manually |
 
+**Known issues (found via full source analysis, 2026-08-04 — see `indaba-cares-analysis.md`):**
+- `reset-budgets` and `evaluate-badges` still query tables (`companies`, `profiles`) dropped in migration 030 during the System-1→System-2 schema rework. Both likely fail silently on every cron run — monthly budget resets and automatic badge-awarding are effectively broken.
+- `manage-redemption`, `redeem-reward`, `cancel-redemption`, and `claim-employee-code` are stale — they reference dropped tables or mismatched RPC signatures. The live app bypasses all four and calls current DB functions (`approve_redemption`, `redeem_reward`, `reject_redemption`) directly instead.
+- `boost-recognition` has no role check — any authenticated employee (not just managers) can boost a coworker's recognition and grant them +25 bonus points, as long as they're not the recognition's original sender (self-boost is blocked). The function's own comment flags this as pending a `role` column on `employees`. As of 2026-08-04 no UI (mobile or admin) actually calls this function yet, so the gap is latent rather than exploited — but it must be fixed with a server-side role check before any "boost" button ships.
+
 ---
 
 ## Database Migrations
